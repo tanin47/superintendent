@@ -1,0 +1,39 @@
+{
+  "name": "superintendent-app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/main.js",
+  "scripts": {
+    "build:watch": "webpack --watch",
+    "build": "webpack",
+    "start": "electron dist/main.js",
+    "nodemon": "nodemon"
+  },
+  "author": "",
+  "devDependencies": {
+    "@types/electron": "^1.6.10",
+    "@types/react": "^17.0.0",
+    "@types/react-dom": "^17.0.0",
+    "css-loader": "^5.0.1",
+    "electron": "^12.0.7",
+    "html-webpack-plugin": "^4.5.0",
+    "nodemon": "^2.0.6",
+    "react": "^17.0.1",
+    "react-dom": "^17.0.1",
+    "sass": "^1.29.0",
+    "sass-loader": "^10.1.0",
+    "style-loader": "^2.0.0",
+    "ts-loader": "^8.0.11",
+    "typescript": "^4.2.4",
+    "webpack": "^5.9.0",
+    "webpack-cli": "^4.2.0"
+  },
+  "nodemonConfig": {
+    "verbose": true,
+    "watch": [
+      "./dist"
+    ],
+    "exec": "electron dist/main.js",
+    "ext": "ts,js,tsx,html,scss"
+  }
+}
