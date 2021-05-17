@@ -9,6 +9,7 @@ const electronConfiguration = {
   resolve: {
     extensions: ['.ts', '.js'],
   },
+  externals: { sqlite3: 'commonjs sqlite3' },
   module: {
     rules: [
       {
