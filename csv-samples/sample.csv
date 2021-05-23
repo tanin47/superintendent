@@ -1,3 +1,4 @@
+period,debit,credit,amount,currency
 2020-12,AccountReceivable,DeferredRevenue,100.00,usd
 2020-12,DeferredRevenue,Revenue,5.00,usd
 2021-01,Cash,AccountReceivable,100.00,usd

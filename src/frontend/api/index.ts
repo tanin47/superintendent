@@ -1,7 +1,8 @@
 
-export function firstEndpoint(opts: {question: any}): Promise<{answer: any}> {
-  console.log(opts)
-  return Promise.resolve({
-    answer: '42'
-  });
+import {ipcRenderer} from 'electron';
+
+export function query(q: string): void {
+  console.log(q);
+  ipcRenderer.send('query', q);
+  console.log('finish sending');
 }
