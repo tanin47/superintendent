@@ -43,7 +43,7 @@ export default class Main {
     }
 
     const rows = await Main.db.all('SELECT * FROM test_csv');
-    this.mainWindow.webContents.send('result', {columns, rows});
+    this.mainWindow.webContents.send('load-table-result', {columns, rows});
   }
 
   private static async onReady(): Promise<void> {
@@ -84,7 +84,7 @@ export default class Main {
         Object.keys(rows[0]).forEach((k) => columns.push(k))
       }
 
-      event.reply('result', {columns, rows});
+      event.reply('query-result', {columns, rows});
     })
 
     Main.mainWindow = new Main.BrowserWindow({ width: 800, height: 600, webPreferences: {nodeIntegration: true, contextIsolation: false}});

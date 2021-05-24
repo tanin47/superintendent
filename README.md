@@ -5,5 +5,5 @@ TODO
 -----
 
 [ ] Change the column types
-[ ] Keep showing the original tables. The new query should show in a separate table
+[ ] Export the table into a CSV
 [ ] Style it to look nicer
