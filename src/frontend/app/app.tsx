@@ -1,39 +1,40 @@
-import React from 'react';
+import React, { ReactElement } from 'react';
 import './app.scss';
-import {query} from '../api';
-import {ipcRenderer} from 'electron';
-import Table from './table';
+import { ipcRenderer } from 'electron';
+import {addCsv, query} from '../api';
+import {Sheet} from "./types";
+import SheetSection from "./SheetSection";
 
-export default function App(): JSX.Element {
-  const [csvData, setCsvData] = React.useState<{columns: Array<string>, rows: Array<{[key:string]: any}>} | null>(null);
+export default function App(): ReactElement {
+  const [sheets, setSheets] = React.useState<Array<Sheet>>([]);
+  const [selectedSheetIndex, setSelectedSheetIndex] = React.useState<number>(0);
   const [queryString, setQueryString] = React.useState('SELECT * FROM test_csv LIMIT 1');
-  const [queryResult, setQueryResult] = React.useState<{columns: Array<string>, rows: Array<{[key:string]: any}>} | null>(null);
 
   ipcRenderer.on('load-table-result', (event, arg) => {
-    setCsvData(arg);
+    setSheets([...sheets, arg]);
+    setSelectedSheetIndex(sheets.length);
   });
 
   ipcRenderer.on('query-result', (event, arg) => {
-    setQueryResult(arg);
+    setSheets([...sheets, arg]);
+    setSelectedSheetIndex(sheets.length);
   });
 
   return (
-    <div className="app">
-      {!csvData && (<h1>Please load a CSV file.</h1>)}
-      {csvData &&
-      <>
-        <h1>Write a query!</h1>
-        <p>
-          <textarea value={queryString} onChange={(e) => setQueryString(e.target.value)} />
-          <br/>
-          <button
-            onClick={() => query(queryString)}
-          >Click me</button>
-        </p>
-        {queryResult && <Table data={queryResult} />}
-        <Table data={csvData} />
-      </>
-      }
-    </div>
+    <>
+      <div id="editorSection">
+        <textarea id="editor" value={queryString} onChange={(e) => setQueryString(e.target.value)} />
+      </div>
+      <div id="toolbarSection">
+        <button onClick={() => query(queryString)}>Run SQL</button>
+        <button onClick={() => addCsv()}>Add CSV</button>
+      </div>
+      <div id="sheetSection">
+        <SheetSection
+          sheets={sheets}
+          selectedSheetIndex={selectedSheetIndex}
+          onSheetSelected={(index) => setSelectedSheetIndex(index)} />
+      </div>
+    </>
   );
 }

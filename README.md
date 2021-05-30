@@ -4,6 +4,8 @@
 TODO
 -----
 
-[ ] Change the column types
-[ ] Export the table into a CSV
-[ ] Style it to look nicer
+- [x] Make a layout for one csv with one workspace first
+- [x] After querying, it should create a new table for the result and create that table
+- [ ] Change the column types -- what is the UI?
+- [ ] Export the table into a CSV
+- [ ] Style it to look nicer

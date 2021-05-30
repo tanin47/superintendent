@@ -1,2 +1,93 @@
-.app {
+#app {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+#editorSection {
+  position: relative;
+  width: 100%;
+  height: 40%;
+
+  textarea {
+    width: 100%;
+    height: 100%;
+    resize: none;
+    outline: none;
+  }
+}
+
+#toolbarSection {
+  position:relative;
+  width: 100%;
+  height: 22px;
+}
+
+#sheetSection {
+  width: 100%;
+  position: relative;
+  flex-grow: 100;
+
+  .sheet {
+    display: block;
+    position: absolute;
+    top: 0;
+    bottom: 30px;
+    left: 0;
+    right: 0;
+
+    table {
+      border-collapse: collapse;
+
+      thead {
+        tr {
+          th {
+            border: 1px solid #ccc;
+            padding: 3px;
+            font-weight: bold;
+            font-size: 12px;
+            font-family: monospace;
+            background-color: #eee;
+          }
+        }
+      }
+
+      tbody {
+        tr {
+          td {
+            border: 1px solid #ccc;
+            padding: 3px;
+            font-size: 12px;
+            font-family: monospace;
+            background-color: #fefefe;
+          }
+        }
+      }
+    }
+  }
+
+  .selector {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 30px;
+
+    div {
+      display: inline-block;
+      line-height: 30px;
+    }
+  }
 }
