@@ -40,7 +40,7 @@ export default function App(): ReactElement {
   return (
     <>
       <div id="editorSection">
-        <Editor ref={editorRef} />
+        <Editor ref={editorRef} sheets={sheets}/>
       </div>
       <div id="toolbarSection">
         <div className="left">

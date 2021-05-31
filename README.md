@@ -14,4 +14,5 @@ TODO
 - [ ] Add CSV to stop loading; The loading needs to stop when it succeeds or fails. API should abstract that away.
 - [ ] Export the table into a CSV
 - [ ] Support showing error message
-- [ ] Add hints
+- [ ] Support changing config between vim, emacs, and normal mode
+- [ ] Make hints good

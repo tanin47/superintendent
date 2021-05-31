@@ -4,8 +4,11 @@ import 'codemirror/lib/codemirror.css';
 import 'codemirror/addon/display/placeholder';
 import 'codemirror/addon/edit/matchbrackets';
 import 'codemirror/addon/hint/show-hint';
+import 'codemirror/addon/hint/show-hint.css';
 import 'codemirror/addon/hint/sql-hint';
+import 'codemirror/keymap/vim.js';
 import './Editor.scss';
+import {Sheet} from "./types";
 
 export interface Ref {
   getValue(): string;
@@ -14,10 +17,12 @@ export interface Ref {
 
 type Props = {
   initialValue?: string | null,
+  sheets: Array<Sheet>
 };
 
 export default React.forwardRef<Ref, Props>(function Editor({
   initialValue,
+  sheets,
 }: Props, ref): JSX.Element {
   const textareaRef = React.createRef<HTMLTextAreaElement>();
   const codeMirrorInstance = React.useRef<any>(null);
@@ -42,24 +47,29 @@ export default React.forwardRef<Ref, Props>(function Editor({
         smartIndent: true,
         lineNumbers: true,
         matchBrackets: true,
+        keyMap: 'vim',
         tabSize: 2,
         autofocus: true,
-        hintOptions: {
-          hint: (cm, option): Promise<Hints | null> => {
-            return new Promise((accept) => {
-              setTimeout(
-                () => {
-                  // TODO: Make hints work with all columns and tables
-                  return accept(null);
-                },
-                100
-              );
-            })
-          }
-        }
+        extraKeys: {'Ctrl-Space': 'autocomplete', 'Cmd-Space': 'autocomplete'}
+
       }
     );
   }, [])
+
+  React.useEffect(() => {
+    if (!codeMirrorInstance.current) { return; }
+
+    const tables = {};
+
+    for (const sheet of sheets) {
+      tables[sheet.name] = sheet.columns;
+    }
+
+    codeMirrorInstance.current.setOption('hintOptions', {
+      tables: tables,
+      closeOnUnfocus: false
+    })
+  }, [codeMirrorInstance, sheets])
 
   return (
     <>
