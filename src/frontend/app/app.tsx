@@ -1,7 +1,6 @@
 import React, { ReactElement } from 'react';
 import './app.scss';
-import { ipcRenderer } from 'electron';
-import {addCsv, query, reloadHtml} from '../api';
+import {addCsv, downloadCsv, query, reloadHtml} from '../api';
 import {Sheet} from "./types";
 import SheetSection from "./SheetSection";
 import Button from "./Button";
@@ -15,30 +14,34 @@ export default function App(): ReactElement {
 
   const [isQueryLoading, setIsQueryLoading] = React.useState<boolean>(false);
   const [isAddCsvLoading, setIsAddCsvLoading] = React.useState<boolean>(false);
-
-  const loadTableResultCallback = React.useCallback((event, arg) => {
-    setSheets([...sheets, arg]);
-    setSelectedSheetIndex(sheets.length);
-    setIsAddCsvLoading(false);
-  }, [sheets]);
-  const queryResultCallback = React.useCallback((event, arg) => {
-    setSheets([...sheets, arg]);
-    setSelectedSheetIndex(sheets.length);
-    setIsQueryLoading(false);
-  }, [sheets]);
-
-  React.useEffect(() => {
-    ipcRenderer.on('load-table-result', loadTableResultCallback);
-    ipcRenderer.on('query-result', queryResultCallback);
-
-    return () => {
-      ipcRenderer.removeListener('load-table-result', loadTableResultCallback);
-      ipcRenderer.removeListener('query-result', queryResultCallback);
-    };
-  }, [loadTableResultCallback, queryResultCallback])
+  const [isDownloadCsvLoading, setIsDownloadCsvLoading] = React.useState<boolean>(false);
 
   return (
     <>
+      {sheets.length === 0 && (
+        <div id="introSection">
+          <Button
+            onClick={() => {
+              setIsAddCsvLoading(true);
+              addCsv()
+                .then((sheet) => {
+                  if (!sheet) { return; }
+                  setSheets([...sheets, sheet]);
+                  setSelectedSheetIndex(sheets.length);
+                })
+                .catch((err) => {
+                  alert(err.message);
+                })
+                .finally(() => {
+                  setIsAddCsvLoading(false);
+                });
+            }}
+            isLoading={isAddCsvLoading}
+            icon={<i className="fas fa-file-upload"/>}>
+            Add your first CSV
+          </Button>
+        </div>
+      )}
       <div id="editorSection">
         <Editor ref={editorRef} sheets={sheets}/>
       </div>
@@ -47,27 +50,69 @@ export default function App(): ReactElement {
           <Button
               onClick={() => {
                 setIsQueryLoading(true);
-                query(editorRef.current!.getValue());
-              }}
+                query(editorRef.current!.getValue())
+                  .then((sheet) => {
+                      setSheets([...sheets, sheet]);
+                      setSelectedSheetIndex(sheets.length);
+                    })
+                      .catch((err) => {
+                        alert(err.message);
+                      })
+                      .finally(() => {
+                        setIsQueryLoading(false);
+                      });
+                  }}
               isLoading={isQueryLoading}
               icon={<i className="fas fa-play"/>}>
             Run SQL
           </Button>
           <span className="separator" />
-          <Button
-              onClick={() => {
-                setIsAddCsvLoading(true);
-                addCsv();
-              }}
-              isLoading={isAddCsvLoading}
-              icon={<i className="fas fa-file-upload"/>}>
-            Add CSV
-          </Button>
-          <span className="separator" />
-          <Button onClick={() => reloadHtml()} icon={<i className="fas fa-sync" />}>Reload HTML</Button>
+          <Button onClick={() => editorRef.current!.format()} icon={<i className="fas fa-align-justify" />}>Format</Button>
+          {/*<span className="separator" />*/}
+          {/*<Button onClick={() => reloadHtml()} icon={<i className="fas fa-sync" />}>Reload HTML</Button>*/}
         </div>
         <div className="right">
-          <Button icon={<i className="fas fa-file-download" />}>Export CSV</Button>
+          <Button
+            onClick={() => {
+              setIsAddCsvLoading(true);
+              addCsv()
+                .then((sheet) => {
+                  if (!sheet) { return; }
+                  setSheets([...sheets, sheet]);
+                  setSelectedSheetIndex(sheets.length);
+                })
+                .catch((err) => {
+                  alert(err.message);
+                })
+                .finally(() => {
+                  setIsAddCsvLoading(false);
+                });
+            }}
+            isLoading={isAddCsvLoading}
+            icon={<i className="fas fa-file-upload"/>}>
+            Add more CSV
+          </Button>
+          <span className="separator" />
+          <Button
+            onClick={() => {
+                setIsDownloadCsvLoading(true);
+                downloadCsv(sheets[selectedSheetIndex].name)
+                  .then((filePath) => {
+                    if (!filePath) { return; }
+                    alert(`The table is saved at: ${filePath}`);
+                  })
+                  .catch((err) => {
+                    alert(err.message);
+                  })
+                  .finally(() => {
+                    setIsDownloadCsvLoading(false);
+                  });
+              }}
+              isLoading={isDownloadCsvLoading}
+              disabled={sheets.length === 0}
+              icon={<i className="fas fa-file-download" />}>
+            Export current sheet
+          </Button>
         </div>
       </div>
       <div id="sheetSection" className={sheets.length === 0 ? 'empty' : ''}>

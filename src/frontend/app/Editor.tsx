@@ -1,4 +1,4 @@
-import CodeMirror, {Hints} from 'codemirror';
+import CodeMirror from 'codemirror';
 import React from "react";
 import 'codemirror/lib/codemirror.css';
 import 'codemirror/addon/display/placeholder';
@@ -9,10 +9,12 @@ import 'codemirror/addon/hint/sql-hint';
 import 'codemirror/keymap/vim.js';
 import './Editor.scss';
 import {Sheet} from "./types";
+import {format} from "sql-formatter";
 
 export interface Ref {
   getValue(): string;
   setValue(newValue: string): void;
+  format(): void;
 }
 
 type Props = {
@@ -34,6 +36,19 @@ export default React.forwardRef<Ref, Props>(function Editor({
     },
     setValue: (newValue: string) => {
       codeMirrorInstance.current!.setValue(newValue);
+    },
+    format: () => {
+      codeMirrorInstance.current!.setValue(
+        format(
+          codeMirrorInstance.current!.getValue(),
+          {
+            language: "sql",
+            indent: '  ',
+            uppercase: true,
+            linesBetweenQueries: 2,
+          }
+        )
+      );
     }
   }));
 

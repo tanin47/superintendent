@@ -6,15 +6,22 @@
   "scripts": {
     "build:watch": "webpack --watch",
     "build": "webpack",
-    "start": "electron dist/main.js"
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make"
   },
-  "author": "",
+  "author": "Tanin Na Nakorn",
   "devDependencies": {
+    "@electron-forge/cli": "^6.0.0-beta.57",
+    "@electron-forge/maker-deb": "^6.0.0-beta.57",
+    "@electron-forge/maker-rpm": "^6.0.0-beta.57",
+    "@electron-forge/maker-squirrel": "^6.0.0-beta.57",
+    "@electron-forge/maker-zip": "^6.0.0-beta.57",
+    "@types/codemirror": "^5.60.0",
     "@types/electron": "^1.6.10",
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0",
     "css-loader": "^5.0.1",
-    "csv-parse": "4.15.4",
     "electron": "^12.0.7",
     "file-loader": "^6.2.0",
     "html-webpack-plugin": "^4.5.0",
@@ -22,8 +29,6 @@
     "react-dom": "^17.0.1",
     "sass": "^1.29.0",
     "sass-loader": "^10.1.0",
-    "sqlite": "4.0.21",
-    "sqlite3": "5.0.2",
     "style-loader": "^2.0.0",
     "ts-loader": "^8.0.11",
     "typescript": "^4.2.4",
@@ -31,7 +36,39 @@
     "webpack-cli": "^4.2.0"
   },
   "dependencies": {
-    "@types/codemirror": "^5.60.0",
-    "codemirror": "^5.61.1"
+    "codemirror": "^5.61.1",
+    "csv-parse": "4.15.4",
+    "csv-stringify": "^5.6.2",
+    "electron-squirrel-startup": "^1.0.0",
+    "sql-formatter": "^4.0.2",
+    "sqlite": "4.0.21",
+    "sqlite3": "5.0.2"
+  },
+  "config": {
+    "forge": {
+      "packagerConfig": {},
+      "makers": [
+        {
+          "name": "@electron-forge/maker-squirrel",
+          "config": {
+            "name": "superintendent_app"
+          }
+        },
+        {
+          "name": "@electron-forge/maker-zip",
+          "platforms": [
+            "darwin"
+          ]
+        },
+        {
+          "name": "@electron-forge/maker-deb",
+          "config": {}
+        },
+        {
+          "name": "@electron-forge/maker-rpm",
+          "config": {}
+        }
+      ]
+    }
   }
 }

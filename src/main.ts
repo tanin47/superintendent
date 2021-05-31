@@ -1,9 +1,11 @@
 import {BrowserWindow, Menu, dialog, ipcMain} from 'electron';
 import {Parser} from 'csv-parse';
+import {Stringifier} from 'csv-stringify';
 import fs from 'fs';
 import path from 'path';
 import * as sqlite from 'sqlite';
 import sqlite3 from 'sqlite3';
+import Stream from 'stream';
 
 export default class Main {
   static mainWindow: Electron.BrowserWindow;
@@ -20,12 +22,12 @@ export default class Main {
     }
   }
 
-  static getTableName(name: string, number: number | null = null): string {
+  private static getTableName(name: string, number: number | null = null): string {
     const candidate = name.replace(/[^a-zA-Z0-9_]/g, '_');
     return Main.getUniqueTableName(candidate);
   }
 
-  static getUniqueTableName(base: string, number: number | null = null): string {
+  private static getUniqueTableName(base: string, number: number | null = null): string {
     const candidate = base + (number ? `_${number}` : '');
     for (const table of Main.tables) {
       if (candidate === table) {
@@ -35,13 +37,11 @@ export default class Main {
     return candidate;
   }
 
-  static makeQueryTableName(): string {
-    const table = Main.getTableName('query', Main.queryTableNameRunner + 1);
-    Main.tables.push(table);
-    return table;
+  private static makeQueryTableName(): string {
+    return Main.getTableName('query', Main.queryTableNameRunner + 1);
   }
 
-  static async addCsv(): Promise<void> {
+  private static async addCsv(): Promise<void> {
     const files = dialog.showOpenDialogSync(
       this.mainWindow,
       {
@@ -50,12 +50,13 @@ export default class Main {
       }
     );
 
-    if (!files || files.length === 0) { return; }
+    if (!files || files.length === 0) {
+      this.mainWindow.webContents.send('load-table-result', null);
+      return;
+    }
 
     const stream = fs.createReadStream(files[0]!).pipe(new Parser({delimiter: ','}));
-
     const table = Main.getTableName(path.parse(files[0]!).name);
-    Main.tables.push(table);
 
     let firstRow = true;
     const columns: Array<string> = [];
@@ -64,6 +65,7 @@ export default class Main {
       if (firstRow)  {
         row.forEach((r: string) => columns.push(r));
         await Main.db.exec(`CREATE TABLE "${table}" (${columns.map((c) => `"${c}" TEXT`).join(', ')})`);
+        Main.tables.push(table);
 
         firstRow = false;
       } else {
@@ -73,6 +75,40 @@ export default class Main {
 
     const rows = await Main.db.all(`SELECT * FROM "${table}"`);
     this.mainWindow.webContents.send('load-table-result', {name: table, columns, rows});
+  }
+
+  private static async downloadCsv(table: string): Promise<void> {
+    const file = dialog.showSaveDialogSync(
+      this.mainWindow,
+      {
+        defaultPath: `${table}.csv`,
+        filters: [{name: 'All files', extensions: ['*']}]
+      }
+    );
+
+    if (!file) {
+      this.mainWindow.webContents.send('download-table-result', null);
+      return;
+    }
+
+    const rows = await Main.db.all(`SELECT * FROM "${table}"`);
+
+    let columns: Array<string> = [];
+    if (rows.length > 0) {
+      Object.keys(rows[0]).forEach((k) => columns.push(k))
+    }
+
+    const sink = fs.createWriteStream(file, {flags: 'w'});
+    const stringifier = new Stringifier({delimiter: ','});
+    const writer = stringifier.pipe(sink);
+
+    stringifier.write(columns);
+    for (const row of rows) {
+      stringifier.write(columns.map((c) => row[c]));
+    }
+    stringifier.end();
+    writer.end();
+    this.mainWindow.webContents.send('download-table-result', file);
   }
 
   private static async onReady(): Promise<void> {
@@ -88,21 +124,30 @@ export default class Main {
     await Main.db.exec("PRAGMA journal_mode = OFF;");
 
     ipcMain.on('query', async (event, arg) => {
-      const table = Main.makeQueryTableName();
-      await Main.db.run(`CREATE VIEW "${table}" AS ${arg}`);
-
-      const rows = await Main.db.all(`SELECT * FROM "${table}"`);
-
-      let columns: Array<string> = [];
-      if (rows.length > 0) {
-        Object.keys(rows[0]).forEach((k) => columns.push(k))
+      try {
+        await Main.query(arg, event);
+      } catch (err) {
+        console.log(err);
+        Main.mainWindow.webContents.send('query-error', {message: err.message})
       }
-
-      event.reply('query-result', {name: table, columns, rows});
     })
 
     ipcMain.on('add-csv', async () => {
-      await Main.addCsv();
+      try {
+        await Main.addCsv();
+      } catch (err) {
+        console.log(err);
+        Main.mainWindow.webContents.send('load-table-error', {message: err.message});
+      }
+    })
+
+    ipcMain.on('download-csv', async (event, arg) => {
+      try {
+        await Main.downloadCsv(arg);
+      } catch (err) {
+        console.log(err);
+        Main.mainWindow.webContents.send('load-table-error', {message: err.message});
+      }
     })
 
     ipcMain.on('reload-html', async () => {
@@ -112,6 +157,21 @@ export default class Main {
     Main.mainWindow = new Main.BrowserWindow({ width: 1280, height: 800, webPreferences: {nodeIntegration: true, contextIsolation: false}});
     await Main.mainWindow!.loadFile(__dirname + '/index.html');
     Main.mainWindow!.webContents.openDevTools()
+  }
+
+  private static async query(arg, event: Electron.IpcMainEvent) {
+    const table = Main.makeQueryTableName();
+    await Main.db.run(`CREATE VIEW "${table}" AS ${arg}`);
+    Main.tables.push(table);
+
+    const rows = await Main.db.all(`SELECT * FROM "${table}"`);
+
+    let columns: Array<string> = [];
+    if (rows.length > 0) {
+      Object.keys(rows[0]).forEach((k) => columns.push(k))
+    }
+
+    event.reply('query-result', {name: table, columns, rows});
   }
 
   static main(app: Electron.App, browserWindow: typeof BrowserWindow): void {

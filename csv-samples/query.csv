@@ -1,0 +1,4 @@
+debit,credit,amount
+AccountReceivable,DeferredRevenue,100.00
+DeferredRevenue,Revenue,5.00
+Cash,AccountReceivable,100.00
