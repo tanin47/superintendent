@@ -1,39 +1,81 @@
 import React, { ReactElement } from 'react';
 import './app.scss';
 import { ipcRenderer } from 'electron';
-import {addCsv, query} from '../api';
+import {addCsv, query, reloadHtml} from '../api';
 import {Sheet} from "./types";
 import SheetSection from "./SheetSection";
+import Button from "./Button";
+import Editor from "./Editor";
+import {Ref as EditorRef} from "./Editor";
 
 export default function App(): ReactElement {
   const [sheets, setSheets] = React.useState<Array<Sheet>>([]);
   const [selectedSheetIndex, setSelectedSheetIndex] = React.useState<number>(0);
-  const [queryString, setQueryString] = React.useState('SELECT * FROM test_csv LIMIT 1');
+  const editorRef = React.createRef<EditorRef>();
 
-  ipcRenderer.on('load-table-result', (event, arg) => {
+  const [isQueryLoading, setIsQueryLoading] = React.useState<boolean>(false);
+  const [isAddCsvLoading, setIsAddCsvLoading] = React.useState<boolean>(false);
+
+  const loadTableResultCallback = React.useCallback((event, arg) => {
     setSheets([...sheets, arg]);
     setSelectedSheetIndex(sheets.length);
-  });
-
-  ipcRenderer.on('query-result', (event, arg) => {
+    setIsAddCsvLoading(false);
+  }, [sheets]);
+  const queryResultCallback = React.useCallback((event, arg) => {
     setSheets([...sheets, arg]);
     setSelectedSheetIndex(sheets.length);
-  });
+    setIsQueryLoading(false);
+  }, [sheets]);
+
+  React.useEffect(() => {
+    ipcRenderer.on('load-table-result', loadTableResultCallback);
+    ipcRenderer.on('query-result', queryResultCallback);
+
+    return () => {
+      ipcRenderer.removeListener('load-table-result', loadTableResultCallback);
+      ipcRenderer.removeListener('query-result', queryResultCallback);
+    };
+  }, [loadTableResultCallback, queryResultCallback])
 
   return (
     <>
       <div id="editorSection">
-        <textarea id="editor" value={queryString} onChange={(e) => setQueryString(e.target.value)} />
+        <Editor ref={editorRef} />
       </div>
       <div id="toolbarSection">
-        <button onClick={() => query(queryString)}>Run SQL</button>
-        <button onClick={() => addCsv()}>Add CSV</button>
+        <div className="left">
+          <Button
+              onClick={() => {
+                setIsQueryLoading(true);
+                query(editorRef.current!.getValue());
+              }}
+              isLoading={isQueryLoading}
+              icon={<i className="fas fa-play"/>}>
+            Run SQL
+          </Button>
+          <span className="separator" />
+          <Button
+              onClick={() => {
+                setIsAddCsvLoading(true);
+                addCsv();
+              }}
+              isLoading={isAddCsvLoading}
+              icon={<i className="fas fa-file-upload"/>}>
+            Add CSV
+          </Button>
+          <span className="separator" />
+          <Button onClick={() => reloadHtml()} icon={<i className="fas fa-sync" />}>Reload HTML</Button>
+        </div>
+        <div className="right">
+          <Button icon={<i className="fas fa-file-download" />}>Export CSV</Button>
+        </div>
       </div>
-      <div id="sheetSection">
+      <div id="sheetSection" className={sheets.length === 0 ? 'empty' : ''}>
         <SheetSection
           sheets={sheets}
           selectedSheetIndex={selectedSheetIndex}
-          onSheetSelected={(index) => setSelectedSheetIndex(index)} />
+          onSheetSelected={(index) => setSelectedSheetIndex(index)}
+          onSheetDeleted={(deletedIndex) => setSheets(sheets.filter((sheet, index) => index !== deletedIndex))} />
       </div>
     </>
   );

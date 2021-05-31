@@ -5,11 +5,13 @@ import Sheet from "./Sheet";
 export default function SheetSection({
   sheets,
   selectedSheetIndex,
-  onSheetSelected
+  onSheetSelected,
+  onSheetDeleted
 }: {
   sheets: Array<SheetType>,
   selectedSheetIndex: number,
   onSheetSelected: (selectedSheetIndex: number) => void
+  onSheetDeleted: (deletedSheetIndex: number) => void
 }): ReactElement {
   return (
     <>
@@ -17,7 +19,15 @@ export default function SheetSection({
       <div className="selector">
         {sheets.map((sheet, index) => {
           return (
-            <div key={`sheet${index}`} onClick={() => onSheetSelected(index)}>{sheet.name}</div>
+            <div
+                key={`sheet${index}`}
+                className={selectedSheetIndex === index ? 'selected' : ''}
+                onClick={() => onSheetSelected(index)}>
+              {sheet.name}
+              <i
+                  className="fas fa-times"
+                  onClick={() => onSheetDeleted(index)}/>
+            </div>
           );
         })}
       </div>

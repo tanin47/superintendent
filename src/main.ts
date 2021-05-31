@@ -21,11 +21,15 @@ export default class Main {
   }
 
   static getTableName(name: string, number: number | null = null): string {
-    const candidate = name.replace(/[^a-zA-Z0-9_]/g, '_') + (number ? `_${number}` : '');
+    const candidate = name.replace(/[^a-zA-Z0-9_]/g, '_');
+    return Main.getUniqueTableName(candidate);
+  }
 
+  static getUniqueTableName(base: string, number: number | null = null): string {
+    const candidate = base + (number ? `_${number}` : '');
     for (const table of Main.tables) {
       if (candidate === table) {
-        return Main.getTableName(name, (number || 0) + 1);
+        return Main.getUniqueTableName(base, (number || 0) + 1);
       }
     }
     return candidate;
@@ -99,6 +103,10 @@ export default class Main {
 
     ipcMain.on('add-csv', async () => {
       await Main.addCsv();
+    })
+
+    ipcMain.on('reload-html', async () => {
+      Main.mainWindow.reload();
     })
 
     Main.mainWindow = new Main.BrowserWindow({ width: 1280, height: 800, webPreferences: {nodeIntegration: true, contextIsolation: false}});
