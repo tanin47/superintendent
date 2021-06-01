@@ -1,10 +1,12 @@
-import {BrowserWindow, dialog, ipcMain} from 'electron';
+import {BrowserWindow, Menu, MenuItem, dialog, ipcMain, shell} from 'electron';
 import {Parser} from 'csv-parse';
 import {Stringifier} from 'csv-stringify';
 import fs from 'fs';
 import path from 'path';
 import * as sqlite from 'sqlite';
 import sqlite3 from 'sqlite3';
+import defaultMenu from 'electron-default-menu';
+import { MenuItemConstructorOptions } from 'electron/main';
 
 export default class Main {
   static mainWindow: Electron.BrowserWindow;
@@ -109,7 +111,43 @@ export default class Main {
     this.mainWindow.webContents.send('download-table-result', file);
   }
 
+  private static buildMenu(): void {
+    const menu = defaultMenu(Main.application, shell);
+
+    (menu[1].submenu as MenuItemConstructorOptions[]).splice(
+      8,
+      0,
+      { type: 'separator' },
+      {
+        label: 'Editor mode',
+        type: 'submenu',
+        submenu: [
+          {
+            label: 'Normal',
+            type: 'radio',
+            checked: true,
+            click: () => {
+              Main.mainWindow.webContents.send('keymap-changed', 'default');
+            }
+          },
+          {
+            label: 'Vim',
+            type: 'radio',
+            checked: false,
+            click: () => {
+              Main.mainWindow.webContents.send('keymap-changed', 'vim');
+            }
+          },
+        ]
+      },
+      { type: 'separator' }
+    );
+    Menu.setApplicationMenu(Menu.buildFromTemplate(menu));
+  }
+
   private static async onReady(): Promise<void> {
+    Main.buildMenu();
+
     Main.db = await sqlite.open({
       filename: '/tmp/super.sqlite.db',
       driver: sqlite3.Database

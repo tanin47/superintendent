@@ -21,8 +21,8 @@ export default function App(): ReactElement {
 
   return (
     <>
-      {sheets.length === 0 && (
-        <div id="introSection">
+      <div id="toolbarSection">
+        <div className="left">
           <Button
             onClick={() => {
               setIsAddCsvLoading(true);
@@ -41,10 +41,12 @@ export default function App(): ReactElement {
             }}
             isLoading={isAddCsvLoading}
             icon={<i className="fas fa-file-upload"/>}>
-            Add your first CSV
+            Add CSV
           </Button>
         </div>
-      )}
+        <div className="right">
+        </div>
+      </div>
       <div id="editorSection">
         <Editor ref={editorRef} sheets={sheets}/>
       </div>
@@ -79,27 +81,6 @@ export default function App(): ReactElement {
           )}
         </div>
         <div className="right">
-          <Button
-            onClick={() => {
-              setIsAddCsvLoading(true);
-              addCsv()
-                .then((sheet) => {
-                  if (!sheet) { return; }
-                  setSheets([...sheets, sheet]);
-                  setSelectedSheetIndex(sheets.length);
-                })
-                .catch((err) => {
-                  alert(err.message);
-                })
-                .finally(() => {
-                  setIsAddCsvLoading(false);
-                });
-            }}
-            isLoading={isAddCsvLoading}
-            icon={<i className="fas fa-file-upload"/>}>
-            Add more CSV
-          </Button>
-          <span className="separator" />
           <Button
             onClick={() => {
                 setIsDownloadCsvLoading(true);

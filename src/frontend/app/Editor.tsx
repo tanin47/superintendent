@@ -7,9 +7,11 @@ import 'codemirror/addon/hint/show-hint';
 import 'codemirror/addon/hint/show-hint.css';
 import 'codemirror/addon/hint/sql-hint';
 import 'codemirror/keymap/vim.js';
+import 'codemirror/keymap/emacs.js';
 import './Editor.scss';
 import {Sheet} from "./types";
 import {format} from "sql-formatter";
+import {ipcRenderer} from "electron";
 
 export interface Ref {
   getValue(): string;
@@ -62,7 +64,7 @@ export default React.forwardRef<Ref, Props>(function Editor({
         smartIndent: true,
         lineNumbers: true,
         matchBrackets: true,
-        keyMap: 'vim',
+        keyMap: 'default',
         tabSize: 2,
         autofocus: true,
         extraKeys: {'Ctrl-Space': 'autocomplete', 'Cmd-Space': 'autocomplete'}
@@ -70,6 +72,15 @@ export default React.forwardRef<Ref, Props>(function Editor({
       }
     );
   }, [])
+
+  React.useEffect(() => {
+    ipcRenderer.on('keymap-changed', (event, arg) => {
+      console.log(arg);
+      if (!codeMirrorInstance.current) { return; }
+
+      codeMirrorInstance.current.setOption('keyMap', arg);
+    });
+  }, [codeMirrorInstance]);
 
   React.useEffect(() => {
     if (!codeMirrorInstance.current) { return; }

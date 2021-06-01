@@ -18,5 +18,5 @@ TODO
 - [x] Package app for Mac  
 - [x] Hide the "Reload HTML" button
   - Need to differentiate by prod and dev
-- [ ] Support changing config between vim, emacs, and normal mode
+- [x] Support changing config between vim, emacs, and normal mode
 - [ ] Make hints good
