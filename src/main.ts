@@ -1,11 +1,10 @@
-import {BrowserWindow, Menu, dialog, ipcMain} from 'electron';
+import {BrowserWindow, dialog, ipcMain} from 'electron';
 import {Parser} from 'csv-parse';
 import {Stringifier} from 'csv-stringify';
 import fs from 'fs';
 import path from 'path';
 import * as sqlite from 'sqlite';
 import sqlite3 from 'sqlite3';
-import Stream from 'stream';
 
 export default class Main {
   static mainWindow: Electron.BrowserWindow;
@@ -18,7 +17,6 @@ export default class Main {
 
   private static onWindowAllClosed(): void {
     if (process.platform !== 'darwin') {
-      Main.application.quit();
     }
   }
 
@@ -113,7 +111,7 @@ export default class Main {
 
   private static async onReady(): Promise<void> {
     Main.db = await sqlite.open({
-      filename: 'super.sqlite.db',
+      filename: '/tmp/super.sqlite.db',
       driver: sqlite3.Database
     })
     await Main.db.exec('PRAGMA writable_schema = 1; \
@@ -150,13 +148,22 @@ export default class Main {
       }
     })
 
-    ipcMain.on('reload-html', async () => {
-      Main.mainWindow.reload();
-    })
+    if (!Main.application.isPackaged) {
+      ipcMain.on('reload-html', async () => {
+        Main.mainWindow.reload();
+        await Main.maybeEnableDev();
+      })
+    }
 
     Main.mainWindow = new Main.BrowserWindow({ width: 1280, height: 800, webPreferences: {nodeIntegration: true, contextIsolation: false}});
-    await Main.mainWindow!.loadFile(__dirname + '/index.html');
-    Main.mainWindow!.webContents.openDevTools()
+
+    await Main.mainWindow!.loadFile(`${__dirname}/index.html`, {query: {isPackaged: `${Main.application.isPackaged}`}});
+    await Main.maybeEnableDev();
+  }
+
+  private static async maybeEnableDev(): Promise<void> {
+    if (Main.application.isPackaged) { return; }
+    Main.mainWindow!.webContents.openDevTools();
   }
 
   private static async query(arg, event: Electron.IpcMainEvent) {
@@ -177,7 +184,9 @@ export default class Main {
   static main(app: Electron.App, browserWindow: typeof BrowserWindow): void {
     Main.BrowserWindow = browserWindow;
     Main.application = app;
-    Main.application.on('window-all-closed', Main.onWindowAllClosed);
+    Main.application.on('window-all-closed', () => {
+      Main.application.quit();
+    });
     Main.application.on('ready', Main.onReady);
   }
 }

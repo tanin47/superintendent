@@ -16,6 +16,9 @@ export default function App(): ReactElement {
   const [isAddCsvLoading, setIsAddCsvLoading] = React.useState<boolean>(false);
   const [isDownloadCsvLoading, setIsDownloadCsvLoading] = React.useState<boolean>(false);
 
+  const urlParams = new URLSearchParams(window.location.search);
+  const isPackaged = urlParams.get('isPackaged') === 'true';
+
   return (
     <>
       {sheets.length === 0 && (
@@ -68,8 +71,12 @@ export default function App(): ReactElement {
           </Button>
           <span className="separator" />
           <Button onClick={() => editorRef.current!.format()} icon={<i className="fas fa-align-justify" />}>Format</Button>
-          {/*<span className="separator" />*/}
-          {/*<Button onClick={() => reloadHtml()} icon={<i className="fas fa-sync" />}>Reload HTML</Button>*/}
+          {!isPackaged && (
+            <>
+              <span className="separator" />
+              <Button onClick={() => reloadHtml()} icon={<i className="fas fa-sync" />}>Reload HTML</Button>
+            </>
+          )}
         </div>
         <div className="right">
           <Button

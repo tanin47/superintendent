@@ -1,4 +1,4 @@
-1. run `npm run build:watch` and `npm run start` in 2 separate windows to start Electron with hot reload.
+1. run `npm run build:watch` and `npm run dev` in 2 separate windows to start Electron with hot reload.
 
 
 TODO
@@ -15,7 +15,8 @@ TODO
 - [x] Convert API to promise  
 - [x] Export the table into a CSV
 - [x] Support showing error message
-- [ ] Hide the "Reload HTML" button
+- [x] Package app for Mac  
+- [x] Hide the "Reload HTML" button
   - Need to differentiate by prod and dev
 - [ ] Support changing config between vim, emacs, and normal mode
 - [ ] Make hints good
