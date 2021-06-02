@@ -1,4 +1,4 @@
-import {BrowserWindow, Menu, MenuItem, dialog, ipcMain, shell} from 'electron';
+import {BrowserWindow, dialog, ipcMain, Menu, shell} from 'electron';
 import {Parser} from 'csv-parse';
 import {Stringifier} from 'csv-stringify';
 import fs from 'fs';
@@ -6,7 +6,7 @@ import path from 'path';
 import * as sqlite from 'sqlite';
 import sqlite3 from 'sqlite3';
 import defaultMenu from 'electron-default-menu';
-import { MenuItemConstructorOptions } from 'electron/main';
+import {MenuItemConstructorOptions} from 'electron/main';
 
 export default class Main {
   static mainWindow: Electron.BrowserWindow;

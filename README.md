@@ -19,4 +19,10 @@ TODO
 - [x] Hide the "Reload HTML" button
   - Need to differentiate by prod and dev
 - [x] Support changing config between vim, emacs, and normal mode
-- [ ] Make hints good
+- [x] Make hints decent
+- [ ] Package into an app
+
+Later
+------
+- [ ] Implement the auto hint using keyUp and remember the state (e.g. typing 2 characters)
+- [ ] Make hints work with double quotes

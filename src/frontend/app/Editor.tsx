@@ -6,8 +6,8 @@ import 'codemirror/addon/edit/matchbrackets';
 import 'codemirror/addon/hint/show-hint';
 import 'codemirror/addon/hint/show-hint.css';
 import 'codemirror/addon/hint/sql-hint';
+import 'codemirror/addon/hint/anyword-hint';
 import 'codemirror/keymap/vim.js';
-import 'codemirror/keymap/emacs.js';
 import './Editor.scss';
 import {Sheet} from "./types";
 import {format} from "sql-formatter";
@@ -86,14 +86,26 @@ export default React.forwardRef<Ref, Props>(function Editor({
     if (!codeMirrorInstance.current) { return; }
 
     const tables = {};
+    const allColumns = new Set<string>();
+
+    for (const sheet of sheets) {
+      for (const column of sheet.columns) {
+        allColumns.add(column);
+      }
+    }
 
     for (const sheet of sheets) {
       tables[sheet.name] = sheet.columns;
     }
 
+    if (sheets.length > 0) {
+      tables[sheets[0].name] = Array.from(allColumns);
+    }
+
     codeMirrorInstance.current.setOption('hintOptions', {
       tables: tables,
-      closeOnUnfocus: false
+      defaultTable: sheets[0]?.name,
+      closeOnUnfocus: false,
     })
   }, [codeMirrorInstance, sheets])
 
