@@ -1,11 +1,8 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const path = require('path');
 
 const electronConfiguration = {
-  mode: 'development',
   entry: './src/app.ts',
   target: 'electron-main',
-  devtool: 'source-map',
   resolve: {
     extensions: ['.ts', '.js'],
   },
@@ -19,16 +16,13 @@ const electronConfiguration = {
     ]
   },
   output: {
-    path: __dirname + '/dist',
-    filename: 'main.js'
+    filename: 'main.js',
   }
-}
+};
 
 const reactConfiguration = {
-  mode: 'development',
   entry: './src/frontend/renderer.tsx',
   target: 'electron-renderer',
-  devtool: 'source-map',
   resolve: {
     extensions: ['.tsx', '.ts', '.js'],
   },
@@ -67,17 +61,16 @@ const reactConfiguration = {
     ]
   },
   output: {
-    path: __dirname + '/dist',
-    filename: 'renderer.js'
+    filename: 'renderer.js',
   },
   plugins: [
     new HtmlWebpackPlugin({
       template: './src/frontend/index.html'
     })
   ]
-}
+};
 
-module.exports = [
+module.exports = {
   electronConfiguration,
-  reactConfiguration,
-];
+  reactConfiguration
+};

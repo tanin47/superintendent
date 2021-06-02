@@ -21,6 +21,7 @@ TODO
 - [x] Support changing config between vim, emacs, and normal mode
 - [x] Make hints decent
 - [ ] Package into an app
+  - We'll need to figure out how to build without node_modules
 
 Later
 ------
