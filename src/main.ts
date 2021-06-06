@@ -58,7 +58,7 @@ export default class Main {
       return;
     }
 
-    const stream = fs.createReadStream(files[0]!).pipe(new Parser({delimiter: ','}));
+    const stream = fs.createReadStream(files[0]!).pipe(new Parser({trim: true, delimiter: ','}));
     const table = Main.getTableName(path.parse(files[0]!).name);
 
     let firstRow = true;
@@ -75,7 +75,7 @@ export default class Main {
 
         firstRow = false;
       } else {
-        await Main.db.run(`INSERT INTO "${table}" (${columns.join(', ')}) VALUES (${columns.map((c) => '?').join(', ')})`, ...row);
+        await Main.db.run(`INSERT INTO "${table}" (${columns.map((c) => `"${c}"`).join(', ')}) VALUES (${columns.map((c) => '?').join(', ')})`, ...row);
       }
     }
 
