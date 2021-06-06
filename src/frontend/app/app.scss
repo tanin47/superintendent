@@ -137,6 +137,14 @@
     position: relative;
     box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 1px 3px 1px;
 
+    .has-more {
+      display: block;
+      font-size: 12px;
+      font-style: italic;
+      color: #888;
+      padding: 5px;
+    }
+
     table {
       border-collapse: collapse;
 
@@ -171,13 +179,12 @@
     left: 0;
     right: 0;
     background-color: #ddd;
-    min-width: 26px;
 
     div {
       position: relative;
       display: inline-block;
-      font-size: 16px;
-      line-height: 26px;
+      font-size: 14px;
+      line-height: 24px;
       padding: 0px 8px;
       color: #666;
       background-color: #ddd;

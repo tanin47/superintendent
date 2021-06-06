@@ -25,13 +25,16 @@ TODO
   - [x] Test on Mac
   - [x] Test on Windows
 - [x] Support resizing
+- [x] Support large CSV  
 - [ ] Build the landing page  
   - [ ] Complete the feature section
-  - [ ] Setup an email  
+  - [x] Setup an email  
   - [ ] Make a believable journal entries
   - [ ] Make an intro gif
 
 Later
 ------
+- [ ] Change to better-sqlite3
+- [ ] Find a way to load and download sqlite natively? Maybe we embed the sqlite executable into electron?  
 - [ ] Implement the auto hint using keyUp and remember the state (e.g. typing 2 characters)
 - [ ] Make hints work with double quotes

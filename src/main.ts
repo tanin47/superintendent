@@ -9,6 +9,8 @@ import sqlite3 from 'sqlite3';
 import defaultMenu from 'electron-default-menu';
 import {MenuItemConstructorOptions} from 'electron/main';
 
+const MAX_ROW = 1000;
+
 export default class Main {
   static mainWindow: Electron.BrowserWindow;
   static application: Electron.App;
@@ -61,8 +63,11 @@ export default class Main {
 
     let firstRow = true;
     const columns: Array<string> = [];
+    let count = 0;
 
     for await (let row of stream)  {
+      count++;
+
       if (firstRow)  {
         row.forEach((r: string) => columns.push(r));
         await Main.db.exec(`CREATE TABLE "${table}" (${columns.map((c) => `"${c}" TEXT`).join(', ')})`);
@@ -74,8 +79,8 @@ export default class Main {
       }
     }
 
-    const rows = await Main.db.all(`SELECT * FROM "${table}"`);
-    this.mainWindow.webContents.send('load-table-result', {name: table, columns, rows});
+    const rows = await Main.db.all(`SELECT * FROM "${table}" LIMIT ${MAX_ROW}`);
+    this.mainWindow.webContents.send('load-table-result', {name: table, count, hasMore: count > MAX_ROW, columns, rows});
   }
 
   private static async downloadCsv(table: string): Promise<void> {
@@ -210,14 +215,17 @@ export default class Main {
     await Main.db.run(`CREATE VIEW "${table}" AS ${arg}`);
     Main.tables.push(table);
 
-    const rows = await Main.db.all(`SELECT * FROM "${table}"`);
+    const numOfRowsResult = await Main.db.all(`SELECT COUNT(*) AS number_of_rows FROM "${table}"`);
+    const numOfRows = numOfRowsResult.length == 0 ? 0 : numOfRowsResult[0].number_of_rows;
+
+    const rows = await Main.db.all(`SELECT * FROM "${table}" LIMIT ${MAX_ROW}`);
 
     let columns: Array<string> = [];
     if (rows.length > 0) {
       Object.keys(rows[0]).forEach((k) => columns.push(k))
     }
 
-    event.reply('query-result', {name: table, columns, rows});
+    event.reply('query-result', {name: table, count: numOfRows, hasMore: numOfRows > MAX_ROW, columns, rows});
   }
 
   static main(app: Electron.App, browserWindow: typeof BrowserWindow): void {
