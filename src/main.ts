@@ -44,6 +44,15 @@ export default class Main {
     return Main.getTableName('query', Main.queryTableNameRunner + 1);
   }
 
+  private static async addBatch(rows: Array<Array<string>>, table: string, columns: Array<string>): Promise<void> {
+    const colLine = columns.map((c) => '?').join(', ');
+    const values = rows
+      .map((r) => `(${colLine})`)
+      .join(', ');
+
+    await Main.db.run(`INSERT INTO "${table}" (${columns.map((c) => `"${c}"`).join(', ')}) VALUES ${values}`, ...rows.flat());
+  }
+
   private static async addCsv(): Promise<void> {
     const files = dialog.showOpenDialogSync(
       this.mainWindow,
@@ -58,16 +67,17 @@ export default class Main {
       return;
     }
 
-    const stream = fs.createReadStream(files[0]!).pipe(new Parser({trim: true, delimiter: ','}));
+    const stream = fs.createReadStream(files[0]!).pipe(new Parser({trim: true, delimiter: ',', skipEmptyLines: true}));
     const table = Main.getTableName(path.parse(files[0]!).name);
 
     let firstRow = true;
     const columns: Array<string> = [];
     let count = 0;
 
-    for await (let row of stream)  {
-      count++;
+    let batch: Array<Array<string>> = [];
+    const maxBatch = 100;
 
+    for await (let row of stream)  {
       if (firstRow)  {
         row.forEach((r: string) => columns.push(r));
         await Main.db.exec(`CREATE TABLE "${table}" (${columns.map((c) => `"${c}" TEXT`).join(', ')})`);
@@ -75,8 +85,24 @@ export default class Main {
 
         firstRow = false;
       } else {
-        await Main.db.run(`INSERT INTO "${table}" (${columns.map((c) => `"${c}"`).join(', ')}) VALUES (${columns.map((c) => '?').join(', ')})`, ...row);
+        count++;
+
+        if (batch.length < maxBatch) {
+          if (row.length > columns.length) {
+            row.splice(columns.length, row.length - columns.length);
+          }
+
+          batch.push(row);
+        } else {
+          await Main.addBatch(batch, table, columns);
+          batch = [];
+        }
       }
+    }
+
+    if (batch.length > 0) {
+      await Main.addBatch(batch, table, columns);
+      batch = [];
     }
 
     const rows = await Main.db.all(`SELECT * FROM "${table}" LIMIT ${MAX_ROW}`);
@@ -155,7 +181,7 @@ export default class Main {
     Main.buildMenu();
 
     Main.db = await sqlite.open({
-      filename: path.join(os.tmpdir(), 'super.sqlite.db'),
+      filename: path.join(os.tmpdir(), `super.sqlite.${new Date().getTime()}.db`),
       driver: sqlite3.Database
     })
     await Main.db.exec('PRAGMA writable_schema = 1; \
@@ -164,6 +190,8 @@ export default class Main {
       VACUUM; \
       PRAGMA integrity_check;');
     await Main.db.exec("PRAGMA journal_mode = OFF;");
+    await Main.db.exec("PRAGMA synchronous = OFF;");
+    await Main.db.exec("PRAGMA locking_mode = EXCLUSIVE;");
 
     ipcMain.on('query', async (event, arg) => {
       try {

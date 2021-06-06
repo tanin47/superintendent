@@ -30,6 +30,44 @@ export default function App(): ReactElement {
     setIsResizing(true);
   };
 
+  const submitHandler = React.useMemo(
+    () => () => {
+      if (isQueryLoading) { return; }
+      if (!editorRef.current) { return; }
+      const value = editorRef.current.getValue();
+
+      setIsQueryLoading(true);
+      query(value)
+        .then((sheet) => {
+          setSheets([...sheets, sheet]);
+          setSelectedSheetIndex(sheets.length);
+        })
+        .catch((err) => {
+          alert(err.message);
+        })
+        .finally(() => {
+          setIsQueryLoading(false);
+        });
+    },
+    [setIsQueryLoading, setSheets, setSelectedSheetIndex, sheets, isQueryLoading]
+  );
+
+  React.useEffect(() => {
+    const handler = (event) => {
+      if (event.code === 'Enter' && (event.metaKey || event.ctrlKey)) {
+        submitHandler();
+        return false;
+      }
+
+      return true;
+    };
+    document.addEventListener('keydown', handler);
+
+    return () => {
+      document.removeEventListener('keydown', handler) ;
+    };
+  }, [submitHandler]);
+
   React.useEffect(() => {
     const handler = (event) => {
       if (!isResizing) { return; }
@@ -97,20 +135,7 @@ export default function App(): ReactElement {
         <div className="inner" unselectable="on">
           <div className="left">
             <Button
-              onClick={() => {
-                setIsQueryLoading(true);
-                query(editorRef.current!.getValue())
-                  .then((sheet) => {
-                    setSheets([...sheets, sheet]);
-                    setSelectedSheetIndex(sheets.length);
-                  })
-                  .catch((err) => {
-                    alert(err.message);
-                  })
-                  .finally(() => {
-                    setIsQueryLoading(false);
-                  });
-              }}
+              onClick={submitHandler}
               isLoading={isQueryLoading}
               icon={<i className="fas fa-play"/>}>
               Run SQL

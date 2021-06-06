@@ -26,14 +26,17 @@ TODO
   - [x] Test on Windows
 - [x] Support resizing
 - [x] Support large CSV  
+  - [x] Batch insert
 - [ ] Build the landing page  
   - [ ] Complete the feature section
   - [x] Setup an email  
-  - [ ] Make a believable journal entries
+  - [x] Make a believable CSV
+    - [x] Make a name for each index
   - [ ] Make an intro gif
 
 Later
 ------
+- [ ] The table header to be sticky
 - [ ] Change to better-sqlite3
 - [ ] Find a way to load and download sqlite natively? Maybe we embed the sqlite executable into electron?  
 - [ ] Implement the auto hint using keyUp and remember the state (e.g. typing 2 characters)

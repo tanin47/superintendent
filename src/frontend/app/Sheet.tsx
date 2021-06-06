@@ -27,9 +27,13 @@ export default function Sheet({sheet}: {sheet: Sheet}): JSX.Element {
               </tr>
             );
           })}
+          {sheet.hasMore && (
+            <tr>
+              <td colSpan={sheet.columns.length} className="has-more">There are {sheet.count} rows, but only {sheet.rows.length} rows is shown. Please export the sheet to see all the rows.</td>
+            </tr>
+          )}
           </tbody>
         </table>
-        {sheet.hasMore && <div className="has-more">There are {sheet.count} rows, but only {sheet.rows.length} rows is shown. Please export the sheet to see all the rows.</div>}
       </div>
     </div>
   );
