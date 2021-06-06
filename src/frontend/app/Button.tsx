@@ -15,7 +15,7 @@ export default function Button({
 }): JSX.Element {
   return (
     <button onClick={onClick} disabled={disabled || isLoading}>
-      {isLoading ? (<span className="spinner" />) : (<span className="icon">{icon}</span>)}
+      {isLoading ? (<span className="spinner" />) : (icon ? <span className="icon">{icon}</span> : null)}
       {children}
     </button>
   );

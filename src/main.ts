@@ -143,43 +143,7 @@ export default class Main {
     this.mainWindow.webContents.send('download-table-result', file);
   }
 
-  private static buildMenu(): void {
-    const menu = defaultMenu(Main.application, shell);
-
-    (menu[1].submenu as MenuItemConstructorOptions[]).splice(
-      8,
-      0,
-      { type: 'separator' },
-      {
-        label: 'Editor mode',
-        type: 'submenu',
-        submenu: [
-          {
-            label: 'Normal',
-            type: 'radio',
-            checked: true,
-            click: () => {
-              Main.mainWindow.webContents.send('keymap-changed', 'default');
-            }
-          },
-          {
-            label: 'Vim',
-            type: 'radio',
-            checked: false,
-            click: () => {
-              Main.mainWindow.webContents.send('keymap-changed', 'vim');
-            }
-          },
-        ]
-      },
-      { type: 'separator' }
-    );
-    Menu.setApplicationMenu(Menu.buildFromTemplate(menu));
-  }
-
   private static async onReady(): Promise<void> {
-    Main.buildMenu();
-
     Main.db = await sqlite.open({
       filename: path.join(os.tmpdir(), `super.sqlite.${new Date().getTime()}.db`),
       driver: sqlite3.Database

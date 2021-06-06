@@ -1,3 +1,6 @@
+
+export type EditorMode = 'default' | 'vim';
+
 export type Sheet = {
   name: string,
   count: number,

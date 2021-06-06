@@ -9,9 +9,8 @@ import 'codemirror/addon/hint/sql-hint';
 import 'codemirror/addon/hint/anyword-hint';
 import 'codemirror/keymap/vim.js';
 import './Editor.scss';
-import {Sheet} from "./types";
+import {EditorMode, Sheet} from "./types";
 import {format} from "sql-formatter";
-import {ipcRenderer} from "electron";
 
 export interface Ref {
   getValue(): string;
@@ -21,11 +20,13 @@ export interface Ref {
 
 type Props = {
   initialValue?: string | null,
+  mode: EditorMode,
   sheets: Array<Sheet>
 };
 
 export default React.forwardRef<Ref, Props>(function Editor({
   initialValue,
+  mode,
   sheets,
 }: Props, ref): JSX.Element {
   const textareaRef = React.createRef<HTMLTextAreaElement>();
@@ -64,7 +65,7 @@ export default React.forwardRef<Ref, Props>(function Editor({
         smartIndent: true,
         lineNumbers: true,
         matchBrackets: true,
-        keyMap: 'default',
+        keyMap: mode,
         tabSize: 2,
         autofocus: true,
         extraKeys: {'Ctrl-Space': 'autocomplete', 'Cmd-Space': 'autocomplete'}
@@ -74,13 +75,9 @@ export default React.forwardRef<Ref, Props>(function Editor({
   }, [])
 
   React.useEffect(() => {
-    ipcRenderer.on('keymap-changed', (event, arg) => {
-      console.log(arg);
-      if (!codeMirrorInstance.current) { return; }
-
-      codeMirrorInstance.current.setOption('keyMap', arg);
-    });
-  }, [codeMirrorInstance]);
+    if (!codeMirrorInstance.current) { return; }
+    codeMirrorInstance.current.setOption('keyMap', mode);
+  }, [codeMirrorInstance, mode]);
 
   React.useEffect(() => {
     if (!codeMirrorInstance.current) { return; }

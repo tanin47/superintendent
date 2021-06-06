@@ -1,13 +1,14 @@
 import React, { ReactElement } from 'react';
 import './app.scss';
 import {addCsv, downloadCsv, query, reloadHtml} from '../api';
-import {Sheet} from "./types";
+import {EditorMode, Sheet} from "./types";
 import SheetSection from "./SheetSection";
 import Button from "./Button";
 import Editor from "./Editor";
 import {Ref as EditorRef} from "./Editor";
 
 export default function App(): ReactElement {
+  const [editorMode, setEditorMode] = React.useState<EditorMode>('default');
   const [sheets, setSheets] = React.useState<Array<Sheet>>([]);
   const [selectedSheetIndex, setSelectedSheetIndex] = React.useState<number>(0);
   const editorRef = React.createRef<EditorRef>();
@@ -49,7 +50,7 @@ export default function App(): ReactElement {
           setIsQueryLoading(false);
         });
     },
-    [setIsQueryLoading, setSheets, setSelectedSheetIndex, sheets, isQueryLoading]
+    [setIsQueryLoading, setSheets, setSelectedSheetIndex, sheets, isQueryLoading, editorRef]
   );
 
   React.useEffect(() => {
@@ -121,11 +122,24 @@ export default function App(): ReactElement {
               Add CSV
             </Button>
           </div>
-          <div className="right" />
+          <div className="right">
+            <div className="mode">
+              Mode:
+              <Button
+                disabled={editorMode === 'default'}
+                onClick={() => setEditorMode('default')}
+              >Normal</Button>
+              <span className="separator"/>
+              <Button
+                disabled={editorMode === 'vim'}
+                onClick={() => setEditorMode('vim')}
+              >Vim</Button>
+            </div>
+          </div>
         </div>
       </div>
       <div id="editorSection" style={{height: editorHeight}}>
-        <Editor ref={editorRef} sheets={sheets}/>
+        <Editor ref={editorRef} mode={editorMode} sheets={sheets}/>
       </div>
       <div id="toolbarSection">
         <div
