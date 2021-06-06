@@ -1,4 +1,5 @@
-1. run `npm run build:watch` and `npm run dev` in 2 separate windows to start Electron with hot reload.
+1. run `yarn run build:watch` and `yarn run start` in 2 separate windows to start Electron with hot reload.
+2. To build the prod artifacts, run `yarn run pack`.
 
 
 TODO
@@ -20,8 +21,15 @@ TODO
   - Need to differentiate by prod and dev
 - [x] Support changing config between vim, emacs, and normal mode
 - [x] Make hints decent
-- [ ] Package into an app
-  - We'll need to figure out how to build without node_modules
+- [x] Package into an app
+  - [x] Test on Mac
+  - [x] Test on Windows
+- [x] Support resizing
+- [ ] Build the landing page  
+  - [ ] Complete the feature section
+  - [ ] Setup an email  
+  - [ ] Make a believable journal entries
+  - [ ] Make an intro gif
 
 Later
 ------

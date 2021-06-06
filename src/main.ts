@@ -2,6 +2,7 @@ import {BrowserWindow, dialog, ipcMain, Menu, shell} from 'electron';
 import {Parser} from 'csv-parse';
 import {Stringifier} from 'csv-stringify';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import * as sqlite from 'sqlite';
 import sqlite3 from 'sqlite3';
@@ -149,7 +150,7 @@ export default class Main {
     Main.buildMenu();
 
     Main.db = await sqlite.open({
-      filename: '/tmp/super.sqlite.db',
+      filename: path.join(os.tmpdir(), 'super.sqlite.db'),
       driver: sqlite3.Database
     })
     await Main.db.exec('PRAGMA writable_schema = 1; \

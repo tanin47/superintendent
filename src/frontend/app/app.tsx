@@ -16,73 +16,123 @@ export default function App(): ReactElement {
   const [isAddCsvLoading, setIsAddCsvLoading] = React.useState<boolean>(false);
   const [isDownloadCsvLoading, setIsDownloadCsvLoading] = React.useState<boolean>(false);
 
+  const [isResizing, setIsResizing] = React.useState<boolean>(false);
+  const [editorHeight, setEditorHeight] = React.useState<number>(250);
+  const [mouseDownY, setMouseDownY] = React.useState<number>(0);
+  const [mouseDownEditorHeight, setMouseDownEditorHeight] = React.useState<number>(editorHeight);
+
   const urlParams = new URLSearchParams(window.location.search);
   const isPackaged = urlParams.get('isPackaged') === 'true';
+
+  const mouseDownHandler = (event: React.MouseEvent) => {
+    setMouseDownY(event.clientY);
+    setMouseDownEditorHeight(editorHeight);
+    setIsResizing(true);
+  };
+
+  React.useEffect(() => {
+    const handler = (event) => {
+      if (!isResizing) { return; }
+
+      setEditorHeight(Math.min(window.innerHeight - 200, Math.max(event.clientY - mouseDownY + mouseDownEditorHeight, 50)));
+    };
+    document.addEventListener('mousemove', handler);
+
+    return () => {
+      document.removeEventListener('mousemove', handler) ;
+    };
+  }, [isResizing, mouseDownEditorHeight, mouseDownY]);
+
+  React.useEffect(() => {
+    const handler = (event) => {
+      if (!isResizing) {
+        return;
+      }
+      setIsResizing(false);
+    };
+    document.addEventListener('mouseup', handler);
+
+    return () => {
+      document.removeEventListener('mouseup', handler);
+    }
+  }, [isResizing, setIsResizing]);
 
   return (
     <>
       <div id="toolbarSection">
-        <div className="left">
-          <Button
-            onClick={() => {
-              setIsAddCsvLoading(true);
-              addCsv()
-                .then((sheet) => {
-                  if (!sheet) { return; }
-                  setSheets([...sheets, sheet]);
-                  setSelectedSheetIndex(sheets.length);
-                })
-                .catch((err) => {
-                  alert(err.message);
-                })
-                .finally(() => {
-                  setIsAddCsvLoading(false);
-                });
-            }}
-            isLoading={isAddCsvLoading}
-            icon={<i className="fas fa-file-upload"/>}>
-            Add CSV
-          </Button>
-        </div>
-        <div className="right">
+        <div className="inner">
+          <div className="left">
+            <Button
+              onClick={() => {
+                setIsAddCsvLoading(true);
+                addCsv()
+                  .then((sheet) => {
+                    if (!sheet) { return; }
+                    setSheets([...sheets, sheet]);
+                    setSelectedSheetIndex(sheets.length);
+                  })
+                  .catch((err) => {
+                    alert(err.message);
+                  })
+                  .finally(() => {
+                    setIsAddCsvLoading(false);
+                  });
+              }}
+              isLoading={isAddCsvLoading}
+              icon={<i className="fas fa-file-upload"/>}>
+              Add CSV
+            </Button>
+          </div>
+          <div className="right" />
         </div>
       </div>
-      <div id="editorSection">
+      <div id="editorSection" style={{height: editorHeight}}>
         <Editor ref={editorRef} sheets={sheets}/>
       </div>
       <div id="toolbarSection">
-        <div className="left">
-          <Button
+        <div
+          className="resize-bar"
+          onMouseDown={mouseDownHandler}
+        />
+        <div className="inner" unselectable="on">
+          <div className="left">
+            <Button
               onClick={() => {
                 setIsQueryLoading(true);
                 query(editorRef.current!.getValue())
                   .then((sheet) => {
-                      setSheets([...sheets, sheet]);
-                      setSelectedSheetIndex(sheets.length);
-                    })
-                      .catch((err) => {
-                        alert(err.message);
-                      })
-                      .finally(() => {
-                        setIsQueryLoading(false);
-                      });
-                  }}
+                    setSheets([...sheets, sheet]);
+                    setSelectedSheetIndex(sheets.length);
+                  })
+                  .catch((err) => {
+                    alert(err.message);
+                  })
+                  .finally(() => {
+                    setIsQueryLoading(false);
+                  });
+              }}
               isLoading={isQueryLoading}
               icon={<i className="fas fa-play"/>}>
-            Run SQL
-          </Button>
-          <span className="separator" />
-          <Button onClick={() => editorRef.current!.format()} icon={<i className="fas fa-align-justify" />}>Format</Button>
-          {!isPackaged && (
-            <>
-              <span className="separator" />
-              <Button onClick={() => reloadHtml()} icon={<i className="fas fa-sync" />}>Reload HTML</Button>
-            </>
-          )}
-        </div>
-        <div className="right">
-          <Button
-            onClick={() => {
+              Run SQL
+            </Button>
+            <span className="separator" />
+            <Button onClick={() => editorRef.current!.format()} icon={<i className="fas fa-align-justify" />}>Format</Button>
+            {!isPackaged && (
+              <>
+                <span className="separator" />
+                <Button onClick={() => reloadHtml()} icon={<i className="fas fa-sync" />}>Reload HTML</Button>
+              </>
+            )}
+          </div>
+          <div className="right">
+            <Button
+              icon={<i className="fas fa-chart-bar" />}
+              disabled
+            >
+              Make chart (coming soon!)
+            </Button>
+            <Button
+              onClick={() => {
                 setIsDownloadCsvLoading(true);
                 downloadCsv(sheets[selectedSheetIndex].name)
                   .then((filePath) => {
@@ -99,9 +149,14 @@ export default function App(): ReactElement {
               isLoading={isDownloadCsvLoading}
               disabled={sheets.length === 0}
               icon={<i className="fas fa-file-download" />}>
-            Export current sheet
-          </Button>
+              Export sheet
+            </Button>
+          </div>
         </div>
+        <div
+          className="resize-bar"
+          onMouseDown={mouseDownHandler}
+        />
       </div>
       <div id="sheetSection" className={sheets.length === 0 ? 'empty' : ''}>
         <SheetSection

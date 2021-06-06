@@ -1,8 +1,15 @@
 
 .CodeMirror {
   height: 100%;
+  font-size: 13px;
 }
 
 .CodeMirror-empty {
   color: #aaa;
+  // Make it unhighlightable
+  -moz-user-select: -moz-none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
