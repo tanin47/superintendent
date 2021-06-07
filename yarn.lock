@@ -1311,6 +1311,14 @@ electron-default-menu@^1.0.2:
   resolved "https://registry.yarnpkg.com/electron-default-menu/-/electron-default-menu-1.0.2.tgz#a652144703ddaf6fa8043a62f91855e422e1005e"
   integrity sha512-YAL/UNR3kPG58wOOlmDpTG3i6+bzwhHx6NllIOaLuVrU7uYifeYGGdk5IH2Hap4wVEx2YTA8cqQ2PGSplYwDWQ==
 
+electron-notarize@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/electron-notarize/-/electron-notarize-1.0.0.tgz#bc925b1ccc3f79e58e029e8c4706572b01a9fd8f"
+  integrity sha512-dsib1IAquMn0onCrNMJ6gtEIZn/azG8hZMCYOuZIMVMUeRMgBYHK1s5TK9P8xAcrAjh/2aN5WYHzgVSWX314og==
+  dependencies:
+    debug "^4.1.1"
+    fs-extra "^9.0.1"
+
 electron-publish@22.10.5:
   version "22.10.5"
   resolved "https://registry.yarnpkg.com/electron-publish/-/electron-publish-22.10.5.tgz#9cbe46266b6c79d8c6e99840755682e2262d3543"

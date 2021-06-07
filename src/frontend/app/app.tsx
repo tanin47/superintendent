@@ -170,6 +170,7 @@ export default function App(): ReactElement {
             >
               Make chart (coming soon!)
             </Button>
+            <span className="separator" />
             <Button
               onClick={() => {
                 setIsDownloadCsvLoading(true);
