@@ -27,12 +27,12 @@ TODO
 - [x] Support resizing
 - [x] Support large CSV  
   - [x] Batch insert
-- [ ] Build the landing page  
-  - [ ] Complete the feature section
+- [x] Build the landing page  
+  - [x] Complete the feature section
   - [x] Setup an email  
   - [x] Make a believable CSV
     - [x] Make a name for each index
-  - [ ] Make an intro gif
+  - [x] Make an intro gif
 
 Later
 ------

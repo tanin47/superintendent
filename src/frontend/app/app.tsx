@@ -176,7 +176,7 @@ export default function App(): ReactElement {
                 downloadCsv(sheets[selectedSheetIndex].name)
                   .then((filePath) => {
                     if (!filePath) { return; }
-                    alert(`The table is saved at: ${filePath}`);
+                    alert(`The sheet has been exported to: ${filePath}`);
                   })
                   .catch((err) => {
                     alert(err.message);
