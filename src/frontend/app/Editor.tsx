@@ -69,9 +69,29 @@ export default React.forwardRef<Ref, Props>(function Editor({
         tabSize: 2,
         autofocus: true,
         extraKeys: {'Ctrl-Space': 'autocomplete', 'Cmd-Space': 'autocomplete'}
-
       }
     );
+
+    let firstCharRecorded = false;
+
+    codeMirrorInstance.current.on('keyup', (cm, event) => {
+      if (cm.state.completionActive) { return; }
+
+      if (
+        (event.keyCode >= 97 && event.keyCode <= 122) || // a-z
+        (event.keyCode >= 65 && event.keyCode <= 90) || // A-Z
+        (event.keyCode >= 48 && event.keyCode <= 57) || // 0-9
+        event.keyCode === 95 // _
+      ) {
+        if (firstCharRecorded) {
+          CodeMirror.commands.autocomplete(cm, undefined, {completeSingle: false});
+        } else {
+          firstCharRecorded = true;
+        }
+      } else {
+        firstCharRecorded = false
+      }
+    });
   }, [])
 
   React.useEffect(() => {
@@ -88,11 +108,12 @@ export default React.forwardRef<Ref, Props>(function Editor({
     for (const sheet of sheets) {
       for (const column of sheet.columns) {
         allColumns.add(column);
+        allColumns.add(`"${column}"`);
       }
     }
 
     for (const sheet of sheets) {
-      tables[sheet.name] = sheet.columns;
+      tables[sheet.name] = [];
     }
 
     if (sheets.length > 0) {

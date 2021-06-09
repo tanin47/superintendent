@@ -36,8 +36,7 @@ TODO
 
 Later
 ------
-- [ ] The table header to be sticky
+- [x] Implement the auto hint using keyUp and remember the state (e.g. typing 2 characters)
+- [x] The table header to be sticky
 - [ ] Change to better-sqlite3
 - [ ] Find a way to load and download sqlite natively? Maybe we embed the sqlite executable into electron?  
-- [ ] Implement the auto hint using keyUp and remember the state (e.g. typing 2 characters)
-- [ ] Make hints work with double quotes
