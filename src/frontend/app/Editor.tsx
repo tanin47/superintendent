@@ -75,7 +75,14 @@ export default React.forwardRef<Ref, Props>(function Editor({
     let firstCharRecorded = false;
 
     codeMirrorInstance.current.on('keyup', (cm, event) => {
-      if (cm.state.completionActive) { return; }
+      if (cm.state.completionActive) {
+        firstCharRecorded = false;
+        return;
+      }
+      if (cm.state.vim && !cm.state.vim.insertMode) {
+        firstCharRecorded = false;
+        return;
+      }
 
       if (
         (event.keyCode >= 97 && event.keyCode <= 122) || // a-z
