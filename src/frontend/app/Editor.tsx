@@ -130,7 +130,7 @@ export default React.forwardRef<Ref, Props>(function Editor({
     codeMirrorInstance.current.setOption('hintOptions', {
       tables: tables,
       defaultTable: sheets[0]?.name,
-      closeOnUnfocus: false,
+      closeOnUnfocus: true,
     })
   }, [codeMirrorInstance, sheets])
 
