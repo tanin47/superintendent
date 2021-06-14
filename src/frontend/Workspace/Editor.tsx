@@ -9,7 +9,7 @@ import 'codemirror/addon/hint/sql-hint';
 import 'codemirror/addon/hint/anyword-hint';
 import 'codemirror/keymap/vim.js';
 import './Editor.scss';
-import {EditorMode, Sheet} from "./types";
+import {EditorMode, Sheet} from './types';
 import {format} from "sql-formatter";
 
 export interface Ref {

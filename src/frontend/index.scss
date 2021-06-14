@@ -1,0 +1,29 @@
+@import './fontawesome/css/all';
+
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('./fonts/JetBrainsMono-Regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Dosis';
+  src: url('./fonts/dosis-v19-latin-regular.woff2') format('woff2');
+}
+
+.fa, .fas {
+  font-family: "Font Awesome 5 Free" !important;
+}
+
+html {
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.link {
+  color: #0645AD;
+  text-decoration: underline;
+  cursor: pointer;
+}

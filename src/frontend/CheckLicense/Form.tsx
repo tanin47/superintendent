@@ -1,0 +1,76 @@
+import React, {ReactElement} from 'react';
+import './Form.scss';
+import {shell} from 'electron';
+import {checkIfLicenseIsValid, isProd, reloadHtml} from "../api";
+
+export default function CheckLicenseForm({onFinished}: {onFinished: (evaluationMode: boolean) => void}): ReactElement {
+  const [licenseKey, setLicenseKey] = React.useState('');
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  const isPackaged = React.useMemo(() => isProd(), []);
+
+  const placeholder = React.useMemo(() => [
+    '---- Superintendent license ----',
+    'Type: Beta',
+    'Name: Super Intendant',
+    'Email: support@superintendent.app',
+    'Key0: SomeKey0',
+    'Key1: SomeKey1',
+    '---- End of Superintendent license ----',
+  ].join('\n'), []);
+
+  return (
+    <div id="checkLicenseForm">
+      <div className="enter-license-form">
+        <div className="label">Enter a license key:</div>
+        <div className="field">
+          <div className="input">
+            <textarea
+              disabled={isLoading}
+              value={licenseKey}
+              onChange={(event) => {setLicenseKey(event.target.value)}}
+              placeholder={placeholder}
+            />
+          </div>
+          <div className="remark">
+            You can get a license key by clicking <span className="link" onClick={() => shell.openExternal('https://superintendent.app/buy')}>here</span>.
+          </div>
+        </div>
+        <div className="cta">
+          {errorMessage && (
+            <div className="error-message">{errorMessage}</div>
+          )}
+          <div className="button-panel">
+            <button
+              disabled={isLoading}
+              onClick={() => {
+                setIsLoading(true);
+                checkIfLicenseIsValid(licenseKey)
+                  .then((result) => {
+                    if (result.success) {
+                      onFinished(false);
+                    } else {
+                      setErrorMessage(result.errorMessage!);
+                    }
+                  })
+                  .finally(() => setIsLoading(false));
+              }}
+            >Submit</button>
+            <button onClick={() => onFinished(true)}>
+              Use the evaluation mode
+            </button>
+          </div>
+          <div className="remark">
+            The evaluation mode is free and allows up to 100 rows per CSV.
+          </div>
+        </div>
+      </div>
+      {!isPackaged && (
+        <>
+          <span className="separator" />
+          <button onClick={() => reloadHtml()}>Reload HTML</button>
+        </>
+      )}
+    </div>
+  );
+}

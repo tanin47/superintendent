@@ -1,14 +1,23 @@
 import React, { ReactElement } from 'react';
-import './app.scss';
-import {addCsv, downloadCsv, query, reloadHtml} from '../api';
-import {EditorMode, Sheet} from "./types";
-import SheetSection from "./SheetSection";
-import Button from "./Button";
-import Editor from "./Editor";
-import {Ref as EditorRef} from "./Editor";
+import './index.scss';
+import {addCsv, downloadCsv, isProd, query, reloadHtml} from '../api';
+import {EditorMode, Sheet} from './types';
+import SheetSection from './SheetSection';
+import Button from './Button';
+import Editor from './Editor';
+import {Ref as EditorRef} from './Editor';
+import Store from "electron-store";
 
-export default function App(): ReactElement {
-  const [editorMode, setEditorMode] = React.useState<EditorMode>('default');
+export default function Workspace({evaluationMode}: {evaluationMode: boolean}): ReactElement {
+  const store = React.useMemo(() => new Store(), []);
+
+  const defaultEditorMode = (store.get('editorMode') as EditorMode | null) || 'default';
+  const [editorMode, setEditorMode] = React.useState<EditorMode>(defaultEditorMode);
+
+  React.useEffect(() => {
+    store.set('editorMode', editorMode);
+  }, [store, editorMode])
+
   const [sheets, setSheets] = React.useState<Array<Sheet>>([]);
   const [selectedSheetIndex, setSelectedSheetIndex] = React.useState<number>(0);
   const editorRef = React.createRef<EditorRef>();
@@ -22,8 +31,7 @@ export default function App(): ReactElement {
   const [mouseDownY, setMouseDownY] = React.useState<number>(0);
   const [mouseDownEditorHeight, setMouseDownEditorHeight] = React.useState<number>(editorHeight);
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const isPackaged = urlParams.get('isPackaged') === 'true';
+  const isPackaged = React.useMemo(() => isProd(), []);
 
   const mouseDownHandler = (event: React.MouseEvent) => {
     setMouseDownY(event.clientY);
@@ -97,7 +105,7 @@ export default function App(): ReactElement {
   }, [isResizing, setIsResizing]);
 
   return (
-    <>
+    <div id="workspace">
       <div id="toolbarSection">
         <div className="inner">
           <div className="left">
@@ -200,11 +208,12 @@ export default function App(): ReactElement {
       </div>
       <div id="sheetSection" className={sheets.length === 0 ? 'empty' : ''}>
         <SheetSection
+          evaluationMode={evaluationMode}
           sheets={sheets}
           selectedSheetIndex={selectedSheetIndex}
           onSheetSelected={(index) => setSelectedSheetIndex(index)}
           onSheetDeleted={(deletedIndex) => setSheets(sheets.filter((sheet, index) => index !== deletedIndex))} />
       </div>
-    </>
+    </div>
   );
 }

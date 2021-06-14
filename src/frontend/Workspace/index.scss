@@ -1,0 +1,239 @@
+#workspace {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  min-width: 800px;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'JetBrains Mono', monospace;
+
+  * {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+
+  #editorSection {
+    position: relative;
+    width: 100%;
+  }
+
+  #toolbarSection {
+    position:relative;
+    width: 100%;
+    background-color: #333;
+
+    .resize-bar {
+      display: block;
+      height: 8px;
+      width: 100%;
+      cursor: row-resize;
+    }
+
+    .inner {
+      padding: 0px;
+      display: flex;
+      justify-content: space-between;
+
+      .left {
+
+      }
+
+      .right {
+
+      }
+
+      .mode {
+        font-size: 13px;
+        color: #eee;
+      }
+
+      .separator {
+        width: 1px;
+        height: 16px;
+        display: inline-block;
+        background-color: #eee;
+        vertical-align: middle;
+      }
+
+      button {
+        color: #eee;
+        border: none;
+        background-color: #333;
+        display: inline-block;
+        height: 26px;
+        line-height: 26px;
+        padding: 0 10px;
+        text-align: center;
+        text-decoration: none;
+        cursor: pointer;
+        outline: none;
+        font-size: 13px;
+
+        // Make it unhighlightable
+        -moz-user-select: -moz-none;
+        -khtml-user-select: none;
+        -webkit-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+
+        @keyframes spinner {
+          to {transform: rotate(360deg);}
+        }
+        .spinner {
+          display: inline-block;
+          vertical-align: middle;
+          width: 12px;
+          height: 12px;
+          margin-top: -2px;
+          margin-right: 5px;
+          border-radius: 10px;
+          border-style: solid;
+          border-width: 2px;
+          border-bottom-color: transparent;
+          animation: spinner 1.1s linear infinite;
+        }
+
+        .icon {
+          display: inline-block;
+          width: 12px;
+          margin-right: 5px;
+        }
+
+        &:disabled {
+          color: #888;
+          cursor: default;
+        }
+      }
+    }
+  }
+
+  #sheetSection {
+    width: 100%;
+    position: relative;
+    flex-grow: 100;
+    display: flex;
+    flex-direction: column;
+    background-color: #fefefe;
+
+    &.empty {
+      background-color: #aaa;
+    }
+
+    .sheet {
+      position: relative;
+      overflow: auto;
+      z-index: 2;
+      flex-grow: 1000;
+      box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px, rgba(60, 64, 67, 0.15) 0px 1px 3px 1px;
+
+      .has-more {
+        display: block;
+        font-size: 12px;
+        font-style: italic;
+        color: #888;
+        padding: 5px;
+      }
+
+      .inner {
+        position: relative;
+        width: 100%;
+        height: 100%;
+
+        table {
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          border-collapse: collapse;
+
+          thead {
+            position: sticky;
+            top: 0;
+            table-layout: fixed;
+            display: table;
+            width: 100%;
+            border-collapse: collapse;
+
+            tr {
+              th {
+                border: 1px solid #ccc;
+                padding: 3px;
+                font-weight: bold;
+                font-size: 12px;
+                background-color: #eee;
+              }
+            }
+          }
+
+          tbody {
+            display: block;
+            overflow: auto;
+            flex-grow: 1000;
+            border-collapse: collapse;
+
+            tr {
+              table-layout: fixed;
+              display: table;
+              width: 100%;
+              border-collapse: collapse;
+
+              td {
+                border-left: 1px solid #ccc;
+                border-bottom: 1px solid #ccc;
+                border-right: 1px solid #ccc;
+                padding: 3px;
+                font-size: 12px;
+                background-color: #fefefe;
+                text-overflow: ellipsis;
+                overflow: hidden;
+                border-collapse: collapse;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    .selector {
+      position: relative;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: #ddd;
+
+      div {
+        position: relative;
+        display: inline-block;
+        font-size: 14px;
+        line-height: 24px;
+        padding: 0px 8px;
+        color: #666;
+        background-color: #ddd;
+        cursor: pointer;
+
+        &.selected {
+          z-index: 3;
+          color: #333;
+          background-color: #fefefe;
+          box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px;
+        }
+
+        i {
+          margin-left: 5px;
+          color: #ccc;
+
+          &:hover {
+            color: #333;
+          }
+        }
+      }
+    }
+  }
+}

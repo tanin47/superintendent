@@ -57,10 +57,12 @@
     "webpack-merge": "^5.7.3"
   },
   "dependencies": {
+    "axios": "^0.21.1",
     "codemirror": "^5.61.1",
     "csv-parse": "4.15.4",
     "csv-stringify": "^5.6.2",
     "electron-default-menu": "^1.0.2",
+    "electron-store": "^8.0.0",
     "sql-formatter": "^4.0.2",
     "sqlite": "4.0.21",
     "sqlite3": "5.0.2"

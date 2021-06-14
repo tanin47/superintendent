@@ -1,5 +1,5 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import App from './app/app';
+import Index from './index';
 
-ReactDOM.render(<App />, document.getElementById('app'));
+ReactDOM.render(<Index />, document.getElementById('app'));

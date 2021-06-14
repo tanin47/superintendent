@@ -6,8 +6,7 @@ import os from 'os';
 import path from 'path';
 import * as sqlite from 'sqlite';
 import sqlite3 from 'sqlite3';
-import defaultMenu from 'electron-default-menu';
-import {MenuItemConstructorOptions} from 'electron/main';
+import Store from 'electron-store';
 
 const MAX_ROW = 1000;
 
@@ -20,10 +19,7 @@ export default class Main {
   static tables: Array<string> = [];
   static queryTableNameRunner: number = 0;
 
-  private static onWindowAllClosed(): void {
-    if (process.platform !== 'darwin') {
-    }
-  }
+  static evaluationMode: boolean = true;
 
   private static getTableName(name: string, number: number | null = null): string {
     const candidate = name.replace(/[^a-zA-Z0-9_]/g, '_');
@@ -98,6 +94,10 @@ export default class Main {
           batch = [];
         }
       }
+
+      if (Main.evaluationMode) {
+        if (count >= 100) { break; }
+      }
     }
 
     if (batch.length > 0) {
@@ -144,6 +144,8 @@ export default class Main {
   }
 
   private static async onReady(): Promise<void> {
+    Store.initRenderer();
+
     Main.db = await sqlite.open({
       filename: path.join(os.tmpdir(), `super.sqlite.${new Date().getTime()}.db`),
       driver: sqlite3.Database
@@ -156,6 +158,12 @@ export default class Main {
     await Main.db.exec("PRAGMA journal_mode = OFF;");
     await Main.db.exec("PRAGMA synchronous = OFF;");
     await Main.db.exec("PRAGMA locking_mode = EXCLUSIVE;");
+
+    ipcMain.handle('set-evaluation-mode', async (event, arg) => {
+      Main.evaluationMode = !!arg;
+
+      return true;
+    });
 
     ipcMain.on('query', async (event, arg) => {
       try {

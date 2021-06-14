@@ -3,11 +3,13 @@ import {Sheet as SheetType} from "./types";
 import Sheet from "./Sheet";
 
 export default function SheetSection({
+  evaluationMode,
   sheets,
   selectedSheetIndex,
   onSheetSelected,
   onSheetDeleted
 }: {
+  evaluationMode: boolean,
   sheets: Array<SheetType>,
   selectedSheetIndex: number,
   onSheetSelected: (selectedSheetIndex: number) => void
@@ -15,7 +17,11 @@ export default function SheetSection({
 }): ReactElement {
   return (
     <>
-      {sheets.length > 0 && <Sheet sheet={sheets[Math.min(selectedSheetIndex, sheets.length - 1)]} />}
+      {sheets.length > 0 && (
+        <Sheet
+          evaluationMode={evaluationMode}
+          sheet={sheets[Math.min(selectedSheetIndex, sheets.length - 1)]} />
+      )}
       <div className="selector">
         {sheets.map((sheet, index) => {
           return (
