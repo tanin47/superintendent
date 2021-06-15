@@ -7,7 +7,6 @@ export default function CheckLicenseForm({onFinished}: {onFinished: (evaluationM
   const [licenseKey, setLicenseKey] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
-  const isPackaged = React.useMemo(() => isProd(), []);
 
   const placeholder = React.useMemo(() => [
     '---- Superintendent license ----',
@@ -67,7 +66,7 @@ export default function CheckLicenseForm({onFinished}: {onFinished: (evaluationM
           </div>
         </div>
       </div>
-      {!isPackaged && (
+      {!process.env.SUPERINTENDENT_IS_PROD && (
         <>
           <span className="separator" />
           <button onClick={() => reloadHtml()}>Reload HTML</button>

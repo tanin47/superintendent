@@ -30,7 +30,7 @@ const reactConfiguration = {
     rules: [
       {
         test: /\.ts(x?)$/,
-        include: /frontend|api/,
+        include: /frontend|api|config/,
         use: [{ loader: 'ts-loader' }]
       },
       {

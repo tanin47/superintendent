@@ -1,4 +1,4 @@
-import {extractPublicKey, verifySignature} from './index';
+import {extractPublicKey, verifySignature} from '../../../src/frontend/api';
 import fs from 'fs';
 
 describe('api', () => {
@@ -31,7 +31,7 @@ ${publicKey}
   });
 
   it('validates the license key correctly', () => {
-    const contract = JSON.parse(fs.readFileSync('./src/frontend/api/contract/license.json').toString());
+    const contract = JSON.parse(fs.readFileSync('./test/frontend/api/contract/license.json').toString());
 
     expect(verifySignature(contract.licenseKey, contract.message, contract.signature)).toBe(true);
     expect(verifySignature(contract.licenseKey, contract.message + '1', contract.signature)).toBe(false);

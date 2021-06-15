@@ -64,7 +64,7 @@ export function checkIfLicenseIsValid(licenseKey: string): Promise<CheckIfLicens
   return new Promise<CheckIfLicenseIsValidResult>((resolve, reject) => {
     axios
       .post(
-        'http://localhost:9000/api/check-license',
+        `${process.env.SUPERINTENDENT_SERVER_BASE_URL}/api/check-license`,
         {
           key: licenseKey,
           message: message

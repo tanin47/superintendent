@@ -192,7 +192,7 @@ export default class Main {
       }
     })
 
-    if (!Main.application.isPackaged) {
+    if (!process.env.SUPERINTENDENT_IS_PROD) {
       ipcMain.on('reload-html', async () => {
         Main.mainWindow.reload();
         await Main.maybeEnableDev();
@@ -201,12 +201,12 @@ export default class Main {
 
     Main.mainWindow = new Main.BrowserWindow({ width: 1280, height: 800, webPreferences: {nodeIntegration: true, contextIsolation: false}});
 
-    await Main.mainWindow!.loadFile(`${__dirname}/index.html`, {query: {isPackaged: `${Main.application.isPackaged}`}});
+    await Main.mainWindow!.loadFile(`${__dirname}/index.html`);
     await Main.maybeEnableDev();
   }
 
   private static async maybeEnableDev(): Promise<void> {
-    if (Main.application.isPackaged) { return; }
+    if (process.env.SUPERINTENDENT_IS_PROD) { return; }
     Main.mainWindow!.webContents.openDevTools();
   }
 

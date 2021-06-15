@@ -1,6 +1,6 @@
 import React, { ReactElement } from 'react';
 import './index.scss';
-import {addCsv, downloadCsv, isProd, query, reloadHtml} from '../api';
+import {addCsv, downloadCsv, query, reloadHtml} from '../api';
 import {EditorMode, Sheet} from './types';
 import SheetSection from './SheetSection';
 import Button from './Button';
@@ -30,8 +30,6 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
   const [editorHeight, setEditorHeight] = React.useState<number>(250);
   const [mouseDownY, setMouseDownY] = React.useState<number>(0);
   const [mouseDownEditorHeight, setMouseDownEditorHeight] = React.useState<number>(editorHeight);
-
-  const isPackaged = React.useMemo(() => isProd(), []);
 
   const mouseDownHandler = (event: React.MouseEvent) => {
     setMouseDownY(event.clientY);
@@ -164,7 +162,7 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
             </Button>
             <span className="separator" />
             <Button onClick={() => editorRef.current!.format()} icon={<i className="fas fa-align-justify" />}>Format</Button>
-            {!isPackaged && (
+            {!process.env.SUPERINTENDENT_IS_PROD && (
               <>
                 <span className="separator" />
                 <Button onClick={() => reloadHtml()} icon={<i className="fas fa-sync" />}>Reload HTML</Button>
