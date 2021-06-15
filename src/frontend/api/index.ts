@@ -15,7 +15,7 @@ export function isProd(): boolean {
   return urlParams.get('isPackaged') === 'true';
 }
 
-function extractPublicKey(licenseKey: string): string | null {
+export function extractPublicKey(licenseKey: string): string | null {
   const publicKeyLines: Array<string> = [];
   let isPublicKeyLine = false;
 
@@ -40,7 +40,7 @@ function extractPublicKey(licenseKey: string): string | null {
   return publicKeyLines.join('\n');
 }
 
-function verifySignature(licenseKey: string, message: string, signature: string): boolean {
+export function verifySignature(licenseKey: string, message: string, signature: string): boolean {
   const publicKey = extractPublicKey(licenseKey);
 
   if (!publicKey) { return false; }
