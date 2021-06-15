@@ -15,7 +15,9 @@ export default function CheckLicenseForm({onFinished}: {onFinished: (evaluationM
     'Name: Super Intendant',
     'Email: support@superintendent.app',
     'Key0: SomeKey0',
-    'Key1: SomeKey1',
+    'Key1:',
+    'SomeKeyLine1',
+    'SomeKeyLine2',
     '---- End of Superintendent license ----',
   ].join('\n'), []);
 

@@ -16,14 +16,28 @@ export function isProd(): boolean {
 }
 
 function extractPublicKey(licenseKey: string): string | null {
-  const line = licenseKey.split('\n').find((line) => line.startsWith('Key0:'));
+  const publicKeyLines: Array<string> = [];
+  let isPublicKeyLine = false;
 
-  if (!line) { return null; }
+  licenseKey.split('\n').forEach((line) => {
+    if (line.startsWith('Key1:')) {
+      isPublicKeyLine = true;
+      return;
+    }
 
-  const publicKey = line.split(' ')[1];
+    if (line.startsWith('---') && isPublicKeyLine) {
+      isPublicKeyLine = false;
+      return;
+    }
 
-  if (!publicKey) { return null; }
-  return publicKey;
+    if (isPublicKeyLine) {
+      publicKeyLines.push(line);
+    }
+  });
+
+  if (publicKeyLines.length === 0) { return null; }
+
+  return publicKeyLines.join('\n');
 }
 
 function verifySignature(licenseKey: string, message: string, signature: string): boolean {
