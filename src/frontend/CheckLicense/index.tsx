@@ -32,7 +32,7 @@ export default function CheckLicense({onFinished}: {onFinished: (evaluationMode:
             setResult('failed');
           })
       },
-      1000
+      100
     )
   }, []);
 
