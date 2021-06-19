@@ -1,7 +1,7 @@
 import React, { ReactElement } from 'react';
 import './index.scss';
 import {addCsv, downloadCsv, query, reloadHtml} from '../api';
-import {EditorMode, Sheet} from './types';
+import {EditorMode, PresentationType, Sheet} from './types';
 import SheetSection from './SheetSection';
 import Button from './Button';
 import Editor from './Editor';
@@ -104,7 +104,7 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
 
   return (
     <div id="workspace">
-      <div id="toolbarSection">
+      <div className="toolbarSection top">
         <div className="inner">
           <div className="left">
             <Button
@@ -131,15 +131,19 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
           <div className="right">
             <div className="mode">
               Mode:
-              <Button
-                disabled={editorMode === 'default'}
-                onClick={() => setEditorMode('default')}
-              >Normal</Button>
-              <span className="separator"/>
-              <Button
-                disabled={editorMode === 'vim'}
-                onClick={() => setEditorMode('vim')}
-              >Vim</Button>
+              <div className="selector">
+                <div className="select">
+                  <select
+                    value={editorMode}
+                    onChange={(event) => {
+                      setEditorMode(event.target.value as EditorMode);
+                    }}
+                  >
+                    <option value="default">Normal</option>
+                    <option value="vim">Vim</option>
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -147,7 +151,7 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
       <div id="editorSection" style={{height: editorHeight}}>
         <Editor ref={editorRef} mode={editorMode} sheets={sheets}/>
       </div>
-      <div id="toolbarSection">
+      <div className="toolbarSection">
         <div
           className="resize-bar"
           onMouseDown={mouseDownHandler}
@@ -170,12 +174,28 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
             )}
           </div>
           <div className="right">
-            <Button
-              icon={<i className="fas fa-chart-bar" />}
-              disabled
-            >
-              Make chart (coming soon!)
-            </Button>
+            <div className="selector">
+              <div className={`select ${sheets.length === 0 ? 'disabled' : ''}`}>
+                <select
+                  value={sheets[selectedSheetIndex]?.presentationType || 'table'}
+                  onChange={(event) => {
+                     setSheets(sheets.map((sheet, index) => {
+                       if (selectedSheetIndex === index) {
+                          sheet.presentationType = event.target.value as PresentationType;
+                       }
+
+                       return sheet;
+                     }));
+                  }}
+                  disabled={sheets.length === 0}
+                >
+                  <option value="table">Table</option>
+                  <option value="line">Line chart</option>
+                  <option value="bar">Bar chart</option>
+                  <option value="pie">Pie chart</option>
+                </select>
+              </div>
+            </div>
             <span className="separator" />
             <Button
               onClick={() => {

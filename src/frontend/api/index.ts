@@ -105,7 +105,10 @@ export function query(q: string): Promise<Sheet> {
 
   const promise = new Promise<Sheet>((resolve, reject) => {
     ipcRenderer.once('query-result', (event, arg) => {
-      resolve(arg);
+      resolve({
+        presentationType: 'table',
+        ...arg
+      });
     });
     ipcRenderer.once('query-error', (event, arg) => {
       reject(arg);
