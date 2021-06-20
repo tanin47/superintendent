@@ -27,17 +27,21 @@ function Table({evaluationMode, sheet}: {evaluationMode: boolean, sheet: Sheet})
           </tr>
         );
       })}
+      </tbody>
       {sheet.hasMore && (
-        <tr>
-          <td colSpan={sheet.columns.length} className="has-more">There are {sheet.count} rows, but only {sheet.rows.length} rows is shown. Please export the sheet to see all the rows.</td>
-        </tr>
+        <tfoot>
+          <tr>
+            <td colSpan={sheet.columns.length} className="has-more">There are {sheet.count} rows, but only {sheet.rows.length} rows is shown. Please export the sheet to see all the rows.</td>
+          </tr>
+        </tfoot>
       )}
       {evaluationMode && (
-        <tr>
-          <td colSpan={sheet.columns.length} className="has-more">In the evaluation mode, you can load up to 100 rows per CSV. Please <span className="link" onClick={() => shell.openExternal("https://superintendent.app/buy")}>get a license</span> in order to get full access.</td>
-        </tr>
+        <tfoot>
+          <tr>
+            <td colSpan={sheet.columns.length} className="has-more">In the evaluation mode, you can load up to 100 rows per CSV. Please <span className="link" onClick={() => shell.openExternal("https://superintendent.app/buy")}>get a license</span> in order to get full access.</td>
+          </tr>
+        </tfoot>
       )}
-      </tbody>
     </table>
   )
 }
