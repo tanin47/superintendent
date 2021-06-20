@@ -1,7 +1,7 @@
 import React from 'react';
 import {Sheet} from './types';
 import {shell} from 'electron';
-import Chart from 'chart.js';
+import {Chart, ChartType, registerables} from 'chart.js';
 
 function Table({evaluationMode, sheet}: {evaluationMode: boolean, sheet: Sheet}): JSX.Element {
   return (
@@ -42,7 +42,14 @@ function Table({evaluationMode, sheet}: {evaluationMode: boolean, sheet: Sheet})
   )
 }
 
-function Line({evaluationMode, sheet}: {evaluationMode: boolean, sheet: Sheet}): JSX.Element {
+function generateColor() {
+  var r = Math.floor(Math.random() * 255);
+  var g = Math.floor(Math.random() * 255);
+  var b = Math.floor(Math.random() * 255);
+  return "rgb(" + r + "," + g + "," + b + ")";
+}
+
+function Graph({type, sheet}: {type: ChartType, sheet: Sheet}): JSX.Element {
   const chartRef = React.createRef<any>();
 
   React.useEffect(
@@ -51,15 +58,37 @@ function Line({evaluationMode, sheet}: {evaluationMode: boolean, sheet: Sheet}):
 
       if (!ctx) { return; }
 
-      new Chart(ctx, {
-        type: 'line',
+      let colorOptionsMap: {backgroundColor?: string[], borderColor?: string} = {};
+
+      if (type === 'pie') {
+        colorOptionsMap = {backgroundColor: sheet.rows.map(() => generateColor())};
+      } else {
+        colorOptionsMap = {
+          borderColor: '#C71585',
+          backgroundColor: sheet.rows.map(() => '#C71585'),
+        }
+      }
+
+      const instance = new Chart(ctx, {
+        type: type,
         data: {
-          labels: sheet.rows.map((r) => r[0]),
-          data: sheet.rows.map((r) => r[1]),
+          labels: sheet.rows.map((r) => r[sheet.columns[0]]),
+          datasets: [{
+            label: sheet.columns[1],
+            data: sheet.rows.map((r) => parseInt(r[sheet.columns[1]])),
+            ...colorOptionsMap
+          }]
+        },
+        options: {
+          maintainAspectRatio: false,
         }
       });
+
+      return () => {
+        instance.destroy();
+      }
     },
-    [sheet, chartRef]
+    [sheet, type]
   )
 
 
@@ -70,6 +99,13 @@ function Line({evaluationMode, sheet}: {evaluationMode: boolean, sheet: Sheet}):
 
 export default function Sheet(props: {evaluationMode: boolean, sheet: Sheet}): JSX.Element {
 
+  React.useEffect(
+    () => {
+      Chart.register(...registerables);
+    },
+    []
+  );
+
   let view: JSX.Element;
 
   switch (props.sheet.presentationType) {
@@ -77,13 +113,13 @@ export default function Sheet(props: {evaluationMode: boolean, sheet: Sheet}): J
       view = <Table {...props} />;
       break;
     case 'line':
-      view = <Table {...props} />;
+      view = <Graph type="line" {...props} />;
       break;
     case 'bar':
-      view = <Table {...props} />;
+      view = <Graph type="bar" {...props} />;
       break;
     case 'pie':
-      view = <Table {...props} />;
+      view = <Graph type="pie" {...props} />;
       break;
     default:
       throw new Error();

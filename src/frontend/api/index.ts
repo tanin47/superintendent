@@ -123,7 +123,10 @@ export function addCsv(): Promise<Sheet> {
 
   const promise = new Promise<Sheet>((resolve, reject) => {
     ipcRenderer.once('load-table-result', (event, arg) => {
-      resolve(arg);
+      resolve({
+        presentationType: 'table',
+        ...arg
+      });
     });
     ipcRenderer.once('load-table-error', (event, arg) => {
       reject(arg);

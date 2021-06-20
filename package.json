@@ -42,6 +42,7 @@
     "@types/jest": "^26.0.23",
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0",
+    "@types/chart.js": "^2.9.32",
     "css-loader": "^5.0.1",
     "electron": "^13.1.2",
     "electron-builder": "^22.10.5",
@@ -63,7 +64,6 @@
     "webpack-merge": "^5.7.3"
   },
   "dependencies": {
-    "@types/chartjs": "^0.0.31",
     "axios": "^0.21.1",
     "chart.js": "^3.3.2",
     "codemirror": "^5.61.1",
