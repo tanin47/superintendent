@@ -9,6 +9,29 @@ import sqlite3 from 'sqlite3';
 import Store from 'electron-store';
 
 const MAX_ROW = 1000;
+const MAX_CHARACTERS = 160000;
+
+class Batch {
+  rowCount: number = 0;
+  values: Array<string> = [];
+
+  constructor() {
+    this.reset();
+  }
+
+  reset() {
+    this.rowCount = 0;
+    this.values = [];
+  }
+
+  add(row: string[]) {
+    for (const value of row) {
+      this.values.push(value);
+    }
+    this.rowCount++;
+  }
+}
+
 
 export default class Main {
   static mainWindow: Electron.BrowserWindow;
@@ -40,13 +63,15 @@ export default class Main {
     return Main.getTableName('query', Main.queryTableNameRunner + 1);
   }
 
-  private static async addBatch(rows: Array<Array<string>>, table: string, columns: Array<string>): Promise<void> {
+  private static async addBatch(batch: Batch, table: string, columns: Array<string>): Promise<void> {
     const colLine = columns.map((c) => '?').join(', ');
-    const values = rows
-      .map((r) => `(${colLine})`)
-      .join(', ');
+    const values: string[] = [];
 
-    await Main.db.run(`INSERT INTO "${table}" (${columns.map((c) => `"${c}"`).join(', ')}) VALUES ${values}`, ...rows.flat());
+    for (let i=0;i<batch.rowCount;i++) {
+      values.push(`(${colLine})`);
+    }
+
+    await Main.db.run(`INSERT INTO "${table}" (${columns.map((c) => `"${c}"`).join(',')}) VALUES ${values.join(',')}`, batch.values);
   }
 
   private static async addCsv(): Promise<void> {
@@ -70,8 +95,8 @@ export default class Main {
     const columns: Array<string> = [];
     let count = 0;
 
-    let batch: Array<Array<string>> = [];
-    const maxBatch = 100;
+    let batch = new Batch();
+    const maxBatchValues = 20000;
 
     for await (let row of stream)  {
       if (firstRow)  {
@@ -83,15 +108,15 @@ export default class Main {
       } else {
         count++;
 
-        if (batch.length < maxBatch) {
+        if (batch.values.length < maxBatchValues) {
           if (row.length > columns.length) {
             row.splice(columns.length, row.length - columns.length);
           }
 
-          batch.push(row);
+          batch.add(row);
         } else {
           await Main.addBatch(batch, table, columns);
-          batch = [];
+          batch.reset();
         }
       }
 
@@ -100,13 +125,37 @@ export default class Main {
       }
     }
 
-    if (batch.length > 0) {
+    if (batch.rowCount > 0) {
       await Main.addBatch(batch, table, columns);
-      batch = [];
+      batch.reset();
     }
 
-    const rows = await Main.db.all(`SELECT * FROM "${table}" LIMIT ${MAX_ROW}`);
-    this.mainWindow.webContents.send('load-table-result', {name: table, count, hasMore: count > MAX_ROW, columns, rows});
+    const allRows = await Main.db.all(`SELECT * FROM "${table}" LIMIT ${MAX_ROW}`);
+    const rows = Main.makePreview(columns, allRows);
+
+    this.mainWindow.webContents.send('load-table-result', {name: table, count, hasMore: count > rows.length, columns, rows});
+  }
+
+  private static makePreview(columns: string[], rows: Array<{[col:string]: any}>): Array<{[col:string]: any}> {
+    let numRows = 0;
+    let numChars = 0;
+
+    for (const row of rows) {
+      for (const col of columns) {
+        if (typeof row[col] === 'string') {
+          numChars += row[col].length;
+        } else {
+          numChars += 3; // estimated for other fields
+        }
+      }
+
+      numRows++;
+
+      if (numChars > MAX_CHARACTERS) break;
+      if (numRows > MAX_ROW) break;
+    }
+
+    return rows.slice(0, numRows);
   }
 
   private static async downloadCsv(table: string): Promise<void> {
@@ -218,14 +267,24 @@ export default class Main {
     const numOfRowsResult = await Main.db.all(`SELECT COUNT(*) AS number_of_rows FROM "${table}"`);
     const numOfRows = numOfRowsResult.length == 0 ? 0 : numOfRowsResult[0].number_of_rows;
 
-    const rows = await Main.db.all(`SELECT * FROM "${table}" LIMIT ${MAX_ROW}`);
+    const allRows = await Main.db.all(`SELECT * FROM "${table}" LIMIT ${MAX_ROW}`);
 
     let columns: Array<string> = [];
-    if (rows.length > 0) {
-      Object.keys(rows[0]).forEach((k) => columns.push(k))
+    if (allRows.length > 0) {
+      Object.keys(allRows[0]).forEach((k) => columns.push(k))
     }
 
-    event.reply('query-result', {name: table, count: numOfRows, hasMore: numOfRows > MAX_ROW, columns, rows});
+    const rows = Main.makePreview(columns, allRows)
+
+    event.reply(
+      'query-result',
+      {
+        name: table,
+        count: numOfRows,
+        hasMore: numOfRows > rows.length,
+        columns,
+        rows
+      });
   }
 
   static main(app: Electron.App, browserWindow: typeof BrowserWindow): void {

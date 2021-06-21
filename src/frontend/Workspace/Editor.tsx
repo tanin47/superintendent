@@ -24,6 +24,14 @@ type Props = {
   sheets: Array<Sheet>
 };
 
+function getAutocompleteWord(s: string): string {
+  if (s.indexOf('.') >= 0 || s.indexOf('-') >= 0 || s.indexOf(' ') >= 0 || s.match(/^[0-9]/) !== null) {
+    return `"${s}"`;
+  } else {
+    return s;
+  }
+}
+
 export default React.forwardRef<Ref, Props>(function Editor({
   initialValue,
   mode,
@@ -114,22 +122,21 @@ export default React.forwardRef<Ref, Props>(function Editor({
 
     for (const sheet of sheets) {
       for (const column of sheet.columns) {
-        allColumns.add(column);
-        allColumns.add(`"${column}"`);
+        allColumns.add(getAutocompleteWord(column));
       }
     }
 
     for (const sheet of sheets) {
-      tables[sheet.name] = [];
+      tables[getAutocompleteWord(sheet.name)] = [];
     }
 
     if (sheets.length > 0) {
-      tables[sheets[0].name] = Array.from(allColumns);
+      tables[getAutocompleteWord(sheets[0].name)] = Array.from(allColumns);
     }
 
     codeMirrorInstance.current.setOption('hintOptions', {
       tables: tables,
-      defaultTable: sheets[0]?.name,
+      defaultTable: sheets[0] ? getAutocompleteWord(sheets[0].name) : null,
       closeOnUnfocus: true,
     })
   }, [codeMirrorInstance, sheets])

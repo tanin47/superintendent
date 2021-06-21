@@ -118,15 +118,19 @@ export function query(q: string): Promise<Sheet> {
   return promise;
 }
 
-export function addCsv(): Promise<Sheet> {
+export function addCsv(): Promise<Sheet | null> {
   ipcRenderer.send('add-csv');
 
-  const promise = new Promise<Sheet>((resolve, reject) => {
+  const promise = new Promise<Sheet | null>((resolve, reject) => {
     ipcRenderer.once('load-table-result', (event, arg) => {
-      resolve({
-        presentationType: 'table',
-        ...arg
-      });
+      if (!arg) {
+        resolve(null);
+      } else {
+        resolve({
+          presentationType: 'table',
+          ...arg
+        });
+      }
     });
     ipcRenderer.once('load-table-error', (event, arg) => {
       reject(arg);
