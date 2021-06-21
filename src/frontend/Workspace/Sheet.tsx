@@ -79,7 +79,7 @@ function Graph({type, sheet}: {type: ChartType, sheet: Sheet}): JSX.Element {
           labels: sheet.rows.map((r) => r[sheet.columns[0]]),
           datasets: [{
             label: sheet.columns[1],
-            data: sheet.rows.map((r) => parseInt(r[sheet.columns[1]])),
+            data: sheet.rows.map((r) => parseFloat(r[sheet.columns[1]])),
             ...colorOptionsMap
           }]
         },
