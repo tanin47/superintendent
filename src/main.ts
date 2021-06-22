@@ -88,7 +88,14 @@ export default class Main {
       return;
     }
 
-    const stream = fs.createReadStream(files[0]!).pipe(new Parser({trim: true, delimiter: ',', skipEmptyLines: true}));
+    const stream = fs
+      .createReadStream(files[0]!)
+      .pipe(new Parser({
+        bom: true,
+        trim: true,
+        delimiter: ',',
+        skipEmptyLines: true
+      }));
     const table = Main.getTableName(path.parse(files[0]!).name);
 
     let firstRow = true;
