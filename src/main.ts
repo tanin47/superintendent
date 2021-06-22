@@ -105,9 +105,23 @@ export default class Main {
     let batch = new Batch();
     const maxBatchValues = 20000;
 
+    const columnNames: Set<string> = new Set();
+    const getColumnName = (candidate: string) => {
+      if (columnNames.has(candidate))  {
+        return getColumnName(`${candidate}_dup`);
+      } else {
+        return candidate;
+      }
+    };
+
     for await (let row of stream)  {
       if (firstRow)  {
-        row.forEach((r: string) => columns.push(r));
+        row.forEach((candidate: string) => {
+          const newName = getColumnName(candidate);
+
+          columns.push(newName);
+          columnNames.add(newName);
+        });
         await Main.db.exec(`CREATE TABLE "${table}" (${columns.map((c) => `"${c}" TEXT`).join(', ')})`);
         Main.tables.push(table);
 
