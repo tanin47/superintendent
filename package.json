@@ -10,6 +10,7 @@
     "build:prod": "webpack --config webpack.prod.js",
     "start": "electron dist/dev/main.js",
     "pack": "yarn run build:prod && electron-builder --mac --linux --win",
+    "pack:win": "yarn run build:prod && electron-builder --win",
     "test": "jest --useStderr"
   },
   "build": {
@@ -45,7 +46,7 @@
     "@types/react-dom": "^17.0.0",
     "css-loader": "^5.0.1",
     "electron": "^13.1.2",
-    "electron-builder": "^22.10.5",
+    "electron-builder": "22.11.7",
     "electron-notarize": "^1.0.0",
     "file-loader": "^6.2.0",
     "html-webpack-plugin": "^4.5.0",
@@ -67,7 +68,7 @@
     "axios": "^0.21.1",
     "chart.js": "^3.3.2",
     "codemirror": "^5.61.1",
-    "duckdb": "^0.2.7",
+    "duckdb": "0.2.3",
     "electron-default-menu": "^1.0.2",
     "electron-store": "^8.0.0",
     "sql-formatter": "^4.0.2"

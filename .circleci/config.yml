@@ -1,0 +1,40 @@
+version: 2.1
+
+orbs:
+  win: circleci/windows@2.4.0
+
+jobs:
+  build:
+    executor:
+      name: win/default
+      size: "medium"
+
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            # when lock file changes, use increasingly general patterns to restore cache
+            - node-v1-{{ .Branch }}-{{ checksum "yarn.lock" }}
+            - node-v1-{{ .Branch }}-
+            - node-v1-
+      - run:
+          name: Install Node 14
+          command: nvm install 14.17.1
+      - run:
+          name: Use Node 14
+          command: nvm use 14.17.1
+      - run:
+          name: Install yarn
+          command: npm install --global yarn
+      - run:
+          name: Install dependencies
+          command: yarn install
+      - run:
+          name: Build exe
+          command: yarn run pack:win
+      - save_cache:
+          paths:
+            - ./node_modules
+          key: node-v1-{{ .Branch }}-{{ checksum "yarn.lock" }}
+      - store_artifacts:
+          path: ./out/superintendent Setup 2.0.0.exe
