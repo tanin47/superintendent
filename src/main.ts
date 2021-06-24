@@ -1,6 +1,6 @@
 import {BrowserWindow, dialog, ipcMain} from 'electron';
 import Store from 'electron-store';
-import {Datastore} from "./data-store/Datastore";
+import {Datastore, Result} from "./data-store/Datastore";
 import {DuckDb} from "./data-store/DuckDb";
 
 
@@ -12,7 +12,7 @@ export default class Main {
 
   static evaluationMode: boolean = true;
 
-  private static async addCsv(): Promise<void> {
+  private static async addCsv(): Promise<Result | null> {
     const files = dialog.showOpenDialogSync(
       this.mainWindow,
       {
@@ -22,15 +22,13 @@ export default class Main {
     );
 
     if (!files || files.length === 0) {
-      this.mainWindow.webContents.send('load-table-result', null);
-      return;
+      return null;
     }
 
-    const result = await Main.db.addCsv(files[0]!, Main.evaluationMode);
-    this.mainWindow.webContents.send('load-table-result', result);
+    return Main.db.addCsv(files[0]!, Main.evaluationMode);
   }
 
-  private static async downloadCsv(table: string): Promise<void> {
+  private static async downloadCsv(table: string): Promise<string | null> {
     const file = dialog.showSaveDialogSync(
       this.mainWindow,
       {
@@ -40,12 +38,20 @@ export default class Main {
     );
 
     if (!file) {
-      this.mainWindow.webContents.send('download-table-result', null);
-      return;
+      return null;
     }
 
     await Main.db.exportCsv(table, file);
-    this.mainWindow.webContents.send('download-table-result', file);
+    return file;
+  }
+
+  private static wrapResponse(resp: Promise<any>): Promise<any> {
+    return resp
+      .then((r) => ({
+          success: true,
+          data: r
+      }))
+      .catch((e) => ({success: false, message: e.message}));
   }
 
   private static async onReady(): Promise<void> {
@@ -59,32 +65,17 @@ export default class Main {
       return true;
     });
 
-    ipcMain.on('query', async (event, arg) => {
-      try {
-        await Main.query(arg, event);
-      } catch (err) {
-        console.log(err);
-        Main.mainWindow.webContents.send('query-error', {message: err.message})
-      }
-    })
+    ipcMain.handle('query', async (event, arg) => {
+      return Main.wrapResponse(Main.db.query(arg));
+    });
 
-    ipcMain.on('add-csv', async () => {
-      try {
-        await Main.addCsv();
-      } catch (err) {
-        console.log(err);
-        Main.mainWindow.webContents.send('load-table-error', {message: err.message});
-      }
-    })
+    ipcMain.handle('add-csv', async () => {
+      return Main.wrapResponse(Main.addCsv());
+    });
 
-    ipcMain.on('download-csv', async (event, arg) => {
-      try {
-        await Main.downloadCsv(arg);
-      } catch (err) {
-        console.log(err);
-        Main.mainWindow.webContents.send('load-table-error', {message: err.message});
-      }
-    })
+    ipcMain.handle('download-csv', async (event, arg) => {
+      return Main.wrapResponse(Main.downloadCsv(arg));
+    });
 
     if (!process.env.SUPERINTENDENT_IS_PROD) {
       ipcMain.on('reload-html', async () => {
@@ -104,17 +95,7 @@ export default class Main {
     Main.mainWindow!.webContents.openDevTools();
   }
 
-  private static async query(arg, event: Electron.IpcMainEvent) {
-    const result = await Main.db.query(arg);
-
-    event.reply(
-      'query-result',
-      {
-        name: result.name,
-        count: result.count,
-        columns: result.columns,
-        rows: result.rows
-      });
+  private static async query(arg) {
   }
 
   static main(app: Electron.App, browserWindow: typeof BrowserWindow): void {

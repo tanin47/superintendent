@@ -10,11 +10,6 @@ export type CheckIfLicenseIsValidResult = {
   errorMessage?: string | null
 }
 
-export function isProd(): boolean {
-  const urlParams = new URLSearchParams(window.location.search);
-  return urlParams.get('isPackaged') === 'true';
-}
-
 export function extractPublicKey(licenseKey: string): string | null {
   const publicKeyLines: Array<string> = [];
   let isPublicKeyLine = false;
@@ -101,58 +96,49 @@ export function checkIfLicenseIsValid(licenseKey: string): Promise<CheckIfLicens
 }
 
 export function query(q: string): Promise<Sheet> {
-  ipcRenderer.send('query', q);
-
-  const promise = new Promise<Sheet>((resolve, reject) => {
-    ipcRenderer.once('query-result', (event, arg) => {
-      resolve({
-        presentationType: 'table',
-        ...arg
-      });
+  return ipcRenderer
+    .invoke('query', q)
+    .then((result) => {
+      if (result.success) {
+        return {
+          presentationType: 'table',
+          ...result.data
+        };
+      } else {
+        throw result;
+      }
     });
-    ipcRenderer.once('query-error', (event, arg) => {
-      reject(arg);
-    });
-  });
-
-  return promise;
 }
 
 export function addCsv(): Promise<Sheet | null> {
-  ipcRenderer.send('add-csv');
-
-  const promise = new Promise<Sheet | null>((resolve, reject) => {
-    ipcRenderer.once('load-table-result', (event, arg) => {
-      if (!arg) {
-        resolve(null);
+  return ipcRenderer
+    .invoke('add-csv')
+    .then((result) => {
+      if (result.success) {
+        if (!result.data) {
+          return null;
+        } else {
+          return {
+            presentationType: 'table',
+            ...result.data
+          };
+        }
       } else {
-        resolve({
-          presentationType: 'table',
-          ...arg
-        });
+        throw result;
       }
     });
-    ipcRenderer.once('load-table-error', (event, arg) => {
-      reject(arg);
-    });
-  });
-
-  return promise;
 }
 
 export function downloadCsv(table: string): Promise<string> {
-  ipcRenderer.send('download-csv', table);
-
-  const promise = new Promise<string>((resolve, reject) => {
-    ipcRenderer.once('download-table-result', (event, arg) => {
-      resolve(arg);
+  return ipcRenderer
+    .invoke('download-csv', table)
+    .then((result) => {
+       if (result.success) {
+          return result.data;
+       } else {
+          throw result;
+       }
     });
-    ipcRenderer.once('download-table-error', (event, arg) => {
-      reject(arg);
-    });
-  });
-
-  return promise;
 }
 
 export function reloadHtml(): void {

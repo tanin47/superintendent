@@ -1,7 +1,7 @@
 import React, {ReactElement} from 'react';
 import './Form.scss';
 import {shell} from 'electron';
-import {checkIfLicenseIsValid, isProd, reloadHtml} from "../api";
+import {checkIfLicenseIsValid, reloadHtml} from "../api";
 
 export default function CheckLicenseForm({onFinished}: {onFinished: (evaluationMode: boolean) => void}): ReactElement {
   const [licenseKey, setLicenseKey] = React.useState('');
