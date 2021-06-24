@@ -17,7 +17,10 @@ const electronConfiguration = {
   },
   output: {
     filename: 'main.js',
-  }
+  },
+  externals: {
+    'duckdb': "require('duckdb')",
+  },
 };
 
 const reactConfiguration = {
@@ -67,7 +70,7 @@ const reactConfiguration = {
     new HtmlWebpackPlugin({
       template: './src/frontend/index.html'
     })
-  ]
+  ],
 };
 
 module.exports = {

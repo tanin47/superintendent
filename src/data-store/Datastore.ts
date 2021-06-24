@@ -1,0 +1,63 @@
+
+export type Column = string;
+export type Row = {[col:string]: any};
+
+export type Result = {
+  name: string,
+  columns: Column[],
+  rows: Row[],
+  count: number,
+}
+
+export abstract class Datastore {
+  static MAX_ROW = 1000;
+  static MAX_CHARACTERS = 160000;
+
+  protected tables: Array<string> = [];
+
+  abstract addCsv(filePath: string, evaluationMode: boolean): Promise<Result>;
+  abstract exportCsv(table: string, filePath: string): Promise<void>;
+
+  abstract query(sql: string): Promise<Result>;
+
+  static makePreview(columns: Column[], rows: Array<Row>): Array<Row> {
+    let numRows = 0;
+    let numChars = 0;
+
+    for (const row of rows) {
+      for (const col of columns) {
+        if (typeof row[col] === 'string') {
+          numChars += row[col].length;
+        } else {
+          numChars += 3; // estimated for other fields
+        }
+      }
+
+      numRows++;
+
+      if (numChars > Datastore.MAX_CHARACTERS) break;
+      if (numRows > Datastore.MAX_ROW) break;
+    }
+
+    return rows.slice(0, numRows);
+  }
+
+  protected getTableName(name: string, number: number | null = null): string {
+    const candidate = name.replace(/[^a-zA-Z0-9_]/g, '_');
+    return this.getUniqueTableName(candidate);
+  }
+
+  protected getUniqueTableName(base: string, number: number | null = null): string {
+    const candidate = base + (number ? `_${number}` : '');
+    for (const table of this.tables) {
+      if (candidate === table) {
+        return this.getUniqueTableName(base, (number || 0) + 1);
+      }
+    }
+    return candidate;
+  }
+
+  protected makeQueryTableName(): string {
+    return this.getTableName('query', 1);
+  }
+}

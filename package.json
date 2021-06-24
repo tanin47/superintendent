@@ -37,12 +37,12 @@
   "author": "Tanin Na Nakorn",
   "devDependencies": {
     "@babel/preset-env": "^7.14.5",
+    "@types/chart.js": "^2.9.32",
     "@types/codemirror": "^5.60.0",
     "@types/electron": "^1.6.10",
     "@types/jest": "^26.0.23",
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0",
-    "@types/chart.js": "^2.9.32",
     "css-loader": "^5.0.1",
     "electron": "^13.1.2",
     "electron-builder": "^22.10.5",
@@ -69,10 +69,9 @@
     "codemirror": "^5.61.1",
     "csv-parse": "4.15.4",
     "csv-stringify": "^5.6.2",
+    "duckdb": "^0.2.7",
     "electron-default-menu": "^1.0.2",
     "electron-store": "^8.0.0",
-    "sql-formatter": "^4.0.2",
-    "sqlite": "4.0.21",
-    "sqlite3": "5.0.2"
+    "sql-formatter": "^4.0.2"
   }
 }

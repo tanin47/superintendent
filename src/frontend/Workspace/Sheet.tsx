@@ -4,6 +4,7 @@ import {shell} from 'electron';
 import {Chart, ChartType, registerables} from 'chart.js';
 
 function Table({evaluationMode, sheet}: {evaluationMode: boolean, sheet: Sheet}): JSX.Element {
+  const hasMore = sheet.rows.length < sheet.count;
   return (
     <table cellPadding={0} cellSpacing={0}>
       <thead>
@@ -28,20 +29,23 @@ function Table({evaluationMode, sheet}: {evaluationMode: boolean, sheet: Sheet})
         );
       })}
       </tbody>
-      {sheet.hasMore && (
         <tfoot>
-          <tr>
-            <td colSpan={sheet.columns.length} className="has-more">There are {sheet.count} rows, but only {sheet.rows.length} rows is shown. Please export the sheet to see all the rows.</td>
-          </tr>
+          {hasMore && (
+            <tr>
+              <td colSpan={sheet.columns.length} className="has-more">There are {sheet.count.toLocaleString('en-US')} rows, but only {sheet.rows.length.toLocaleString('en-US')} rows is shown. Please export the sheet to see all the rows.</td>
+            </tr>
+          )}
+          {!hasMore && (
+            <tr>
+              <td colSpan={sheet.columns.length} className="has-more">There are {sheet.count.toLocaleString('en-US')} rows.</td>
+            </tr>
+          )}
+          {evaluationMode && (
+            <tr>
+              <td colSpan={sheet.columns.length} className="has-more">In the evaluation mode, you can load up to 100 rows per CSV. Please <span className="link" onClick={() => shell.openExternal("https://superintendent.app/buy")}>get a license</span> in order to get full access.</td>
+            </tr>
+          )}
         </tfoot>
-      )}
-      {evaluationMode && (
-        <tfoot>
-          <tr>
-            <td colSpan={sheet.columns.length} className="has-more">In the evaluation mode, you can load up to 100 rows per CSV. Please <span className="link" onClick={() => shell.openExternal("https://superintendent.app/buy")}>get a license</span> in order to get full access.</td>
-          </tr>
-        </tfoot>
-      )}
     </table>
   )
 }
