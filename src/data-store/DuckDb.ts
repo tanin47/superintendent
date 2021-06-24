@@ -2,8 +2,6 @@ import {Datastore, Result, Row} from "./Datastore";
 import duckdb from 'duckdb';
 import path from "path";
 import os from "os";
-import fs from "fs";
-import {Stringifier} from "csv-stringify";
 
 export class DuckDb extends Datastore {
   private db: duckdb.Database;
@@ -61,7 +59,7 @@ export class DuckDb extends Datastore {
           reject(error);
         }
       });
-      
+
       this.db.all(sql, (err, result) => {
         process.removeAllListeners('uncaughtException');
 
