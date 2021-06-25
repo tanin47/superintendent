@@ -9,7 +9,8 @@
     "build": "webpack --config webpack.dev.js",
     "build:prod": "webpack --config webpack.prod.js",
     "start": "electron dist/dev/main.js",
-    "pack": "yarn run build:prod && electron-builder --mac --linux --win",
+    "pack:mac": "yarn run build:prod && electron-builder --mac",
+    "pack:linux": "yarn run build:prod && electron-builder --linux",
     "pack:win": "yarn run build:prod && electron-builder --win",
     "test": "jest --useStderr"
   },

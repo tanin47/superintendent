@@ -4,7 +4,31 @@ orbs:
   win: circleci/windows@2.4.0
 
 jobs:
-  build:
+#  build-linux:
+#    docker:
+#      - image: circleci/node:14.17.1
+#    resource_class: medium+
+#    steps:
+#      - checkout
+#      - restore_cache:
+#          keys:
+#            - node-v1-linux-{{ .Branch }}-{{ checksum "yarn.lock" }}
+#            - node-v1-linux-{{ .Branch }}-
+#            - node-v1-linux-
+#      - run:
+#          name: Install dependencies
+#          command: yarn install
+#      - run:
+#          name: Build AppImage
+#          command: yarn run pack:linux
+#      - save_cache:
+#          paths:
+#            - ./node_modules
+#          key: node-v1-linux-{{ .Branch }}-{{ checksum "yarn.lock" }}
+#      - store_artifacts:
+#          path: ./out/superintendent-2.0.0.AppImage
+
+  build-win:
     executor:
       name: win/default
       size: "medium"
@@ -13,10 +37,9 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            # when lock file changes, use increasingly general patterns to restore cache
-            - node-v1-{{ .Branch }}-{{ checksum "yarn.lock" }}
-            - node-v1-{{ .Branch }}-
-            - node-v1-
+            - node-v1-win-{{ .Branch }}-{{ checksum "yarn.lock" }}
+            - node-v1-win-{{ .Branch }}-
+            - node-v1-win-
       - run:
           name: Install Node 14
           command: nvm install 14.17.1
@@ -35,6 +58,13 @@ jobs:
       - save_cache:
           paths:
             - ./node_modules
-          key: node-v1-{{ .Branch }}-{{ checksum "yarn.lock" }}
+          key: node-v1-win-{{ .Branch }}-{{ checksum "yarn.lock" }}
       - store_artifacts:
           path: ./out/superintendent Setup 2.0.0.exe
+
+workflows:
+  version: 2
+  build:
+    jobs:
+#      - build-linux
+      - build-win
