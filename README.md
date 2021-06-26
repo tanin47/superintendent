@@ -38,8 +38,8 @@ TODO
 - [x] Find a way to load and download sqlite natively? Maybe we embed the sqlite executable into electron?  
 - [x] Solve the editor bug on windows by using a different dialog
 - [x] Windows cannot export file because it doesn't flush database  
+- [x] List the test scenarios
 - [ ] Restore query of the table
-- [ ] List the test scenarios
 
 
 Testing
