@@ -63,7 +63,7 @@ export class DuckDb extends Datastore {
 
     await this.run(`CREATE TABLE "${table}" (${columns.map((c) => `"${c}" TEXT`).join(', ')})`);
     await this.run(`INSERT INTO "${table}" SELECT * FROM read_csv_auto('${filePath}', HEADER=TRUE, ALL_VARCHAR=TRUE) ${evaluationMode ? 'LIMIT 100' : ''};`);
-    await this.run(`UPDATE "${table}" SET ${columns.map((c) => `"${c}" = trim("${c}", ' \t\n\r"''')`).join(', ')}`);
+    // await this.run(`UPDATE "${table}" SET ${columns.map((c) => `"${c}" = trim("${c}", ' \t\n\r"''')`).join(', ')}`);
     this.tables.push(table);
 
     return this.queryFromTable(table);
