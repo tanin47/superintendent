@@ -1,7 +1,9 @@
-import {Datastore, Result, Row} from "./Datastore";
+import {Column, Datastore, Result, Row} from "./Datastore";
 import duckdb from 'duckdb';
 import path from "path";
 import os from "os";
+import fs from "fs";
+import {Parser} from "csv-parse";
 
 export class DuckDb extends Datastore {
   private db: duckdb.Database;
@@ -15,9 +17,47 @@ export class DuckDb extends Datastore {
     return new DuckDb(new duckdb.Database(path.join(os.tmpdir(), `super.duck.${new Date().getTime()}.db`)));
   }
 
+  async getColumns(csvPath: string): Promise<Column[]> {
+    const stream = fs
+      .createReadStream(csvPath)
+      .pipe(new Parser({
+        bom: true,
+        trim: true,
+        delimiter: ',',
+        skipEmptyLines: true
+      }));
+
+    const columns: Column[] = [];
+    const columnNames: Set<string> = new Set();
+    const getColumnName = (candidate: string) => {
+      if (columnNames.has(candidate))  {
+        return getColumnName(`${candidate}_dup`);
+      } else {
+        return candidate;
+      }
+    };
+
+    for await (const row of stream) {
+      row.forEach((candidate: string) => {
+        const newName = getColumnName(candidate.replace(/["]/g, '').trim());
+
+        columns.push(newName);
+        columnNames.add(newName);
+      });
+      break;
+    }
+
+    return columns;
+  }
+
   async addCsv(filePath: string, evaluationMode: boolean): Promise<Result> {
     const table = this.getTableName(path.parse(filePath).name);
-    await this.run(`CREATE TABLE "${table}" AS SELECT * FROM read_csv_auto('${filePath}', HEADER=TRUE, ALL_VARCHAR=TRUE) ${evaluationMode ? 'LIMIT 100' : ''};`);
+
+    const columns = await this.getColumns(filePath);
+
+    await this.run(`CREATE TABLE "${table}" (${columns.map((c) => `"${c}" TEXT`).join(', ')})`);
+    await this.run(`INSERT INTO "${table}" SELECT * FROM read_csv_auto('${filePath}', HEADER=TRUE, ALL_VARCHAR=TRUE) ${evaluationMode ? 'LIMIT 100' : ''};`);
+    await this.run(`UPDATE "${table}" SET ${columns.map((c) => `"${c}" = trim("${c}", ' \t\n\r"''')`).join(', ')}`);
     this.tables.push(table);
 
     return this.queryFromTable(table);

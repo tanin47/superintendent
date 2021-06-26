@@ -1,6 +1,6 @@
 {
   "name": "superintendent",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Write SQLs on CSVs",
   "license": "UNLICENSED",
   "main": "dist/prod/main.js",
@@ -69,6 +69,7 @@
     "axios": "^0.21.1",
     "chart.js": "^3.3.2",
     "codemirror": "^5.61.1",
+    "csv-parse": "4.15.4",
     "duckdb": "0.2.3",
     "electron-default-menu": "^1.0.2",
     "electron-store": "^8.0.0",

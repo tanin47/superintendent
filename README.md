@@ -33,10 +33,9 @@ TODO
   - [x] Make a believable CSV
     - [x] Make a name for each index
   - [x] Make an intro gif
-
-Later
-------
 - [x] Implement the auto hint using keyUp and remember the state (e.g. typing 2 characters)
 - [x] The table header to be sticky
-- [ ] Change to better-sqlite3
-- [ ] Find a way to load and download sqlite natively? Maybe we embed the sqlite executable into electron?  
+- [x] Find a way to load and download sqlite natively? Maybe we embed the sqlite executable into electron?  
+- [ ] Restore query of the table
+- [ ] Solve the bug on windows  
+- [ ] List the test scenarios

@@ -5,6 +5,24 @@ import {Chart, ChartType, registerables} from 'chart.js';
 
 function Table({evaluationMode, sheet}: {evaluationMode: boolean, sheet: Sheet}): JSX.Element {
   const hasMore = sheet.rows.length < sheet.count;
+  let totalLabel: JSX.Element | null = null;
+
+  if (sheet.count > 1) {
+    if (hasMore) {
+      totalLabel = (
+        <tr>
+          <td colSpan={sheet.columns.length} className="has-more">There are {sheet.count.toLocaleString('en-US')} rows, but only {sheet.rows.length.toLocaleString('en-US')} rows is shown. Please export the sheet to see all the rows.</td>
+        </tr>
+      );
+    } else {
+      totalLabel = (
+        <tr>
+          <td colSpan={sheet.columns.length} className="has-more">There are {sheet.count.toLocaleString('en-US')} rows.</td>
+        </tr>
+      );
+    }
+  }
+
   return (
     <table cellPadding={0} cellSpacing={0}>
       <thead>
@@ -30,16 +48,7 @@ function Table({evaluationMode, sheet}: {evaluationMode: boolean, sheet: Sheet})
       })}
       </tbody>
         <tfoot>
-          {hasMore && (
-            <tr>
-              <td colSpan={sheet.columns.length} className="has-more">There are {sheet.count.toLocaleString('en-US')} rows, but only {sheet.rows.length.toLocaleString('en-US')} rows is shown. Please export the sheet to see all the rows.</td>
-            </tr>
-          )}
-          {!hasMore && (
-            <tr>
-              <td colSpan={sheet.columns.length} className="has-more">There are {sheet.count.toLocaleString('en-US')} rows.</td>
-            </tr>
-          )}
+          {totalLabel}
           {evaluationMode && (
             <tr>
               <td colSpan={sheet.columns.length} className="has-more">In the evaluation mode, you can load up to 100 rows per CSV. Please <span className="link" onClick={() => shell.openExternal("https://superintendent.app/buy")}>get a license</span> in order to get full access.</td>
