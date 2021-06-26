@@ -36,6 +36,17 @@ TODO
 - [x] Implement the auto hint using keyUp and remember the state (e.g. typing 2 characters)
 - [x] The table header to be sticky
 - [x] Find a way to load and download sqlite natively? Maybe we embed the sqlite executable into electron?  
+- [x] Solve the editor bug on windows by using a different dialog
+- [x] Windows cannot export file because it doesn't flush database  
 - [ ] Restore query of the table
-- [ ] Solve the bug on windows  
 - [ ] List the test scenarios
+
+
+Testing
+--------
+
+1. Test importing bom.csv
+2. Test importing a large csv file (600MB)
+3. Test importing quote.csv
+4. Test importing height_weight.csv + user.csv and do a join.
+5. Test exporting a table especially windows

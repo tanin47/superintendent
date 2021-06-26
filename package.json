@@ -73,6 +73,7 @@
     "duckdb": "0.2.3",
     "electron-default-menu": "^1.0.2",
     "electron-store": "^8.0.0",
-    "sql-formatter": "^4.0.2"
+    "sql-formatter": "^4.0.2",
+    "sweetalert2": "^11.0.18"
   }
 }

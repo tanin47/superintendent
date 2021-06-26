@@ -7,14 +7,20 @@ import {Parser} from "csv-parse";
 
 export class DuckDb extends Datastore {
   private db: duckdb.Database;
+  private databaseFile: string;
 
-  constructor(db: duckdb.Database) {
+  constructor(databaseFile: string) {
     super();
-    this.db = db;
+    this.databaseFile = databaseFile;
+    this.connect();
+  }
+
+  private connect(): void {
+    this.db = new duckdb.Database(this.databaseFile)
   }
 
   static async create(): Promise<Datastore> {
-    return new DuckDb(new duckdb.Database(path.join(os.tmpdir(), `super.duck.${new Date().getTime()}.db`)));
+    return new DuckDb(path.join(os.tmpdir(), `super.duck.${new Date().getTime()}.db`));
   }
 
   async getColumns(csvPath: string): Promise<Column[]> {
@@ -64,6 +70,8 @@ export class DuckDb extends Datastore {
   }
   async exportCsv(table: string, filePath: string): Promise<void> {
     await this.run(`COPY "${table}" TO '${filePath}' WITH (HEADER 1, DELIMITER ',')`);
+    await this.close();
+    this.connect();
   }
 
   async query(sql: string): Promise<Result> {
@@ -83,6 +91,12 @@ export class DuckDb extends Datastore {
           resolve(result);
         }
       });
+    });
+  }
+
+  private async close(): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      this.db.close(resolve);
     });
   }
 

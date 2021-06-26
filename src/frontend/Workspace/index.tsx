@@ -7,6 +7,7 @@ import Button from './Button';
 import Editor from './Editor';
 import {Ref as EditorRef} from './Editor';
 import Store from "electron-store";
+import * as dialog from './dialog';
 
 export default function Workspace({evaluationMode}: {evaluationMode: boolean}): ReactElement {
   const store = React.useMemo(() => new Store(), []);
@@ -50,7 +51,7 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
           setSelectedSheetIndex(sheets.length);
         })
         .catch((err) => {
-          alert(err.message);
+          dialog.showError('Found an error!', err.message);
         })
         .finally(() => {
           setIsQueryLoading(false);
@@ -117,7 +118,7 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
                     setSelectedSheetIndex(sheets.length);
                   })
                   .catch((err) => {
-                    alert(err.message);
+                    dialog.showError('Found an error!', err.message);
                   })
                   .finally(() => {
                     setIsAddCsvLoading(false);
@@ -203,10 +204,10 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
                 downloadCsv(sheets[selectedSheetIndex].name)
                   .then((filePath) => {
                     if (!filePath) { return; }
-                    alert(`The sheet has been exported to: ${filePath}`);
+                    dialog.showSuccess('Exported!', `The sheet has been exported to: ${filePath}`);
                   })
                   .catch((err) => {
-                    alert(err.message);
+                    dialog.showError('Found an error!', err.message);
                   })
                   .finally(() => {
                     setIsDownloadCsvLoading(false);
