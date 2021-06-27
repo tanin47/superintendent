@@ -133,21 +133,7 @@ export class Sqlite extends Datastore {
     return this.queryAllFromTable(table);
   }
 
-  async exportCsv(table: string, filePath: string): Promise<void> {
-    // We should paginate it.
-    const rows = await this.db.all(`SELECT * FROM "${table}"`);
-
-    let columns: Array<string> = [];
-    if (rows.length > 0) {
-      Object.keys(rows[0]).forEach((k) => columns.push(k))
-    }
-
-    const sink = fs.createWriteStream(filePath, {flags: 'w'});
-    const stringifier = new Stringifier({delimiter: ','});
-    const writer = stringifier.pipe(sink);
-
-    stringifier.write(columns);
-
+  private async writeRows(rows: any[], columns: string[], stringifier: Stringifier): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       try {
         let numRowLeft = rows.length;
@@ -159,7 +145,6 @@ export class Sqlite extends Datastore {
             const nextRow = rows[rows.length - numRowLeft];
             if (numRowLeft === 1) {
               stringifier.write(columns.map((c) => nextRow[c]), () => {
-                stringifier.end();
                 resolve();
               });
             } else {
@@ -178,6 +163,37 @@ export class Sqlite extends Datastore {
         reject(e);
       }
     });
+  }
+
+  async exportCsv(table: string, filePath: string): Promise<void> {
+    let offset = 0;
+    const limit = 10000;
+
+    const sink = fs.createWriteStream(filePath, {flags: 'w'});
+    const stringifier = new Stringifier({delimiter: ','});
+    const writer = stringifier.pipe(sink);
+
+    const columns: Array<string> = [];
+    let firstRow = true;
+
+    while (true) {
+      const rows = await this.db.all(`SELECT * FROM "${table}" LIMIT ${limit} OFFSET ${offset}`);
+      offset += limit;
+
+      if (rows.length === 0) {
+        break;
+      }
+
+      if (firstRow && rows.length > 0) {
+        Object.keys(rows[0]).forEach((k) => columns.push(k));
+        stringifier.write(columns);
+        firstRow = false;
+      }
+
+      await this.writeRows(rows, columns, stringifier);
+    }
+
+    stringifier.end();
   }
 
   async query(sql: string): Promise<Result> {

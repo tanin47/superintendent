@@ -40,6 +40,8 @@ TODO
 - [x] Windows cannot export file because it doesn't flush database  
 - [x] List the test scenarios
 - [ ] Restore query of the table
+- [ ] Save and open workspace
+- [ ] Try adding regex to sqlite3
 
 
 Testing
