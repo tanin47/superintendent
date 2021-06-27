@@ -63,7 +63,7 @@ export class Sqlite extends Datastore {
       values.push(`(${colLine})`);
     }
 
-    await this.db.run(`INSERT INTO "${table}" (${columns.map((c) => `"${c}"`).join(',')}) VALUES ${values.join(',')}`, batch.values);
+    await this.db.run(`INSERT INTO "${table}" (${columns.map((c) => `"${c}"`).join(',')}) VALUES ${values.join(',')};`, batch.values);
   }
 
   async addCsv(filePath: string, evaluationMode: boolean): Promise<Result> {
@@ -82,7 +82,7 @@ export class Sqlite extends Datastore {
     let count = 0;
 
     let batch = new Batch();
-    const maxBatchValues = 20000;
+    const maxBatchValues = 10000;
 
     const columnNames: Set<string> = new Set();
     const getColumnName = (candidate: string) => {
@@ -108,13 +108,13 @@ export class Sqlite extends Datastore {
       } else {
         count++;
 
-        if (batch.values.length < maxBatchValues) {
-          if (row.length > columns.length) {
-            row.splice(columns.length, row.length - columns.length);
-          }
+        if (row.length > columns.length) {
+          row.splice(columns.length, row.length - columns.length);
+        }
 
-          batch.add(row);
-        } else {
+        batch.add(row);
+
+        if (batch.values.length >= maxBatchValues) {
           await this.addBatch(batch, table, columns);
           batch.reset();
         }
@@ -134,6 +134,7 @@ export class Sqlite extends Datastore {
   }
 
   async exportCsv(table: string, filePath: string): Promise<void> {
+    // We should paginate it.
     const rows = await this.db.all(`SELECT * FROM "${table}"`);
 
     let columns: Array<string> = [];
@@ -146,11 +147,37 @@ export class Sqlite extends Datastore {
     const writer = stringifier.pipe(sink);
 
     stringifier.write(columns);
-    for (const row of rows) {
-      stringifier.write(columns.map((c) => row[c]));
-    }
-    stringifier.end();
-    writer.end();
+
+    return new Promise<void>((resolve, reject) => {
+      try {
+        let numRowLeft = rows.length;
+
+        const niceWrite = () => {
+          let canContinue = true;
+
+          while (canContinue && numRowLeft > 0) {
+            const nextRow = rows[rows.length - numRowLeft];
+            if (numRowLeft === 1) {
+              stringifier.write(columns.map((c) => nextRow[c]), () => {
+                stringifier.end();
+                resolve();
+              });
+            } else {
+              canContinue = stringifier.write(columns.map((c) => nextRow[c]));
+            }
+            numRowLeft--;
+          }
+
+          if (numRowLeft > 0) {
+            stringifier.once('drain', niceWrite);
+          }
+        }
+
+        niceWrite();
+      } catch (e) {
+        reject(e);
+      }
+    });
   }
 
   async query(sql: string): Promise<Result> {
