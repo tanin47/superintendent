@@ -1,6 +1,6 @@
 {
   "name": "superintendent",
-  "version": "2.0.1",
+  "version": "1.1.2",
   "description": "Write SQLs on CSVs",
   "license": "UNLICENSED",
   "main": "dist/prod/main.js",
@@ -9,9 +9,7 @@
     "build": "webpack --config webpack.dev.js",
     "build:prod": "webpack --config webpack.prod.js",
     "start": "electron dist/dev/main.js",
-    "pack:mac": "yarn run build:prod && electron-builder --mac",
-    "pack:linux": "yarn run build:prod && electron-builder --linux",
-    "pack:win": "yarn run build:prod && electron-builder --win",
+    "pack": "yarn run build:prod && electron-builder --mac --linux --win",
     "test": "jest --useStderr"
   },
   "build": {
@@ -70,10 +68,12 @@
     "chart.js": "^3.3.2",
     "codemirror": "^5.61.1",
     "csv-parse": "4.15.4",
-    "duckdb": "0.2.3",
+    "csv-stringify": "^5.6.2",
     "electron-default-menu": "^1.0.2",
     "electron-store": "^8.0.0",
     "sql-formatter": "^4.0.2",
-    "sweetalert2": "^11.0.18"
+    "sweetalert2": "^11.0.18",
+    "sqlite": "4.0.21",
+    "sqlite3": "5.0.2"
   }
 }

@@ -6,7 +6,6 @@ const electronConfiguration = {
   resolve: {
     extensions: ['.ts', '.js'],
   },
-  externals: { sqlite3: 'commonjs sqlite3' },
   module: {
     rules: [
       {
@@ -18,9 +17,7 @@ const electronConfiguration = {
   output: {
     filename: 'main.js',
   },
-  externals: {
-    'duckdb': "require('duckdb')",
-  },
+  externals: { sqlite3: 'commonjs sqlite3' },
 };
 
 const reactConfiguration = {
