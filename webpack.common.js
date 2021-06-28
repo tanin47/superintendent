@@ -17,7 +17,9 @@ const electronConfiguration = {
   output: {
     filename: 'main.js',
   },
-  externals: { sqlite3: 'commonjs sqlite3' },
+  externals: {
+    'better-sqlite3': 'commonjs better-sqlite3'
+  },
 };
 
 const reactConfiguration = {

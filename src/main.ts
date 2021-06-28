@@ -95,9 +95,6 @@ export default class Main {
     Main.mainWindow!.webContents.openDevTools();
   }
 
-  private static async query(arg) {
-  }
-
   static main(app: Electron.App, browserWindow: typeof BrowserWindow): void {
     Main.BrowserWindow = browserWindow;
     Main.application = app;
