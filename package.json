@@ -7,7 +7,6 @@
   "scripts": {
     "build:watch": "webpack --watch --config webpack.dev.js",
     "build": "webpack --config webpack.dev.js",
-    "build:prod": "webpack --config webpack.prod.js",
     "start": "electron dist/dev/main.js",
     "pack": "yarn run build:prod && electron-builder --mac --linux --win",
     "test": "jest --useStderr"
@@ -22,8 +21,8 @@
       "category": "public.app-category.finance",
       "type": "distribution",
       "hardenedRuntime": true,
-      "entitlements": "build/entitlements.mac.plist",
-      "entitlementsInherit": "build/entitlements.mac.plist"
+      "entitlements": "electron-builder/build/entitlements.mac.plist",
+      "entitlementsInherit": "electron-builder/build/entitlements.mac.plist"
     },
     "files": [
       "dist",
@@ -33,7 +32,11 @@
       "!out{/*}",
       "!src{/*}"
     ],
-    "afterSign": "scripts/notarize.js"
+    "extraResources": [
+      "./deps/csv_writer/csv_writer.dylib",
+      "./deps/csv/csv.dylib",
+      "./deps/ext/ext.dylib"
+    ]
   },
   "author": "Tanin Na Nakorn",
   "devDependencies": {
@@ -50,6 +53,7 @@
     "electron-notarize": "^1.0.0",
     "electron-rebuild": "^2.3.5",
     "file-loader": "^6.2.0",
+    "gulp": "^4.0.2",
     "html-webpack-plugin": "^4.5.0",
     "jest": "^27.0.6",
     "react": "^17.0.1",

@@ -6,7 +6,7 @@ use std::ffi::CString;
 use std::mem::{forget, transmute};
 use std::ptr::null;
 
-use chrono::{DateTime, NaiveDate, SecondsFormat, Utc, TimeZone};
+use chrono::{NaiveDate, SecondsFormat, Utc, TimeZone};
 use libc::c_char;
 use regex::Regex;
 
@@ -36,7 +36,7 @@ pub extern "C" fn date_parse(
 
     return match Utc.datetime_from_str(&value, &pattern) {
         Ok(time) => to_c_char_pointer(time.to_rfc3339_opts(SecondsFormat::Millis, true)),
-        Err(e) =>  match NaiveDate::parse_from_str(&value, &pattern) {
+        Err(_) =>  match NaiveDate::parse_from_str(&value, &pattern) {
             Ok(time) => to_c_char_pointer(time.format("%Y-%m-%d").to_string()),
             Err(_) => null(),
         },

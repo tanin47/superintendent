@@ -45,9 +45,11 @@ export class Sqlite extends Datastore {
     this.db.pragma("journal_mode = OFF;");
     this.db.pragma("synchronous = OFF;");
     this.db.pragma("locking_mode = EXCLUSIVE;");
-    this.db.loadExtension('/Users/tanin/projects/superintendent-app/deps/ext/ext.dylib');
-    this.db.loadExtension('/Users/tanin/projects/superintendent-app/deps/csv/csv.dylib');
-    this.db.loadExtension('/Users/tanin/projects/superintendent-app/deps/csv-writer/csv_writer.dylib');
+
+    let prefix = process.env.SUPERINTENDENT_IS_PROD ? process.resourcesPath : '.';
+    this.db.loadExtension(path.join(prefix, 'deps/ext/ext.dylib'));
+    this.db.loadExtension(path.join(prefix, 'deps/csv/csv.dylib'));
+    this.db.loadExtension(path.join(prefix, 'deps/csv_writer/csv_writer.dylib'));
   }
 
   close() {
