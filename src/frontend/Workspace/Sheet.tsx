@@ -38,9 +38,9 @@ function Table({evaluationMode, sheet}: {evaluationMode: boolean, sheet: Sheet})
       {sheet.rows.map((row, index) => {
         return (
           <tr key={`row-${index}`}>
-            {sheet.columns.map((col, index) => {
+            {row.map((row, index) => {
               return (
-                <td key={`col-${index}`}>{row[col]}</td>
+                <td key={`col-${index}`}>{row}</td>
               );
             })}
           </tr>

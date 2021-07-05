@@ -12,13 +12,17 @@ const electronConfiguration = {
         test: /\.ts$/,
         use: [{loader: 'ts-loader'}]
       },
+      {
+        test: /\.node$/,
+        loader: 'node-loader'
+      },
     ]
   },
   output: {
     filename: 'main.js',
   },
   externals: {
-    'better-sqlite3': 'commonjs better-sqlite3'
+    'better-sqlite3': 'commonjs better-sqlite3',
   },
 };
 

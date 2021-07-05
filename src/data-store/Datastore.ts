@@ -1,6 +1,6 @@
 
 export type Column = string;
-export type Row = {[col:string]: any};
+export type Row = string[];
 
 export type Result = {
   name: string,
@@ -11,7 +11,7 @@ export type Result = {
 
 export abstract class Datastore {
   static MAX_ROW = 1000;
-  static MAX_CHARACTERS = 160000;
+  static MAX_CHARACTERS = 300000;
 
   protected tables: Array<string> = [];
 
@@ -20,7 +20,7 @@ export abstract class Datastore {
 
   abstract query(sql: string): Promise<Result>;
 
-  static makePreview(columns: Column[], rows: Array<Row>): Array<Row> {
+  static makePreview(columns: Column[], rows: Row[]): Array<Row> {
     let numRows = 0;
     let numChars = 0;
 
@@ -42,9 +42,12 @@ export abstract class Datastore {
     return rows.slice(0, numRows);
   }
 
+  protected sanitizeName(name: string): string {
+    return name.replace(/[^a-zA-Z0-9_]/g, '_');
+  }
+
   protected getTableName(name: string, number: number | null = null): string {
-    const candidate = name.replace(/[^a-zA-Z0-9_]/g, '_');
-    return this.getUniqueTableName(candidate);
+    return this.getUniqueTableName(this.sanitizeName(name), number);
   }
 
   protected getUniqueTableName(base: string, number: number | null = null): string {

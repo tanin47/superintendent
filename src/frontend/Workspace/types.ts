@@ -6,7 +6,7 @@ export type PresentationType = 'table' | 'line' | 'bar' | 'pie';
 export type Sheet = {
   name: string,
   count: number,
-  columns: Array<string>,
-  rows: Array<{[key:string]: any}>,
+  columns: string[],
+  rows: string[][],
   presentationType: PresentationType
 };

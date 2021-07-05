@@ -39,9 +39,13 @@ TODO
 - [x] Solve the editor bug on windows by using a different dialog
 - [x] Windows cannot export file because it doesn't flush database  
 - [x] List the test scenarios
+- [x] Try adding regex, date parse
+- [x] Import/export CSV with C  
+- [x] Don't send column name with rows. Just use raw  
+- [x] Add a set of tests  
+- [ ] Set up cross compilation  
 - [ ] Restore query of the table
 - [ ] Save and open workspace
-- [ ] Try adding regex to sqlite3
 
 
 Testing

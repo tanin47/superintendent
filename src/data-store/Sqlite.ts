@@ -5,6 +5,8 @@ import os from "os";
 import fs from "fs";
 import {Parser} from "csv-parse";
 import {Stringifier} from "csv-stringify";
+// @ts-ignore
+import csv from '../../build/Release/csv.node';
 
 
 class Batch {
@@ -29,21 +31,33 @@ class Batch {
 }
 
 export class Sqlite extends Datastore {
-  private db: Database;
+  dbPath: string;
+  private db!: Database;
 
-  constructor(db: Database) {
+  constructor(dbPath: string) {
     super();
-    this.db = db;
+    this.dbPath = dbPath;
+    this.open();
+  }
+
+  private open() {
+    this.db = sqlite(this.dbPath);
+    this.db.pragma("journal_mode = OFF;");
+    this.db.pragma("synchronous = OFF;");
+    this.db.pragma("locking_mode = EXCLUSIVE;");
+    this.db.loadExtension('/Users/tanin/projects/superintendent-app/deps/ext/ext.dylib');
+    this.db.loadExtension('/Users/tanin/projects/superintendent-app/deps/csv/csv.dylib');
+    this.db.loadExtension('/Users/tanin/projects/superintendent-app/deps/csv-writer/csv_writer.dylib');
+  }
+
+  close() {
+    this.db.close();
   }
 
   static async create(): Promise<Datastore> {
     const dbPath = path.join(os.tmpdir(), `super.sqlite.${new Date().getTime()}.db`);
-    const db = sqlite(dbPath);
-    db.pragma("journal_mode = OFF;");
-    db.pragma("synchronous = OFF;");
-    db.pragma("locking_mode = EXCLUSIVE;");
 
-    return Promise.resolve(new Sqlite(db));
+    return Promise.resolve(new Sqlite(dbPath));
   }
 
   private cachedPreparedInserts: {[rowCount: number]: Statement} = {};
@@ -73,6 +87,9 @@ export class Sqlite extends Datastore {
   }
 
   async addCsv(filePath: string, evaluationMode: boolean): Promise<Result> {
+    const table = this.getTableName(path.parse(filePath).name);
+    this.tables.push(table);
+
     const stream = fs
       .createReadStream(filePath)
       .pipe(new Parser({
@@ -81,14 +98,8 @@ export class Sqlite extends Datastore {
         delimiter: ',',
         skipEmptyLines: true
       }));
-    const table = this.getTableName(path.parse(filePath).name);
 
-    let firstRow = true;
     const columns: Array<string> = [];
-    let count = 0;
-
-    let batch = new Batch();
-    const maxBatchValues = 10000;
 
     const columnNames: Set<string> = new Set();
     const getColumnName = (candidate: string) => {
@@ -99,84 +110,47 @@ export class Sqlite extends Datastore {
       }
     };
 
-    for await (let row of stream)  {
-      if (firstRow)  {
-        row.forEach((candidate: string) => {
-          const newName = getColumnName(candidate);
+    let createTable: string;
+    for await (let row of stream) {
+      row.forEach((candidate: string) => {
+        const newName = getColumnName(this.sanitizeName(candidate));
 
-          columns.push(newName);
-          columnNames.add(newName);
-        });
-        this.db.exec(`CREATE TABLE "${table}" (${columns.map((c) => `"${c}" TEXT`).join(', ')})`);
-        this.tables.push(table);
-
-        firstRow = false;
-      } else {
-        count++;
-
-        if (row.length > columns.length) {
-          row.splice(columns.length, row.length - columns.length);
-        }
-
-        batch.add(row);
-
-        if (batch.values.length >= maxBatchValues) {
-          this.addBatch(batch, table, columns);
-          batch.reset();
-        }
-      }
-
-      if (evaluationMode) {
-        if (count >= 100) { break; }
-      }
+        columns.push(newName);
+        columnNames.add(newName);
+      });
+      createTable = `CREATE TABLE x(${columns.map((c) => `"${c}" TEXT`).join(', ')})`;
+      break;
     }
 
-    if (batch.rowCount > 0) {
-      this.addBatch(batch, table, columns);
-      batch.reset();
-    }
+    const virtualTable = this.getTableName("virtual_" + table);
+    this.db.exec(`CREATE VIRTUAL TABLE "${virtualTable}" USING csv(filename='${filePath}', header=true, schema='${createTable!}')`);
 
-    this.cachedPreparedInserts = {}; // Clear the cached prepared statements
+    this.db.exec(`CREATE TABLE "${table}" AS SELECT * FROM "${virtualTable}" ${evaluationMode ? 'LIMIT 100' : ''}`);
 
     return this.queryAllFromTable(table);
   }
 
   async exportCsv(table: string, filePath: string): Promise<void> {
-    const sink = fs.createWriteStream(filePath, {flags: 'w'});
-    const stringifier = new Stringifier({delimiter: ','});
-    const writer = stringifier.pipe(sink);
+    let columns: string[];
+    {
+      const statement = this.db.prepare(`SELECT * FROM "${table}" LIMIT 1`).raw(true);
 
-    const statement = this.db.prepare(`SELECT * FROM "${table}"`).raw(true);
-    const iterator = statement.iterate();
+      columns = statement.columns().map((c) => c.name);
 
-    const columns = statement.columns().map((c) => c.name);
-    stringifier.write(columns);
-
-    return new Promise<void>((resolve, reject) => {
-      try {
-        const niceWrite = () => {
-          let canContinue = true;
-
-          while (canContinue) {
-            const {done, value: row} = iterator.next();
-
-            if (done) {
-              stringifier.end();
-              resolve();
-              return;
-            }
-
-            canContinue = stringifier.write(row);
-          }
-
-          stringifier.once('drain', niceWrite);
+      const iterator = statement.iterate();
+      while (true) {
+        const {done} = iterator.next(); // drain it
+        if (done) {
+          break;
         }
-
-        niceWrite();
-      } catch (e) {
-        reject(e);
       }
-    });
+    }
+
+    this.db.exec(`CREATE VIRTUAL TABLE "temp_table_name" USING csv_writer(filename='${filePath}', columns='${columns!.join(',')}')`);
+    this.db.exec(`INSERT INTO "temp_table_name" SELECT * FROM "${table}"`);
+    this.db.exec(`DROP TABLE "temp_table_name"`);
+
+    return Promise.resolve();
   }
 
   async query(sql: string): Promise<Result> {
@@ -191,13 +165,10 @@ export class Sqlite extends Datastore {
     const numOfRowsResult = this.db.prepare(`SELECT COUNT(*) AS number_of_rows FROM "${table}"`).all();
     const numOfRows = numOfRowsResult.length == 0 ? 0 : numOfRowsResult[0].number_of_rows;
 
-    const allRows = this.db.prepare(`SELECT * FROM "${table}" LIMIT ${Datastore.MAX_ROW}`).all();
+    const statement = this.db.prepare(`SELECT * FROM "${table}" LIMIT ${Datastore.MAX_ROW}`).raw(true)
+    const allRows = statement.all();
 
-    let columns: Array<string> = [];
-    if (allRows.length > 0) {
-      Object.keys(allRows[0]).forEach((k) => columns.push(k));
-    }
-
+    let columns = statement.columns().map((c) => c.name);
     const rows = Datastore.makePreview(columns, allRows);
 
     return {
