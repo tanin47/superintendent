@@ -35,8 +35,12 @@
     "extraResources": [
       "./deps/csv_writer/csv_writer.dylib",
       "./deps/csv/csv.dylib",
-      "./deps/ext/ext.dylib"
-    ]
+      "./deps/ext/ext.dylib",
+      "./deps/csv_writer/csv_writer.dll",
+      "./deps/csv/csv.dll",
+      "./deps/ext/ext.dll"
+    ],
+    "afterSign": "scripts/notarize.js"
   },
   "author": "Tanin Na Nakorn",
   "devDependencies": {

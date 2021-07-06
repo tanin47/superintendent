@@ -6,5 +6,11 @@ dist
 out
 .DS_Store
 *.sqlite.db
+*.o
+*.a
+*.dll
+*.exp
+*.lib
+*.obj
 
 out/

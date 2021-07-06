@@ -5,8 +5,6 @@ import os from "os";
 import fs from "fs";
 import {Parser} from "csv-parse";
 import {Stringifier} from "csv-stringify";
-// @ts-ignore
-import csv from '../../build/Release/csv.node';
 
 
 class Batch {
@@ -45,11 +43,26 @@ export class Sqlite extends Datastore {
     this.db.pragma("journal_mode = OFF;");
     this.db.pragma("synchronous = OFF;");
     this.db.pragma("locking_mode = EXCLUSIVE;");
+    // @ts-ignore
+    this.db.unsafeMode(true);
 
     let prefix = process.env.SUPERINTENDENT_IS_PROD ? process.resourcesPath : '.';
-    this.db.loadExtension(path.join(prefix, 'deps/ext/ext.dylib'));
-    this.db.loadExtension(path.join(prefix, 'deps/csv/csv.dylib'));
-    this.db.loadExtension(path.join(prefix, 'deps/csv_writer/csv_writer.dylib'));
+    let ext = 'dylib';
+
+    switch (process.platform) {
+      case 'darwin':
+        ext = 'dylib';
+        break;
+      case 'win32':
+        ext = 'dll';
+        break;
+      default:
+        throw new Error(`The platform ${process.platform} is not supported.`)
+    }
+
+    this.db.loadExtension(path.join(prefix, 'deps', 'ext', `ext.${ext}`));
+    this.db.loadExtension(path.join(prefix, 'deps', 'csv', `csv.${ext}`));
+    this.db.loadExtension(path.join(prefix, 'deps', 'csv_writer', `csv_writer.${ext}`));
   }
 
   close() {
@@ -80,12 +93,6 @@ export class Sqlite extends Datastore {
     this.cachedPreparedInserts[batch.rowCount] = statement;
 
     return statement;
-  }
-
-  private addBatch(batch: Batch, table: string, columns: Array<string>): void {
-    const statement = this.getPreparedInsert(table, columns, batch);
-
-    statement.run(batch.values);
   }
 
   async addCsv(filePath: string, evaluationMode: boolean): Promise<Result> {

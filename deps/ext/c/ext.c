@@ -1,6 +1,4 @@
-#include <string.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include "sqlite3ext.h"
 #include "rust_ext.h"
 SQLITE_EXTENSION_INIT1

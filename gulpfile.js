@@ -1,26 +1,60 @@
 const {series, parallel} = require('gulp');
 const {execSync} = require('child_process');
 
+const WIN32_LOAD_CL = '"C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Auxiliary\\Build\\vcvars64.bat"';
+
 function exec(cmd, cwd) {
   return execSync(cmd, {cwd, encoding: 'utf8', stdio: 'inherit'});
 }
 
 function buildCsv(done) {
   const cwd = './deps/csv';
-  exec('gcc -g -fPIC -dynamiclib csv.c -o csv.dylib', cwd);
+
+  switch (process.platform) {
+    case 'win32':
+      exec(`${WIN32_LOAD_CL} && cl csv.c -I . -link -dll -out:csv.dll`, cwd);
+      break;
+
+    case 'darwin':
+      exec('gcc -g -fPIC -dynamiclib csv.c -o csv.dylib', cwd);
+      break;
+    default:
+      throw new Error();
+  }
   done();
 }
 
 function buildCsvWriter(done) {
   const cwd = './deps/csv_writer';
-  exec('gcc -g -fPIC -dynamiclib csv_writer.c -o csv_writer.dylib', cwd);
+  switch (process.platform) {
+    case 'win32':
+      exec(`${WIN32_LOAD_CL} && cl csv_writer.c -I . -link -dll -out:csv_writer.dll`, cwd);
+      break;
+
+    case 'darwin':
+      exec('gcc -g -fPIC -dynamiclib csv_writer.c -o csv_writer.dylib', cwd);
+      break;
+    default:
+      throw new Error();
+  }
   done();
 }
 
 function buildExt(done) {
   const cwd = './deps/ext';
-  exec('cargo build --release', cwd);
-  exec('gcc -g -fPIC -dynamiclib c/ext.c target/release/libext.a -o ext.dylib', cwd);
+  switch (process.platform) {
+    case 'win32':
+      exec('cargo build --release', cwd);
+      exec(`${WIN32_LOAD_CL} && cl c\\ext.c target\\release\\ext.lib advapi32.lib ws2_32.lib userenv.lib -I c -link -dll -out:ext.dll`, cwd);
+      break;
+
+    case 'darwin':
+      exec('cargo build --release', cwd);
+      exec('gcc -g -fPIC -dynamiclib c/ext.c target/release/libext.a -o ext.dylib', cwd);
+      break;
+    default:
+      throw new Error();
+  }
   done();
 }
 
@@ -35,8 +69,19 @@ function buildElectronProd(done) {
 }
 
 function pack(done) {
-  // exec('yarn run electron-builder --mac --linux --win');
-  exec('yarn run electron-builder --mac');
+  let opt = '--mac';
+  switch (process.platform) {
+    case 'win32':
+      opt = '--win';
+      break;
+
+    case 'darwin':
+      opt = '--mac';
+      break;
+    default:
+      throw new Error();
+  }
+  exec(`yarn run electron-builder ${opt}`);
   done();
 }
 
