@@ -12,5 +12,6 @@ out
 *.exp
 *.lib
 *.obj
+*.so
 
 out/

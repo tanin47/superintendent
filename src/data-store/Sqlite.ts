@@ -53,6 +53,9 @@ export class Sqlite extends Datastore {
       case 'darwin':
         ext = 'dylib';
         break;
+      case 'linux':
+        ext = 'so';
+        break;
       case 'win32':
         ext = 'dll';
         break;

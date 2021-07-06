@@ -201,17 +201,23 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
             <Button
               onClick={() => {
                 setIsDownloadCsvLoading(true);
-                downloadCsv(sheets[selectedSheetIndex].name)
-                  .then((filePath) => {
-                    if (!filePath) { return; }
-                    dialog.showSuccess('Exported!', `The sheet has been exported to: ${filePath}`);
-                  })
-                  .catch((err) => {
-                    dialog.showError('Found an error!', err.message);
-                  })
-                  .finally(() => {
-                    setIsDownloadCsvLoading(false);
-                  });
+                // Add some delay for the UI to be updated.
+                setTimeout(
+                    () => {
+                      downloadCsv(sheets[selectedSheetIndex].name)
+                          .then((filePath) => {
+                            if (!filePath) { return; }
+                            dialog.showSuccess('Exported!', `The sheet has been exported to: ${filePath}`);
+                          })
+                          .catch((err) => {
+                            dialog.showError('Found an error!', err.message);
+                          })
+                          .finally(() => {
+                            setIsDownloadCsvLoading(false);
+                          });
+                    },
+                    100
+                );
               }}
               isLoading={isDownloadCsvLoading}
               disabled={sheets.length === 0}

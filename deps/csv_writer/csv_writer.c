@@ -117,7 +117,6 @@ static const char needCsvQuote[] = {
 
 static void output_csv(FILE *out, const char *z){
   if(z == 0) {
-    fprintf(out, "");
     return;
   }
 

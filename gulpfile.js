@@ -15,6 +15,10 @@ function buildCsv(done) {
       exec(`${WIN32_LOAD_CL} && cl csv.c -I . -link -dll -out:csv.dll`, cwd);
       break;
 
+    case 'linux':
+      exec('gcc -g -fPIC -shared csv.c -I . -o csv.so', cwd);
+      break;
+
     case 'darwin':
       exec('gcc -g -fPIC -dynamiclib csv.c -o csv.dylib', cwd);
       break;
@@ -31,6 +35,10 @@ function buildCsvWriter(done) {
       exec(`${WIN32_LOAD_CL} && cl csv_writer.c -I . -link -dll -out:csv_writer.dll`, cwd);
       break;
 
+    case 'linux':
+      exec('gcc -g -fPIC -shared csv_writer.c -I . -o csv_writer.so', cwd);
+      break;
+
     case 'darwin':
       exec('gcc -g -fPIC -dynamiclib csv_writer.c -o csv_writer.dylib', cwd);
       break;
@@ -42,14 +50,17 @@ function buildCsvWriter(done) {
 
 function buildExt(done) {
   const cwd = './deps/ext';
+  exec('cargo build --release', cwd);
   switch (process.platform) {
     case 'win32':
-      exec('cargo build --release', cwd);
       exec(`${WIN32_LOAD_CL} && cl c\\ext.c target\\release\\ext.lib advapi32.lib ws2_32.lib userenv.lib -I c -link -dll -out:ext.dll`, cwd);
       break;
 
+    case 'linux':
+      exec('gcc -g -fPIC -shared c/ext.c target/release/libext.a -I c -o ext.so', cwd);
+      break;
+
     case 'darwin':
-      exec('cargo build --release', cwd);
       exec('gcc -g -fPIC -dynamiclib c/ext.c target/release/libext.a -o ext.dylib', cwd);
       break;
     default:
@@ -73,6 +84,10 @@ function pack(done) {
   switch (process.platform) {
     case 'win32':
       opt = '--win';
+      break;
+
+    case 'linux':
+      opt = '--linux';
       break;
 
     case 'darwin':

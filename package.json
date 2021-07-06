@@ -38,7 +38,10 @@
       "./deps/ext/ext.dylib",
       "./deps/csv_writer/csv_writer.dll",
       "./deps/csv/csv.dll",
-      "./deps/ext/ext.dll"
+      "./deps/ext/ext.dll",
+      "./deps/csv_writer/csv_writer.so",
+      "./deps/csv/csv.so",
+      "./deps/ext/ext.so"
     ],
     "afterSign": "scripts/notarize.js"
   },
