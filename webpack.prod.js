@@ -8,11 +8,21 @@ const definePlugin = new DefinePlugin({
 })
 
 module.exports = [
+  merge(common.electronWorkerConfiguration, {
+    mode: 'production',
+    devtool: 'inline-source-map',
+    output: {
+      path: __dirname + '/dist/prod',
+      clean: true
+    },
+    plugins: [
+      definePlugin
+    ]
+  }),
   merge(common.electronConfiguration, {
     mode: 'production',
     output: {
       path: __dirname + '/dist/prod',
-      clean: true,
     },
     plugins: [
       definePlugin

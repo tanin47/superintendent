@@ -4,6 +4,7 @@ export type Row = string[];
 
 export type Result = {
   name: string,
+  sql: string,
   columns: Column[],
   rows: Row[],
   count: number,

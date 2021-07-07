@@ -43,8 +43,16 @@ TODO
 - [x] Import/export CSV with C  
 - [x] Don't send column name with rows. Just use raw  
 - [x] Add a set of tests  
-- [ ] Set up cross compilation  
-- [ ] Restore query of the table
+- [x] Automate build
+- [x] Build on windows  
+- [x] Build on Linux
+- [x] Move processing to worker thread  
+- [x] Move total row to the top
+- [x] Restore query of the table
+
+v2.1.0  
+- [ ] Loading dialog
+- [ ] Double click and open files immediately
 - [ ] Save and open workspace
 
 

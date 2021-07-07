@@ -43,7 +43,9 @@
       "./deps/csv/csv.so",
       "./deps/ext/ext.so"
     ],
-    "afterSign": "scripts/notarize.js"
+    "asarUnpack": [
+      "dist/prod/worker.js"
+    ]
   },
   "author": "Tanin Na Nakorn",
   "devDependencies": {
@@ -68,25 +70,30 @@
     "sass": "^1.29.0",
     "sass-loader": "^10.1.0",
     "style-loader": "^2.0.0",
+    "threads-plugin": "^1.4.0",
     "ts-jest": "^27.0.3",
     "ts-loader": "^8.0.11",
     "ts-node": "^10.0.0",
     "typescript": "^4.3.5",
     "webpack": "^5.9.0",
     "webpack-cli": "^4.2.0",
-    "webpack-merge": "^5.7.3"
+    "webpack-merge": "^5.7.3",
+    "worker-loader": "^3.0.8"
   },
   "dependencies": {
+    "@tippyjs/react": "^4.2.5",
     "axios": "^0.21.1",
     "better-sqlite3": "^7.4.1",
     "chart.js": "^3.3.2",
     "codemirror": "^5.61.1",
     "csv-parse": "4.15.4",
-    "csv-stringify": "^5.6.2",
     "electron-default-menu": "^1.0.2",
     "electron-store": "^8.0.0",
     "nan": "^2.14.0",
     "sql-formatter": "^4.0.2",
-    "sweetalert2": "^11.0.18"
+    "sweetalert2": "^11.0.18",
+    "threads": "^1.6.5",
+    "tiny-worker": "^2.3.0",
+    "tippy.js": "^6.3.1"
   }
 }

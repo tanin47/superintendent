@@ -8,6 +8,11 @@ import Editor from './Editor';
 import {Ref as EditorRef} from './Editor';
 import Store from "electron-store";
 import * as dialog from './dialog';
+import {formatTotal} from "./helper";
+import Tippy from '@tippyjs/react';
+import 'tippy.js/dist/tippy.css';
+import 'tippy.js/themes/material.css';
+import {shell} from "electron";
 
 export default function Workspace({evaluationMode}: {evaluationMode: boolean}): ReactElement {
   const store = React.useMemo(() => new Store(), []);
@@ -167,6 +172,8 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
             </Button>
             <span className="separator" />
             <Button onClick={() => editorRef.current!.format()} icon={<i className="fas fa-align-justify" />}>Format</Button>
+            <span className="separator" />
+            <Button onClick={() => editorRef.current!.setValue(sheets[selectedSheetIndex].sql)} icon={<i className="fas fa-history" />}>Restore SQL</Button>
             {!process.env.SUPERINTENDENT_IS_PROD && (
               <>
                 <span className="separator" />
@@ -175,6 +182,27 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
             )}
           </div>
           <div className="right">
+            {selectedSheetIndex < sheets.length && (
+              <>
+                <span className="total">
+                  {formatTotal(sheets[selectedSheetIndex].count)}
+                  {evaluationMode && (
+                    <Tippy
+                      theme="material"
+                      interactive
+                      content={
+                        <span className="tooltip">
+                          In the evaluation mode, you can load up to 100 rows per CSV. Please <span className="link" onClick={() => shell.openExternal("https://superintendent.app/buy")}>get a license</span> in order to get full access.
+                        </span>
+                      }
+                    >
+                      <i className="fas fa-info-circle" />
+                    </Tippy>
+                  )}
+                </span>
+                <span className="separator" />
+              </>
+            )}
             <div className="selector">
               <div className={`select ${sheets.length === 0 ? 'disabled' : ''}`}>
                 <select

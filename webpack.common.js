@@ -1,4 +1,37 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const ThreadsPlugin = require('threads-plugin');
+
+const electronWorkerConfiguration = {
+  entry: './src/data-store/worker.ts',
+  target: 'async-node',
+  resolve: {
+    extensions: ['.ts', '.js'],
+  },
+  module: {
+    rules: [
+      {
+        test: /\.ts$/,
+        use: [{loader: 'ts-loader'}]
+      },
+      {
+        test: /\.node$/,
+        loader: 'node-loader'
+      },
+    ]
+  },
+  output: {
+    filename: 'worker.js',
+  },
+  plugins: [
+    new ThreadsPlugin({
+      target: 'electron-node-worker'
+    }),
+  ],
+  externals: {
+    'better-sqlite3': 'commonjs better-sqlite3',
+    'tiny-worker': 'tiny-worker'
+  },
+};
 
 const electronConfiguration = {
   entry: './src/app.ts',
@@ -21,8 +54,12 @@ const electronConfiguration = {
   output: {
     filename: 'main.js',
   },
+  plugins: [
+    new ThreadsPlugin(),
+  ],
   externals: {
     'better-sqlite3': 'commonjs better-sqlite3',
+    'tiny-worker': 'tiny-worker'
   },
 };
 
@@ -77,6 +114,7 @@ const reactConfiguration = {
 };
 
 module.exports = {
+  electronWorkerConfiguration,
   electronConfiguration,
   reactConfiguration
 };

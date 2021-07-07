@@ -1,7 +1,7 @@
 import {BrowserWindow, dialog, ipcMain} from 'electron';
 import Store from 'electron-store';
 import {Datastore, Result} from "./data-store/Datastore";
-import {Sqlite} from "./data-store/Sqlite";
+import {Workerize} from "./data-store/Workerize";
 
 
 export default class Main {
@@ -57,7 +57,7 @@ export default class Main {
   private static async onReady(): Promise<void> {
     Store.initRenderer();
 
-    Main.db = await Sqlite.create();
+    Main.db = await Workerize.create();
 
     ipcMain.handle('set-evaluation-mode', async (event, arg) => {
       Main.evaluationMode = !!arg;

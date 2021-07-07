@@ -11,13 +11,7 @@ function Table({evaluationMode, sheet}: {evaluationMode: boolean, sheet: Sheet})
     if (hasMore) {
       totalLabel = (
         <tr>
-          <td colSpan={sheet.columns.length} className="has-more">There are {sheet.count.toLocaleString('en-US')} rows, but only {sheet.rows.length.toLocaleString('en-US')} rows is shown. Please export the sheet to see all the rows.</td>
-        </tr>
-      );
-    } else {
-      totalLabel = (
-        <tr>
-          <td colSpan={sheet.columns.length} className="has-more">There are {sheet.count.toLocaleString('en-US')} rows.</td>
+          <td colSpan={sheet.columns.length} className="has-more">Only {sheet.rows.length.toLocaleString('en-US')} rows are previewed. Please export the sheet to see all the rows.</td>
         </tr>
       );
     }
@@ -47,14 +41,9 @@ function Table({evaluationMode, sheet}: {evaluationMode: boolean, sheet: Sheet})
         );
       })}
       </tbody>
-        <tfoot>
-          {totalLabel}
-          {evaluationMode && (
-            <tr>
-              <td colSpan={sheet.columns.length} className="has-more">In the evaluation mode, you can load up to 100 rows per CSV. Please <span className="link" onClick={() => shell.openExternal("https://superintendent.app/buy")}>get a license</span> in order to get full access.</td>
-            </tr>
-          )}
-        </tfoot>
+      <tfoot>
+        {totalLabel}
+      </tfoot>
     </table>
   )
 }

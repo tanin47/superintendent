@@ -4,37 +4,21 @@ import path from "path";
 import os from "os";
 import fs from "fs";
 import {Parser} from "csv-parse";
-import {Stringifier} from "csv-stringify";
 
-
-class Batch {
-  rowCount: number = 0;
-  values: Array<string> = [];
-
-  constructor() {
-    this.reset();
-  }
-
-  reset() {
-    this.rowCount = 0;
-    this.values = [];
-  }
-
-  add(row: string[]) {
-    for (const value of row) {
-      this.values.push(value);
-    }
-    this.rowCount++;
-  }
+export type Env = {
+  resourcePath: string,
+  platform: string
 }
 
 export class Sqlite extends Datastore {
   dbPath: string;
+  private env!: Env;
   private db!: Database;
 
-  constructor(dbPath: string) {
+  constructor(dbPath: string, env: Env) {
     super();
     this.dbPath = dbPath;
+    this.env = env;
     this.open();
   }
 
@@ -43,13 +27,11 @@ export class Sqlite extends Datastore {
     this.db.pragma("journal_mode = OFF;");
     this.db.pragma("synchronous = OFF;");
     this.db.pragma("locking_mode = EXCLUSIVE;");
-    // @ts-ignore
-    this.db.unsafeMode(true);
 
-    let prefix = process.env.SUPERINTENDENT_IS_PROD ? process.resourcesPath : '.';
+    let prefix = process.env.SUPERINTENDENT_IS_PROD ? this.env.resourcePath : '.';
     let ext = 'dylib';
 
-    switch (process.platform) {
+    switch (this.env.platform) {
       case 'darwin':
         ext = 'dylib';
         break;
@@ -60,7 +42,7 @@ export class Sqlite extends Datastore {
         ext = 'dll';
         break;
       default:
-        throw new Error(`The platform ${process.platform} is not supported.`)
+        throw new Error(`The platform ${this.env.platform} is not supported.`)
     }
 
     this.db.loadExtension(path.join(prefix, 'deps', 'ext', `ext.${ext}`));
@@ -70,32 +52,6 @@ export class Sqlite extends Datastore {
 
   close() {
     this.db.close();
-  }
-
-  static async create(): Promise<Datastore> {
-    const dbPath = path.join(os.tmpdir(), `super.sqlite.${new Date().getTime()}.db`);
-
-    return Promise.resolve(new Sqlite(dbPath));
-  }
-
-  private cachedPreparedInserts: {[rowCount: number]: Statement} = {};
-
-  private getPreparedInsert(table: string, columns: string[], batch: Batch): Statement {
-    if (this.cachedPreparedInserts[batch.rowCount]) {
-      return this.cachedPreparedInserts[batch.rowCount];
-    }
-
-    const colLine = columns.map((c) => '?').join(', ');
-    const values: string[] = [];
-
-    for (let i=0;i<batch.rowCount;i++) {
-      values.push(`(${colLine})`);
-    }
-
-    const statement = this.db.prepare(`INSERT INTO "${table}" (${columns.map((c) => `"${c}"`).join(',')}) VALUES ${values.join(',')};`);
-    this.cachedPreparedInserts[batch.rowCount] = statement;
-
-    return statement;
   }
 
   async addCsv(filePath: string, evaluationMode: boolean): Promise<Result> {
@@ -139,7 +95,7 @@ export class Sqlite extends Datastore {
 
     this.db.exec(`CREATE TABLE "${table}" AS SELECT * FROM "${virtualTable}" ${evaluationMode ? 'LIMIT 100' : ''}`);
 
-    return this.queryAllFromTable(table);
+    return this.queryAllFromTable(table, `SELECT * FROM "${table}"`);
   }
 
   async exportCsv(table: string, filePath: string): Promise<void> {
@@ -170,10 +126,10 @@ export class Sqlite extends Datastore {
     this.db.exec(`CREATE VIEW "${table}" AS ${sql}`);
     this.tables.push(table);
 
-    return Promise.resolve(this.queryAllFromTable(table));
+    return Promise.resolve(this.queryAllFromTable(table, sql));
   }
 
-  private queryAllFromTable(table: string): Result {
+  private queryAllFromTable(table: string, sql: string): Result {
     const numOfRowsResult = this.db.prepare(`SELECT COUNT(*) AS number_of_rows FROM "${table}"`).all();
     const numOfRows = numOfRowsResult.length == 0 ? 0 : numOfRowsResult[0].number_of_rows;
 
@@ -185,6 +141,7 @@ export class Sqlite extends Datastore {
 
     return {
       name: table,
+      sql,
       columns,
       rows,
       count: numOfRows,
