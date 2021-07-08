@@ -2,6 +2,9 @@ import {BrowserWindow, dialog, ipcMain} from 'electron';
 import Store from 'electron-store';
 import {Datastore, Result} from "./data-store/Datastore";
 import {Workerize} from "./data-store/Workerize";
+import {Sqlite} from "./data-store/Sqlite";
+import path from "path";
+import os from "os";
 
 
 export default class Main {
@@ -58,6 +61,7 @@ export default class Main {
     Store.initRenderer();
 
     Main.db = await Workerize.create();
+    // Main.db = new Sqlite(path.join(os.tmpdir(), `super.sqlite.${new Date().getTime()}.db`), {resourcePath: process.resourcesPath, platform: process.platform});
 
     ipcMain.handle('set-evaluation-mode', async (event, arg) => {
       Main.evaluationMode = !!arg;

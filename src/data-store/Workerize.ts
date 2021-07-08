@@ -16,7 +16,8 @@ export class Workerize extends Datastore {
 
     let prefix = process.env.SUPERINTENDENT_IS_PROD ? path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'prod') : '.';
 
-    const worker = await spawn(new Worker(path.join(prefix, 'worker')));
+
+    const worker = await spawn(new Worker(path.join(prefix, 'worker.js')));
     await worker.init(dbPath, {resourcePath: process.resourcesPath, platform: process.platform});
     return Promise.resolve(new Workerize(worker));
   }

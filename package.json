@@ -25,7 +25,7 @@
       "entitlementsInherit": "electron-builder/build/entitlements.mac.plist"
     },
     "files": [
-      "dist",
+      "dist/prod",
       "package.json",
       "!.git{/*}",
       "!.idea{/*}",
@@ -44,7 +44,8 @@
       "./deps/ext/ext.so"
     ],
     "asarUnpack": [
-      "dist/prod/worker.js"
+      "dist/prod/worker.js",
+      "node_modules"
     ]
   },
   "author": "Tanin Na Nakorn",

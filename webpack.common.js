@@ -28,8 +28,7 @@ const electronWorkerConfiguration = {
     }),
   ],
   externals: {
-    'better-sqlite3': 'commonjs better-sqlite3',
-    'tiny-worker': 'tiny-worker'
+    'better-sqlite3': 'commonjs better-sqlite3'
   },
 };
 
@@ -59,7 +58,6 @@ const electronConfiguration = {
   ],
   externals: {
     'better-sqlite3': 'commonjs better-sqlite3',
-    'tiny-worker': 'tiny-worker'
   },
 };
 
