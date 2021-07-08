@@ -13,5 +13,6 @@ out
 *.lib
 *.obj
 *.so
+yarn.lock
 
 out/
