@@ -46,7 +46,8 @@
     "asarUnpack": [
       "dist/prod/worker.js",
       "node_modules"
-    ]
+    ],
+    "afterSign": "scripts/notarize.js"
   },
   "author": "Tanin Na Nakorn",
   "devDependencies": {
