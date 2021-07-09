@@ -43,6 +43,17 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
     setIsResizing(true);
   };
 
+  const addNewSheetCallback = React.useCallback(
+    (sheet: Sheet | null): void => {
+      if (!sheet) { return; }
+      setSheets((prevSheets) => {
+        setSelectedSheetIndex(prevSheets.length);
+        return [...prevSheets, sheet]
+      });
+    },
+    [setSheets, setSelectedSheetIndex]
+  );
+
   const submitHandler = React.useMemo(
     () => () => {
       if (isQueryLoading) { return; }
@@ -51,10 +62,7 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
 
       setIsQueryLoading(true);
       query(value)
-        .then((sheet) => {
-          setSheets([...sheets, sheet]);
-          setSelectedSheetIndex(sheets.length);
-        })
+        .then((sheet) => addNewSheetCallback(sheet))
         .catch((err) => {
           dialog.showError('Found an error!', err.message);
         })
@@ -62,7 +70,7 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
           setIsQueryLoading(false);
         });
     },
-    [setIsQueryLoading, setSheets, setSelectedSheetIndex, sheets, isQueryLoading, editorRef]
+    [setIsQueryLoading, setSheets, setSelectedSheetIndex, sheets, isQueryLoading, editorRef, addNewSheetCallback]
   );
 
   React.useEffect(() => {
@@ -117,11 +125,7 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
               onClick={() => {
                 setIsAddCsvLoading(true);
                 addCsv()
-                  .then((sheet) => {
-                    if (!sheet) { return; }
-                    setSheets([...sheets, sheet]);
-                    setSelectedSheetIndex(sheets.length);
-                  })
+                  .then((sheet) => addNewSheetCallback(sheet))
                   .catch((err) => {
                     dialog.showError('Found an error!', err.message);
                   })

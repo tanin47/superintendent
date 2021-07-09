@@ -1,6 +1,5 @@
 import React from 'react';
 import {Sheet} from './types';
-import {shell} from 'electron';
 import {Chart, ChartType, registerables} from 'chart.js';
 
 function Table({evaluationMode, sheet}: {evaluationMode: boolean, sheet: Sheet}): JSX.Element {
@@ -66,24 +65,27 @@ function Graph({type, sheet}: {type: ChartType, sheet: Sheet}): JSX.Element {
 
       let colorOptionsMap: {backgroundColor?: string[], borderColor?: string} = {};
 
-      if (type === 'pie') {
-        colorOptionsMap = {backgroundColor: sheet.rows.map(() => generateColor())};
-      } else {
-        colorOptionsMap = {
-          borderColor: '#C71585',
-          backgroundColor: sheet.rows.map(() => '#C71585'),
-        }
-      }
 
       const instance = new Chart(ctx, {
         type: type,
         data: {
-          labels: sheet.rows.map((r) => r[sheet.columns[0]]),
-          datasets: [{
-            label: sheet.columns[1],
-            data: sheet.rows.map((r) => parseFloat(r[sheet.columns[1]])),
-            ...colorOptionsMap
-          }]
+          labels: sheet.rows.map((r) => r[0]),
+          datasets: sheet.columns.slice(1).map((column, index) => {
+            if (type === 'pie') {
+              colorOptionsMap = {backgroundColor: sheet.rows.map(() => generateColor())};
+            } else {
+              const color = generateColor();
+              colorOptionsMap = {
+                borderColor: color,
+                backgroundColor: sheet.rows.map(() => color),
+              }
+            }
+            return {
+              label: column,
+              data: sheet.rows.map((r) => parseFloat(r[index + 1])),
+              ...colorOptionsMap
+            };
+          })
         },
         options: {
           maintainAspectRatio: false,

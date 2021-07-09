@@ -64,6 +64,7 @@ Testing
 3. Test importing quote.csv
 4. Test importing height_weight.csv + user.csv and do a join.
 5. Test exporting a table especially windows
+6. Test evaluation mode
 
 License for testing on prod
 ----------------------------
