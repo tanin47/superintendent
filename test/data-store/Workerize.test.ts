@@ -1,5 +1,4 @@
 import fs from 'fs';
-import {Sqlite} from "../../src/data-store/Sqlite";
 import path from "path";
 import os from "os";
 import {Workerize} from "../../src/data-store/Workerize";
@@ -7,21 +6,16 @@ import {Workerize} from "../../src/data-store/Workerize";
 describe('Workerize', () => {
   let workerize: Workerize;
   let exportedPath: string;
-  let dbPath: string;
 
   beforeEach(async () => {
     exportedPath = path.join(os.tmpdir(), `exported.${new Date().getTime()}-${Math.random()}.csv`);
-    dbPath = path.join(os.tmpdir(), `test.${new Date().getTime()}-${Math.random()}.db`);
-    workerize = (await Workerize.create(dbPath)) as Workerize;
+    workerize = (await Workerize.create()) as Workerize;
   });
 
   afterEach(async () =>{
     await workerize.close();
     if (fs.existsSync(exportedPath)) {
       fs.unlinkSync(exportedPath);
-    }
-    if (fs.existsSync(dbPath)) {
-      fs.unlinkSync(dbPath);
     }
   });
 

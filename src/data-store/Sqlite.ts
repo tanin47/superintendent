@@ -11,19 +11,17 @@ export type Env = {
 }
 
 export class Sqlite extends Datastore {
-  dbPath: string;
   private env!: Env;
   private db!: Database;
 
-  constructor(dbPath: string, env: Env) {
+  constructor(env: Env) {
     super();
-    this.dbPath = dbPath;
     this.env = env;
     this.open();
   }
 
   private open() {
-    this.db = sqlite(this.dbPath);
+    this.db = sqlite(':memory:');
     this.db.pragma("journal_mode = OFF;");
     this.db.pragma("synchronous = OFF;");
     this.db.pragma("locking_mode = EXCLUSIVE;");

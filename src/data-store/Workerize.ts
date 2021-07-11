@@ -1,6 +1,5 @@
 import {Datastore, Result} from './Datastore';
 import path from "path";
-import os from "os";
 import {spawn, Thread, Worker} from 'threads';
 
 export class Workerize extends Datastore {
@@ -11,14 +10,11 @@ export class Workerize extends Datastore {
     this.worker = worker;
   }
 
-  static async create(dbPath: string | null = null): Promise<Datastore> {
-    dbPath ||= path.join(os.tmpdir(), `super.sqlite.${new Date().getTime()}.db`);
-
+  static async create(): Promise<Datastore> {
     let prefix = process.env.SUPERINTENDENT_IS_PROD ? path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'prod') : '.';
 
-
     const worker = await spawn(new Worker(path.join(prefix, 'worker')));
-    await worker.init(dbPath, {resourcePath: process.resourcesPath, platform: process.platform});
+    await worker.init({resourcePath: process.resourcesPath, platform: process.platform});
     return Promise.resolve(new Workerize(worker));
   }
 

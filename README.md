@@ -51,10 +51,22 @@ TODO
 - [x] Restore query of the table
 
 v2.1.0  
-- [ ] Loading dialog
+- [ ] Delete table when closing a sheet
+- [ ] Loading dialog when adding or removing CSV with a cancel button
 - [ ] Double click and open files immediately
+- [ ] Drop a file on the app
+- [ ] Support adding multiple CSVs  
 - [ ] Save and open workspace
+- [ ] Disable toggling developer tool
 
+v2.2.0
+- [ ] Sort column
+- [ ] Copy column as CSV
+- [ ] Infinite scrolling
+- [ ] Start collecting payments
+- [ ] Recruit a few users to post and upvote on hacker news
+  - Ensure they are happy and ask about how frequently they use it
+- [ ] After 2.2.0, we'll post on product hunt
 
 Testing
 --------

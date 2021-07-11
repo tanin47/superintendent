@@ -5,12 +5,12 @@ import {Result} from "./Datastore";
 let sqlite: Sqlite | null;
 
 expose({
-  init(dbPath: string, env: Env): void {
+  init(env: Env): void {
     if (sqlite != null) {
       sqlite.close();
       sqlite = null;
     }
-    sqlite = new Sqlite(dbPath, env);
+    sqlite = new Sqlite(env);
   },
   async addCsv(filePath: string, evaluationMode: boolean): Promise<Result> {
     return sqlite!.addCsv(filePath, evaluationMode);
