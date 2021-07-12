@@ -73,6 +73,10 @@ export default class Main {
       return Main.wrapResponse(Main.db.query(arg));
     });
 
+    ipcMain.handle('drop', async (event, arg) => {
+      return Main.wrapResponse(Main.db.drop(arg));
+    });
+
     ipcMain.handle('add-csv', async () => {
       return Main.wrapResponse(Main.addCsv());
     });

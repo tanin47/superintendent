@@ -51,13 +51,16 @@ TODO
 - [x] Restore query of the table
 
 v2.1.0  
-- [ ] Delete table when closing a sheet
+- [x] Load in-memory
+- [x] Delete table when closing a sheet
 - [ ] Loading dialog when adding or removing CSV with a cancel button
 - [ ] Double click and open files immediately
 - [ ] Drop a file on the app
 - [ ] Support adding multiple CSVs  
 - [ ] Save and open workspace
-- [ ] Disable toggling developer tool
+  - Use sqlite backup api
+- [ ] Make the menu. Move vim/normal to menu.
+  - Disable toggling developer tool
 
 v2.2.0
 - [ ] Sort column
@@ -67,6 +70,19 @@ v2.2.0
 - [ ] Recruit a few users to post and upvote on hacker news
   - Ensure they are happy and ask about how frequently they use it
 - [ ] After 2.2.0, we'll post on product hunt
+  
+vmaybe
+- [ ] Show the loading time
+
+Requests from actual users
+---------------------------
+
+- [ ] Choose columns before importing.
+  - Good:
+    - We can reformat dates (important)
+    - We can change some columns to float or int
+  - Bad:
+    - A workaround is to write SQL to transform it. It's not really a blocker.
 
 Testing
 --------

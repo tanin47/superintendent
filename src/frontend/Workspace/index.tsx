@@ -1,6 +1,6 @@
 import React, { ReactElement } from 'react';
 import './index.scss';
-import {addCsv, downloadCsv, query, reloadHtml} from '../api';
+import {addCsv, downloadCsv, drop, query, reloadHtml} from '../api';
 import {EditorMode, PresentationType, Sheet} from './types';
 import SheetSection from './SheetSection';
 import Button from './Button';
@@ -53,6 +53,19 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
     },
     [setSheets, setSelectedSheetIndex]
   );
+
+  const deleteSheetCallback = React.useCallback(
+    (deletedSheetIndex: number): void => {
+      setSheets((prevSheets) => {
+        drop(prevSheets[deletedSheetIndex].name)
+          .then(() => {
+            // don't care.
+          });
+        return prevSheets.filter((sheet, index) => index !== deletedSheetIndex);
+      });
+    },
+    [setSheets]
+  )
 
   const submitHandler = React.useMemo(
     () => () => {
@@ -269,7 +282,7 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
           sheets={sheets}
           selectedSheetIndex={selectedSheetIndex}
           onSheetSelected={(index) => setSelectedSheetIndex(index)}
-          onSheetDeleted={(deletedIndex) => setSheets(sheets.filter((sheet, index) => index !== deletedIndex))} />
+          onSheetDeleted={(deletedIndex) => deleteSheetCallback(deletedIndex)} />
       </div>
     </div>
   );

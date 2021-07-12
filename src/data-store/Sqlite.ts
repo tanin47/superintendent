@@ -119,9 +119,22 @@ export class Sqlite extends Datastore {
     return Promise.resolve();
   }
 
+  async drop(table: string): Promise<void> {
+    try {
+      this.db.exec(`DROP TABLE IF EXISTS "${table}"`);
+
+      for (let i=0;i<this.tables.length;i++) {
+        if (table === this.tables[i]) {
+          this.tables.splice(i, 1);
+          break;
+        }
+      }
+    } catch (e) { }
+  }
+
   async query(sql: string): Promise<Result> {
     const table = this.makeQueryTableName();
-    this.db.exec(`CREATE VIEW "${table}" AS ${sql}`);
+    this.db.exec(`CREATE TABLE "${table}" AS ${sql}`);
     this.tables.push(table);
 
     return Promise.resolve(this.queryAllFromTable(table, sql));

@@ -141,6 +141,14 @@ export function downloadCsv(table: string): Promise<string> {
     });
 }
 
+export function drop(table: string): Promise<void> {
+  return ipcRenderer
+    .invoke('drop', table)
+    .then((result) => {
+      // don't care
+    });
+}
+
 export function reloadHtml(): void {
   ipcRenderer.send('reload-html');
 }

@@ -20,6 +20,7 @@ export abstract class Datastore {
   abstract exportCsv(table: string, filePath: string): Promise<void>;
 
   abstract query(sql: string): Promise<Result>;
+  abstract drop(table: string): Promise<void>;
 
   static makePreview(columns: Column[], rows: Row[]): Array<Row> {
     let numRows = 0;

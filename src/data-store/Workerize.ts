@@ -33,4 +33,8 @@ export class Workerize extends Datastore {
   async query(sql: string): Promise<Result> {
     return this.worker.query(sql);
   }
+
+  async drop(table: string): Promise<void> {
+    return this.worker.drop(table);
+  }
 }

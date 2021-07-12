@@ -20,5 +20,8 @@ expose({
   },
   async query(sql: string): Promise<Result> {
     return sqlite!.query(sql);
+  },
+  async drop(table: string): Promise<void> {
+    return sqlite!.drop(table);
   }
 })
