@@ -34,3 +34,55 @@ html {
   text-decoration: underline;
   cursor: pointer;
 }
+
+.modal {
+  position: fixed;
+  background-color: white;
+  top: 50%;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  transform: translate(-50%, -50%);
+  border-radius: 5px;
+  padding: 20px;
+  color: #333;
+  width: 550px;
+
+  font-family: 'Dosis', sans-serif !important;
+  * {
+    font-family: 'Dosis', sans-serif !important;
+  }
+
+  button {
+    border: 0;
+    border-radius: 5px;
+    background-color: #333;
+    color: #fff;
+    padding: 8px 12px;
+    font-size: 16px;
+    cursor: pointer;
+
+    &.main {
+      background-color: #228B22;
+    }
+
+    &.cancel {
+      background-color: #B22222;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.modal-overlay {
+  z-index: 65000;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,.7);
+}

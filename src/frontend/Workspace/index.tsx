@@ -1,11 +1,10 @@
-import React, { ReactElement } from 'react';
+import React, {ReactElement} from 'react';
 import './index.scss';
-import {addCsv, downloadCsv, drop, query, reloadHtml} from '../api';
+import {downloadCsv, drop, query, reloadHtml} from '../api';
 import {EditorMode, PresentationType, Sheet} from './types';
 import SheetSection from './SheetSection';
 import Button from './Button';
-import Editor from './Editor';
-import {Ref as EditorRef} from './Editor';
+import Editor, {Ref as EditorRef} from './Editor';
 import Store from "electron-store";
 import * as dialog from './dialog';
 import {formatTotal} from "./helper";
@@ -13,6 +12,7 @@ import Tippy from '@tippyjs/react';
 import 'tippy.js/dist/tippy.css';
 import 'tippy.js/themes/material.css';
 import {shell} from "electron";
+import AddCsv from "./AddCsvModal";
 
 export default function Workspace({evaluationMode}: {evaluationMode: boolean}): ReactElement {
   const store = React.useMemo(() => new Store(), []);
@@ -25,11 +25,11 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
   }, [store, editorMode])
 
   const [sheets, setSheets] = React.useState<Array<Sheet>>([]);
+  const [shouldOpenAddCsv, setShouldOpenAddCsv] = React.useState<boolean>(false);
   const [selectedSheetIndex, setSelectedSheetIndex] = React.useState<number>(0);
   const editorRef = React.createRef<EditorRef>();
 
   const [isQueryLoading, setIsQueryLoading] = React.useState<boolean>(false);
-  const [isAddCsvLoading, setIsAddCsvLoading] = React.useState<boolean>(false);
   const [isDownloadCsvLoading, setIsDownloadCsvLoading] = React.useState<boolean>(false);
 
   const [isResizing, setIsResizing] = React.useState<boolean>(false);
@@ -131,22 +131,18 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
 
   return (
     <div id="workspace">
+      <AddCsv
+        isOpen={shouldOpenAddCsv}
+        onClose={() => setShouldOpenAddCsv(false)}
+        onAdded={(sheet) => addNewSheetCallback(sheet)}
+      />
       <div className="toolbarSection top">
         <div className="inner">
           <div className="left">
             <Button
               onClick={() => {
-                setIsAddCsvLoading(true);
-                addCsv()
-                  .then((sheet) => addNewSheetCallback(sheet))
-                  .catch((err) => {
-                    dialog.showError('Found an error!', err.message);
-                  })
-                  .finally(() => {
-                    setIsAddCsvLoading(false);
-                  });
+                setShouldOpenAddCsv(true);
               }}
-              isLoading={isAddCsvLoading}
               icon={<i className="fas fa-file-upload"/>}>
               Add CSV
             </Button>
@@ -252,6 +248,7 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
                       downloadCsv(sheets[selectedSheetIndex].name)
                           .then((filePath) => {
                             if (!filePath) { return; }
+
                             dialog.showSuccess('Exported!', `The sheet has been exported to: ${filePath}`);
                           })
                           .catch((err) => {

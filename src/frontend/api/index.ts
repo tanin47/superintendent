@@ -110,9 +110,9 @@ export function query(q: string): Promise<Sheet> {
     });
 }
 
-export function addCsv(): Promise<Sheet | null> {
+export function addCsv(path: string): Promise<Sheet | null> {
   return ipcRenderer
-    .invoke('add-csv')
+    .invoke('add-csv', path)
     .then((result) => {
       if (result.success) {
         if (!result.data) {

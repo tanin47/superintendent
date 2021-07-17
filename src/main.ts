@@ -1,10 +1,7 @@
 import {BrowserWindow, dialog, ipcMain} from 'electron';
 import Store from 'electron-store';
-import {Datastore, Result} from "./data-store/Datastore";
+import {Datastore} from "./data-store/Datastore";
 import {Workerize} from "./data-store/Workerize";
-import {Sqlite} from "./data-store/Sqlite";
-import path from "path";
-import os from "os";
 
 
 export default class Main {
@@ -14,22 +11,6 @@ export default class Main {
   static db: Datastore;
 
   static evaluationMode: boolean = true;
-
-  private static async addCsv(): Promise<Result | null> {
-    const files = dialog.showOpenDialogSync(
-      this.mainWindow,
-      {
-        properties: ['openFile'],
-        filters: [{name: 'All files', extensions: ['*']}]
-      }
-    );
-
-    if (!files || files.length === 0) {
-      return null;
-    }
-
-    return Main.db.addCsv(files[0]!, Main.evaluationMode);
-  }
 
   private static async downloadCsv(table: string): Promise<string | null> {
     const file = dialog.showSaveDialogSync(
@@ -61,7 +42,6 @@ export default class Main {
     Store.initRenderer();
 
     Main.db = await Workerize.create();
-    // Main.db = new Sqlite(path.join(os.tmpdir(), `super.sqlite.${new Date().getTime()}.db`), {resourcePath: process.resourcesPath, platform: process.platform});
 
     ipcMain.handle('set-evaluation-mode', async (event, arg) => {
       Main.evaluationMode = !!arg;
@@ -77,8 +57,8 @@ export default class Main {
       return Main.wrapResponse(Main.db.drop(arg));
     });
 
-    ipcMain.handle('add-csv', async () => {
-      return Main.wrapResponse(Main.addCsv());
+    ipcMain.handle('add-csv', async (event, arg) => {
+      return Main.wrapResponse(Main.db.addCsv(arg, Main.evaluationMode));
     });
 
     ipcMain.handle('download-csv', async (event, arg) => {

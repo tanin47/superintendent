@@ -6,7 +6,9 @@ export function showError(title: string, message: string): void {
     text: message,
     icon: 'error',
     confirmButtonText: 'Close',
-    confirmButtonColor: '#333'
+    confirmButtonColor: '#333',
+    allowOutsideClick: false,
+    allowEscapeKey: false
   });
 }
 
@@ -16,6 +18,8 @@ export function showSuccess(title: string, message: string): void {
     text: message,
     icon: 'success',
     confirmButtonText: 'Close',
-    confirmButtonColor: '#333'
+    confirmButtonColor: '#333',
+    allowOutsideClick: false,
+    allowEscapeKey: false
   });
 }
