@@ -4,7 +4,7 @@ import './AddCsvModal.scss';
 import {addCsv} from "../api";
 import {Sheet} from "./types";
 
-type Format = 'csv' | 'tsv' | 'psv';
+type Format = 'comma' | 'tab' | 'pipe' | 'semicolon' | 'colon';
 type Status = 'draft' | 'loading' | 'added' | 'errored';
 
 type File = {
@@ -14,7 +14,7 @@ type File = {
   status: Status
 };
 
-const MAX_LENGTH = 50;
+const MAX_LENGTH = 40;
 
 function trimFilename(name: string): string {
   const length = MAX_LENGTH - 3;
@@ -68,9 +68,11 @@ function FileItem({
               }}
               disabled={disabled}
             >
-              <option value="csv">CSV</option>
-              <option value="tsv">TSV</option>
-              <option value="psv">PSV</option>
+              <option value="comma">Comma (,)</option>
+              <option value="tab">Tab</option>
+              <option value="pipe">Pipe (|)</option>
+              <option value="semicolon">Semicolon (;)</option>
+              <option value="colon">Colon (:)</option>
             </select>
           </div>
         </div>
@@ -117,7 +119,7 @@ export default function AddCsv({
       });
 
       try {
-        const sheet = await addCsv(file.path);
+        const sheet = await addCsv(file.path, file.format);
         if (sheet) {
           onAdded(sheet);
         }
@@ -153,10 +155,19 @@ export default function AddCsv({
 
     const newFiles: File[] = [];
     for (const file of fileList) {
+
+      let format: Format = 'comma';
+
+      if (file.name.endsWith('.tsv')) {
+        format = 'tab';
+      } else if (file.name.endsWith('.psv')) {
+        format = 'pipe';
+      }
+
       newFiles.push({
         name: trimFilename(file.name),
         path: file.path,
-        format: 'csv',
+        format: format,
         status: 'draft',
       });
     }

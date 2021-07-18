@@ -52,7 +52,7 @@ export class Sqlite extends Datastore {
     this.db.close();
   }
 
-  async addCsv(filePath: string, evaluationMode: boolean): Promise<Result> {
+  async addCsv(filePath: string, separator: string, evaluationMode: boolean): Promise<Result> {
     const table = this.getTableName(path.parse(filePath).name);
     this.tables.push(table);
 
@@ -61,7 +61,7 @@ export class Sqlite extends Datastore {
       .pipe(new Parser({
         bom: true,
         trim: true,
-        delimiter: ',',
+        delimiter: separator,
         skipEmptyLines: true
       }));
 
@@ -89,7 +89,7 @@ export class Sqlite extends Datastore {
     }
 
     const virtualTable = this.getTableName("virtual_" + table);
-    this.db.exec(`CREATE VIRTUAL TABLE "${virtualTable}" USING csv(filename='${filePath}', header=true, schema='${createTable!}')`);
+    this.db.exec(`CREATE VIRTUAL TABLE "${virtualTable}" USING csv(filename='${filePath}', header=true, schema='${createTable!}', separator='${separator}')`);
 
     this.db.exec(`CREATE TABLE "${table}" AS SELECT * FROM "${virtualTable}" ${evaluationMode ? 'LIMIT 100' : ''}`);
 

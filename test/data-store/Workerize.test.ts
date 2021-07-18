@@ -34,7 +34,7 @@ describe('Workerize', () => {
     });
 
     it('only loads 100 rows because of the evaluation mode', async () => {
-      await workerize.addCsv(evaluationTestCsvFilePath, true);
+      await workerize.addCsv(evaluationTestCsvFilePath, ',', true);
 
       const result = await workerize.query("SELECT * FROM evaluation_test");
 
@@ -43,7 +43,7 @@ describe('Workerize', () => {
     })
 
     it('loads all rows', async () => {
-      await workerize.addCsv(evaluationTestCsvFilePath, false);
+      await workerize.addCsv(evaluationTestCsvFilePath, ',', false);
 
       const result = await workerize.query("SELECT * FROM evaluation_test");
 
@@ -52,13 +52,40 @@ describe('Workerize', () => {
     })
   });
 
-  describe('test preview', () => {
-    // TODO: write a few test.
+  describe('different formats', () => {
+    const formats = [
+      {filename: 'colon.csv', separator: ':'},
+      {filename: 'semicolon.csv', separator: ';'},
+      {filename: 'pipe.psv', separator: '|'},
+      {filename: 'tab.tsv', separator: '\t'},
+    ];
+
+    for (const format of formats) {
+      it(`Import ${format.filename}`, async () => {
+        await workerize.addCsv(`./test/data-store/csv-samples/${format.filename}`, format.separator, false);
+
+        const sql = `SELECT * FROM ${format.filename.split('.')[0]}`;
+        const result = await workerize.query(sql);
+
+        expect(result).toEqual(
+          {
+            count: 2,
+            columns: ['firstname', 'lastname', 'email'],
+            name: 'query_1',
+            sql,
+            rows: [
+              ['Harmonia', 'Waite', 'Harmonia.Waite@yopmail.com'],
+              ['Joy', `something${format.separator}another`, 'Joy.Haerr@yopmail.com']
+            ]
+          }
+        );
+      });
+    }
   });
 
   describe('import/export', () => {
     it('import bom', async () => {
-      await workerize.addCsv('./test/data-store/csv-samples/bom.csv', false);
+      await workerize.addCsv('./test/data-store/csv-samples/bom.csv', ',', false);
       const result = await workerize.query("SELECT * FROM bom");
 
       expect(result).toEqual(
@@ -78,7 +105,7 @@ describe('Workerize', () => {
     });
 
     it('import unicode', async () => {
-      await workerize.addCsv('./test/data-store/csv-samples/unicode.csv', false);
+      await workerize.addCsv('./test/data-store/csv-samples/unicode.csv', ',', false);
       const result = await workerize.query("SELECT * FROM unicode");
 
       expect(result).toEqual(
@@ -97,7 +124,7 @@ describe('Workerize', () => {
     });
 
     it('import quote', async () => {
-      await workerize.addCsv('./test/data-store/csv-samples/quote.csv', false);
+      await workerize.addCsv('./test/data-store/csv-samples/quote.csv', ',', false);
       const result = await workerize.query("SELECT * FROM quote");
 
       expect(result).toEqual(

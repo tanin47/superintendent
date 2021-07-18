@@ -209,7 +209,7 @@ static int csv_append(CsvReader *p, char c){
 ** Return 0 at EOF or on OOM.  On EOF, the p->cTerm character will have
 ** been set to EOF.
 */
-static char *csv_read_one_field(CsvReader *p){
+static char *csv_read_one_field(CsvReader *p, char separator){
   int c;
   p->n = 0;
   c = csv_getc(p);
@@ -231,7 +231,7 @@ static char *csv_read_one_field(CsvReader *p){
             continue;
           }
         }
-        if( (c==',' && pc=='"')
+        if( (c==separator && pc=='"')
          || (c=='\n' && pc=='"')
          || (c=='\n' && pc=='\r' && ppc=='"')
          || (c==EOF && pc=='"')
@@ -267,11 +267,11 @@ static char *csv_read_one_field(CsvReader *p){
         if( (c&0xff)==0xbf ){
           p->bNotFirst = 1;
           p->n = 0;
-          return csv_read_one_field(p);
+          return csv_read_one_field(p, separator);
         }
       }
     }
-    while( c>',' || (c!=EOF && c!=',' && c!='\n') ){
+    while(c!=EOF && c!=separator && c!='\n'){
       if( csv_append(p, (char)c) ) return 0;
       c = csv_getc(p);
     }
@@ -312,6 +312,7 @@ typedef struct CsvTable {
   long iStart;                    /* Offset to start of data in zFilename */
   int nCol;                       /* Number of columns in the CSV file */
   unsigned int tstFlags;          /* Bit values used for testing */
+  char separator;
 } CsvTable;
 
 /* Allowed values for tstFlags */
@@ -503,12 +504,13 @@ static int csvtabConnect(
   CsvReader sRdr;            /* A CSV file reader used to store an error
                              ** message and/or to count the number of columns */
   static const char *azParam[] = {
-     "filename", "data", "schema",
+     "filename", "data", "schema", "separator",
   };
-  char *azPValue[3];         /* Parameter values */
+  char *azPValue[4];         /* Parameter values */
 # define CSV_FILENAME (azPValue[0])
 # define CSV_DATA     (azPValue[1])
 # define CSV_SCHEMA   (azPValue[2])
+# define CSV_SEPARATOR   (azPValue[3])
 
 
   assert( sizeof(azPValue)==sizeof(azParam) );
@@ -530,11 +532,6 @@ static int csvtabConnect(
       }
       bHeader = b;
     }else
-#ifdef SQLITE_TEST
-    if( (zValue = csv_parameter("testflags",9,z))!=0 ){
-      tstFlags = (unsigned int)atoi(zValue);
-    }else
-#endif
     if( (zValue = csv_parameter("columns",7,z))!=0 ){
       if( nCol>0 ){
         csv_errmsg(&sRdr, "more than one 'columns' parameter");
@@ -564,51 +561,16 @@ static int csvtabConnect(
   pNew = sqlite3_malloc( sizeof(*pNew) );
   *ppVtab = (sqlite3_vtab*)pNew;
   if( pNew==0 ) goto csvtab_connect_oom;
+
   memset(pNew, 0, sizeof(*pNew));
-  if( CSV_SCHEMA==0 ){
-    sqlite3_str *pStr = sqlite3_str_new(0);
-    char *zSep = "";
-    int iCol = 0;
-    sqlite3_str_appendf(pStr, "CREATE TABLE x(");
-    if( nCol<0 && bHeader<1 ){
-      nCol = 0;
-      do{
-        csv_read_one_field(&sRdr);
-        nCol++;
-      }while( sRdr.cTerm==',' );
-    }
-    if( nCol>0 && bHeader<1 ){
-      for(iCol=0; iCol<nCol; iCol++){
-        sqlite3_str_appendf(pStr, "%sc%d TEXT", zSep, iCol);
-        zSep = ",";
-      }
-    }else{
-      do{
-        char *z = csv_read_one_field(&sRdr);
-        if( (nCol>0 && iCol<nCol) || (nCol<0 && bHeader) ){
-          sqlite3_str_appendf(pStr,"%s\"%w\" TEXT", zSep, z);
-          zSep = ",";
-          iCol++;
-        }
-      }while( sRdr.cTerm==',' );
-      if( nCol<0 ){
-        nCol = iCol;
-      }else{
-        while( iCol<nCol ){
-          sqlite3_str_appendf(pStr,"%sc%d TEXT", zSep, ++iCol);
-          zSep = ",";
-        }
-      }
-    }
-    pNew->nCol = nCol;
-    sqlite3_str_appendf(pStr, ")");
-    CSV_SCHEMA = sqlite3_str_finish(pStr);
-    if( CSV_SCHEMA==0 ) goto csvtab_connect_oom;
-  }else if( nCol<0 ){
+
+  pNew->separator = CSV_SEPARATOR[0];
+
+  if( nCol<0 ){
     do{
-      csv_read_one_field(&sRdr);
+      csv_read_one_field(&sRdr, pNew->separator);
       pNew->nCol++;
-    }while( sRdr.cTerm==',' );
+    }while( sRdr.cTerm==pNew->separator );
   }else{
     pNew->nCol = nCol;
   }
@@ -732,7 +694,7 @@ static int csvtabNext(sqlite3_vtab_cursor *cur){
   int i = 0;
   char *z;
   do{
-    z = csv_read_one_field(&pCur->rdr);
+    z = csv_read_one_field(&pCur->rdr, pTab->separator);
     if( z==0 ){
       break;
     }
@@ -750,7 +712,7 @@ static int csvtabNext(sqlite3_vtab_cursor *cur){
       memcpy(pCur->azVal[i], z, pCur->rdr.n+1);
       i++;
     }
-  }while( pCur->rdr.cTerm==',' );
+  }while( pCur->rdr.cTerm==pTab->separator );
   if( z==0 || (pCur->rdr.cTerm==EOF && i<pTab->nCol) ){
     pCur->iRowid = -1;
   }else{

@@ -57,8 +57,20 @@ export default class Main {
       return Main.wrapResponse(Main.db.drop(arg));
     });
 
-    ipcMain.handle('add-csv', async (event, arg) => {
-      return Main.wrapResponse(Main.db.addCsv(arg, Main.evaluationMode));
+    ipcMain.handle('add-csv', async (event, path, format) => {
+      let separator = ',';
+
+      if (format === 'tab') {
+        separator = '\t';
+      } else if (format === 'pipe') {
+        separator = '|';
+      } else if (format === 'semicolon') {
+        separator = ';';
+      } else if (format === 'colon') {
+        separator = ':';
+      }
+
+      return Main.wrapResponse(Main.db.addCsv(path, separator, Main.evaluationMode));
     });
 
     ipcMain.handle('download-csv', async (event, arg) => {
