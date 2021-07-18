@@ -90,8 +90,8 @@ export class Sqlite extends Datastore {
 
     const virtualTable = this.getTableName("virtual_" + table);
     this.db.exec(`CREATE VIRTUAL TABLE "${virtualTable}" USING csv(filename='${filePath}', header=true, schema='${createTable!}', separator='${separator}')`);
-
     this.db.exec(`CREATE TABLE "${table}" AS SELECT * FROM "${virtualTable}" ${evaluationMode ? 'LIMIT 100' : ''}`);
+    this.db.exec(`DROP TABLE "${virtualTable}"`);
 
     return this.queryAllFromTable(table, `SELECT * FROM "${table}"`);
   }

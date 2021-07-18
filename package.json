@@ -1,6 +1,6 @@
 {
   "name": "superintendent",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Write SQLs on CSVs",
   "license": "UNLICENSED",
   "main": "dist/prod/main.js",
