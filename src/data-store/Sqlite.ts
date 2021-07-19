@@ -1,7 +1,6 @@
 import {Datastore, Result} from './Datastore';
 import sqlite, {Database, Statement} from 'better-sqlite3';
 import path from "path";
-import os from "os";
 import fs from "fs";
 import {Parser} from "csv-parse";
 

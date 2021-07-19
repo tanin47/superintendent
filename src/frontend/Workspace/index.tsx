@@ -199,6 +199,19 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
               <>
                 <span className="total">
                   {formatTotal(sheets[selectedSheetIndex].count)}
+                  {sheets[selectedSheetIndex].rows.length < sheets[selectedSheetIndex].count &&
+                    <Tippy
+                      theme="material"
+                      interactive
+                      content={
+                        <span className="tooltip">
+                          Only {sheets[selectedSheetIndex].rows.length.toLocaleString('en-US')} rows are previewed. Please export the sheet to see all the rows.
+                        </span>
+                      }
+                    >
+                      <i className="fas fa-info-circle" />
+                    </Tippy>
+                  }
                   {evaluationMode && (
                     <Tippy
                       theme="material"
