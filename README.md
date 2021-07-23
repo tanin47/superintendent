@@ -57,23 +57,32 @@ v2.1.0
 - [x] Drop a file on the app
 - [x] Support adding multiple CSVs
 - [x] Support TSV/PSV  
-- [ ] Start collecting payments
-- [ ] Recruit a few users to post and upvote on hacker news
+- [x] Recruit a few users to post and upvote on hacker news
   - Ensure they are happy and ask about how frequently they use it
-- [ ] After 2.1.0, we'll post on product hunt
 
 v2.2.0
-- [ ] Sort column
-- [ ] Copy column as CSV
-- [ ] Infinite scrolling
-- [ ] Double click and open files immediately
+- [ ] Support trial license - 14d
+  - Can they request for another 14d? Yes, they can. But we'll do it manually.
+- [ ] Start collecting payments
+- [ ] After 2.1.0, we'll post on product hunt
+  
+v2.3.0
+- [ ] Attach a Sqlite file
 - [ ] Save and open workspace
   - Use sqlite backup api
 - [ ] Make the menu. Move vim/normal to menu.
   - Disable toggling developer tool
   
+v2.4.0
+- [ ] Sort column
+- [ ] Copy column as CSV
+- [ ] Infinite scrolling
+- [ ] Double click and open files immediately
+  
 vmaybe
 - [ ] Show the loading time
+- [ ] Support JSON and ND-JSON
+- [ ] Support Parquet
 
 Requests from actual users
 ---------------------------

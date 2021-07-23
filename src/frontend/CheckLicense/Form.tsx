@@ -10,7 +10,7 @@ export default function CheckLicenseForm({onFinished}: {onFinished: (evaluationM
 
   const placeholder = React.useMemo(() => [
     '---- Superintendent license ----',
-    'Type: Beta',
+    'Type: Trial',
     'Name: Super Intendant',
     'Email: support@superintendent.app',
     'Key0: SomeKey0',
