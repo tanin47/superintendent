@@ -61,23 +61,26 @@ v2.1.0
   - Ensure they are happy and ask about how frequently they use it
 
 v2.2.0
-- [ ] Support trial license - 14d
+- [x] Support trial license - 14d
   - Can they request for another 14d? Yes, they can. But we'll do it manually.
-- [ ] Start collecting payments
-- [ ] After 2.1.0, we'll post on product hunt
+- [ ] Make the menu. Move vim/normal to menu.
+  - Disable toggling developer tool
+- [ ] Export a schema using the menu  
   
 v2.3.0
 - [ ] Attach a Sqlite file
 - [ ] Save and open workspace
   - Use sqlite backup api
-- [ ] Make the menu. Move vim/normal to menu.
-  - Disable toggling developer tool
   
 v2.4.0
 - [ ] Sort column
 - [ ] Copy column as CSV
 - [ ] Infinite scrolling
 - [ ] Double click and open files immediately
+  
+Side quest
+- [ ] After some users pay, implement the license purchase flow
+- [ ] We'll post on product hunt after we can self-serve licence
   
 vmaybe
 - [ ] Show the loading time

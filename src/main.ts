@@ -1,7 +1,8 @@
-import {BrowserWindow, dialog, ipcMain} from 'electron';
+import {BrowserWindow, dialog, ipcMain, Menu} from 'electron';
 import Store from 'electron-store';
 import {Datastore} from "./data-store/Datastore";
 import {Workerize} from "./data-store/Workerize";
+import {EditorMode, EditorModeChannel} from "./types";
 
 
 export default class Main {
@@ -9,6 +10,7 @@ export default class Main {
   static application: Electron.App;
   static BrowserWindow;
   static db: Datastore;
+  static store: Store;
 
   static evaluationMode: boolean = true;
 
@@ -36,6 +38,142 @@ export default class Main {
           data: r
       }))
       .catch((e) => ({success: false, message: e.message}));
+  }
+
+  private static getEditorMode(): EditorMode {
+    return (Main.store.get('editorMode') as (EditorMode | null)) || 'default';
+  }
+
+  private static buildMenu(): void {
+    const isMac = process.platform === 'darwin'
+    const devViewSubmenu = [
+      { role: 'reload' },
+      { role: 'forceReload' },
+      { role: 'toggleDevTools' },
+      { type: 'separator' },
+    ];
+
+    const setEditorMode = (mode: EditorMode) => {
+      Main.store.set('editorMode', mode);
+      Main.mainWindow!.webContents.send(EditorModeChannel, mode);
+    };
+
+    const template = [
+      ...(isMac ? [{
+        label: 'Superintendent',
+        submenu: [
+          { role: 'about' },
+          { type: 'separator' },
+          { role: 'services' },
+          { type: 'separator' },
+          { role: 'hide' },
+          { role: 'hideothers' },
+          { role: 'unhide' },
+          { type: 'separator' },
+          { role: 'quit' }
+        ]
+      }] : []),
+      {
+        label: 'File',
+        submenu: [
+          isMac ? { role: 'close' } : { role: 'quit' }
+        ]
+      },
+      {
+        label: 'Edit',
+        submenu: [
+          { role: 'undo' },
+          { role: 'redo' },
+          { type: 'separator' },
+          { role: 'cut' },
+          { role: 'copy' },
+          { role: 'paste' },
+          ...(isMac ? [
+            { role: 'pasteAndMatchStyle' },
+            { role: 'delete' },
+            { role: 'selectAll' },
+            { type: 'separator' },
+            {
+              label: 'Speech',
+              submenu: [
+                { role: 'startSpeaking' },
+                { role: 'stopSpeaking' }
+              ]
+            }
+          ] : [
+            { role: 'delete' },
+            { type: 'separator' },
+            { role: 'selectAll' }
+          ]),
+          { type: 'separator' },
+          {
+            label: 'Editor mode',
+            submenu: [
+              {
+                label: 'Default',
+                type: 'radio',
+                checked: Main.getEditorMode() === 'default',
+                click: function (item, BrowserWindow) {
+                  item.checked = true;
+                  setEditorMode('default');
+                }
+              },
+              {
+                label: 'Vim',
+                type: 'radio',
+                checked: Main.getEditorMode() === 'vim',
+                click: function (item, BrowserWindow) {
+                  item.checked = true;
+                  setEditorMode('vim');
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        label: 'View',
+        submenu: [
+          ...(process.env.SUPERINTENDENT_IS_PROD ? [] : devViewSubmenu),
+          { role: 'resetZoom' },
+          { role: 'zoomIn' },
+          { role: 'zoomOut' },
+          { type: 'separator' },
+          { role: 'togglefullscreen' }
+        ]
+      },
+      {
+        label: 'Window',
+        submenu: [
+          { role: 'minimize' },
+          { role: 'zoom' },
+          ...(isMac ? [
+            { type: 'separator' },
+            { role: 'front' },
+            { type: 'separator' },
+            { role: 'window' }
+          ] : [
+            { role: 'close' }
+          ])
+        ]
+      },
+      {
+        label: 'Help',
+        submenu: [
+          {
+            label: 'Learn More',
+            click: async () => {
+              const { shell } = require('electron')
+              await shell.openExternal('https://docs.superintendent.app/')
+            }
+          }
+        ]
+      }
+    ]
+
+    // @ts-ignore
+    const menu = Menu.buildFromTemplate(template)
+    Menu.setApplicationMenu(menu)
   }
 
   private static async onReady(): Promise<void> {
@@ -77,16 +215,9 @@ export default class Main {
       return Main.wrapResponse(Main.downloadCsv(arg));
     });
 
-    if (!process.env.SUPERINTENDENT_IS_PROD) {
-      ipcMain.on('reload-html', async () => {
-        Main.mainWindow.reload();
-        await Main.maybeEnableDev();
-      })
-    }
-
     Main.mainWindow = new Main.BrowserWindow({ width: 1280, height: 800, webPreferences: {nodeIntegration: true, contextIsolation: false}});
 
-    await Main.mainWindow!.loadFile(`${__dirname}/index.html`);
+    await Main.mainWindow!.loadFile(`${__dirname}/index.html`, {query: {editorMode: Main.getEditorMode()}});
     await Main.maybeEnableDev();
   }
 
@@ -98,6 +229,8 @@ export default class Main {
   static main(app: Electron.App, browserWindow: typeof BrowserWindow): void {
     Main.BrowserWindow = browserWindow;
     Main.application = app;
+    Main.store = new Store();
+    Main.buildMenu();
     Main.application.on('window-all-closed', () => {
       Main.application.quit();
     });

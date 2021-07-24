@@ -4,6 +4,13 @@ import {Sheet} from "../Workspace/types";
 import axios from "axios";
 import Store from "electron-store";
 import crypto from 'crypto';
+import {EditorMode} from "../../types";
+
+const urlParams = new URLSearchParams(window.location.search);
+
+export function getInitialEditorMode(): EditorMode {
+  return (urlParams.get('editorMode') as EditorMode) || 'default';
+}
 
 export type CheckIfLicenseIsValidResult = {
   success: boolean,
@@ -147,8 +154,4 @@ export function drop(table: string): Promise<void> {
     .then((result) => {
       // don't care
     });
-}
-
-export function reloadHtml(): void {
-  ipcRenderer.send('reload-html');
 }

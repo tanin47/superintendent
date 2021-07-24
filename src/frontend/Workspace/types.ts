@@ -1,6 +1,4 @@
 
-export type EditorMode = 'default' | 'vim';
-
 export type PresentationType = 'table' | 'line' | 'bar' | 'pie';
 
 export type Sheet = {

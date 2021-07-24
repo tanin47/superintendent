@@ -1,28 +1,30 @@
 import React, {ReactElement} from 'react';
 import './index.scss';
-import {downloadCsv, drop, query, reloadHtml} from '../api';
-import {EditorMode, PresentationType, Sheet} from './types';
+import {downloadCsv, drop, getInitialEditorMode, query} from '../api';
+import {EditorMode, EditorModeChannel} from '../../types';
+import {PresentationType, Sheet} from './types';
 import SheetSection from './SheetSection';
 import Button from './Button';
 import Editor, {Ref as EditorRef} from './Editor';
-import Store from "electron-store";
 import * as dialog from './dialog';
 import {formatTotal} from "./helper";
 import Tippy from '@tippyjs/react';
 import 'tippy.js/dist/tippy.css';
 import 'tippy.js/themes/material.css';
-import {shell} from "electron";
+import {ipcRenderer, shell} from "electron";
 import AddCsv from "./AddCsvModal";
 
 export default function Workspace({evaluationMode}: {evaluationMode: boolean}): ReactElement {
-  const store = React.useMemo(() => new Store(), []);
-
-  const defaultEditorMode = (store.get('editorMode') as EditorMode | null) || 'default';
-  const [editorMode, setEditorMode] = React.useState<EditorMode>(defaultEditorMode);
+  const [editorMode, setEditorMode] = React.useState<EditorMode>(getInitialEditorMode());
 
   React.useEffect(() => {
-    store.set('editorMode', editorMode);
-  }, [store, editorMode])
+    const callback = (event, mode: any) => { setEditorMode(mode as EditorMode); };
+    ipcRenderer.on(EditorModeChannel, callback);
+
+    return () => {
+      ipcRenderer.removeListener(EditorModeChannel, callback) ;
+    };
+  }, [setEditorMode]);
 
   const [sheets, setSheets] = React.useState<Array<Sheet>>([]);
   const [shouldOpenAddCsv, setShouldOpenAddCsv] = React.useState<boolean>(false);
@@ -147,24 +149,6 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
               Add CSV
             </Button>
           </div>
-          <div className="right">
-            <div className="mode">
-              Mode:
-              <div className="selector">
-                <div className="select">
-                  <select
-                    value={editorMode}
-                    onChange={(event) => {
-                      setEditorMode(event.target.value as EditorMode);
-                    }}
-                  >
-                    <option value="default">Normal</option>
-                    <option value="vim">Vim</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
       <div id="editorSection" style={{height: editorHeight}}>
@@ -187,12 +171,6 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
             <Button onClick={() => editorRef.current!.format()} icon={<i className="fas fa-align-justify" />}>Format</Button>
             <span className="separator" />
             <Button onClick={() => editorRef.current!.setValue(sheets[selectedSheetIndex].sql)} icon={<i className="fas fa-history" />}>Restore SQL</Button>
-            {!process.env.SUPERINTENDENT_IS_PROD && (
-              <>
-                <span className="separator" />
-                <Button onClick={() => reloadHtml()} icon={<i className="fas fa-sync" />}>Reload HTML</Button>
-              </>
-            )}
           </div>
           <div className="right">
             {selectedSheetIndex < sheets.length && (

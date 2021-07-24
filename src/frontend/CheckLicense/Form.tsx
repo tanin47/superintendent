@@ -1,7 +1,7 @@
 import React, {ReactElement} from 'react';
 import './Form.scss';
 import {shell} from 'electron';
-import {checkIfLicenseIsValid, reloadHtml} from "../api";
+import {checkIfLicenseIsValid} from "../api";
 
 export default function CheckLicenseForm({onFinished}: {onFinished: (evaluationMode: boolean) => void}): ReactElement {
   const [licenseKey, setLicenseKey] = React.useState('');
@@ -66,12 +66,6 @@ export default function CheckLicenseForm({onFinished}: {onFinished: (evaluationM
           </div>
         </div>
       </div>
-      {!process.env.SUPERINTENDENT_IS_PROD && (
-        <>
-          <span className="separator" />
-          <button onClick={() => reloadHtml()}>Reload HTML</button>
-        </>
-      )}
     </div>
   );
 }
