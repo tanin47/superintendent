@@ -67,6 +67,7 @@ v2.2.0
   - Disable toggling developer tool
 - [x] Import a Sqlite file
 - [x] Export a schema using the menu
+- [ ] Release the new version  
 - [ ] Send out the email
 - [ ] Expire the beta license
 - [ ] If a user has an expired beta license and submit for a trial license, then give one more trial license.
@@ -111,6 +112,8 @@ Testing
 4. Test importing height_weight.csv + user.csv and do a join.
 5. Test exporting a table especially windows
 6. Test evaluation mode
+7. Test import sqlite
+8. Test exporting schema
 
 License for testing on prod
 ----------------------------
