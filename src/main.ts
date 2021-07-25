@@ -2,7 +2,7 @@ import {BrowserWindow, dialog, ipcMain, Menu} from 'electron';
 import Store from 'electron-store';
 import {Datastore} from "./data-store/Datastore";
 import {Workerize} from "./data-store/Workerize";
-import {EditorMode, EditorModeChannel} from "./types";
+import {EditorMode, EditorModeChannel, Format} from "./types";
 
 
 export default class Main {
@@ -195,10 +195,12 @@ export default class Main {
       return Main.wrapResponse(Main.db.drop(arg));
     });
 
-    ipcMain.handle('add-csv', async (event, path, format) => {
-      let separator = ',';
+    ipcMain.handle('add-csv', async (event, path, format: Format) => {
+      let separator: string;
 
-      if (format === 'tab') {
+      if (format === 'comma') {
+        separator = ',';
+      } else if (format === 'tab') {
         separator = '\t';
       } else if (format === 'pipe') {
         separator = '|';
@@ -206,6 +208,10 @@ export default class Main {
         separator = ';';
       } else if (format === 'colon') {
         separator = ':';
+      } else if (format === 'sqlite') {
+        return Main.wrapResponse(Main.db.addSqlite(path, Main.evaluationMode));
+      } else {
+        throw new Error();
       }
 
       return Main.wrapResponse(Main.db.addCsv(path, separator, Main.evaluationMode));

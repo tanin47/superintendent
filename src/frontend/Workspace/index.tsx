@@ -146,7 +146,7 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
                 setShouldOpenAddCsv(true);
               }}
               icon={<i className="fas fa-file-upload"/>}>
-              Add CSV
+              Add files
             </Button>
           </div>
         </div>

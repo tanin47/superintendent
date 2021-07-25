@@ -117,7 +117,7 @@ export function query(q: string): Promise<Sheet> {
     });
 }
 
-export function addCsv(path: string, format: string): Promise<Sheet | null> {
+export function addCsv(path: string, format: string): Promise<Sheet[] | null> {
   return ipcRenderer
     .invoke('add-csv', path, format)
     .then((result) => {
@@ -125,10 +125,12 @@ export function addCsv(path: string, format: string): Promise<Sheet | null> {
         if (!result.data) {
           return null;
         } else {
-          return {
-            presentationType: 'table',
-            ...result.data
-          };
+          return result.data.map((item) => {
+            return {
+              presentationType: 'table',
+              ...item
+            };
+          });
         }
       } else {
         throw result;

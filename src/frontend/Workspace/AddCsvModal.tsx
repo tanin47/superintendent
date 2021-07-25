@@ -3,8 +3,8 @@ import Modal from 'react-modal';
 import './AddCsvModal.scss';
 import {addCsv} from "../api";
 import {Sheet} from "./types";
+import {Format} from "../../types";
 
-type Format = 'comma' | 'tab' | 'pipe' | 'semicolon' | 'colon';
 type Status = 'draft' | 'loading' | 'added' | 'errored';
 
 type File = {
@@ -73,6 +73,7 @@ function FileItem({
               <option value="pipe">Pipe (|)</option>
               <option value="semicolon">Semicolon (;)</option>
               <option value="colon">Colon (:)</option>
+              <option value="sqlite">Sqlite</option>
             </select>
           </div>
         </div>
@@ -119,9 +120,11 @@ export default function AddCsv({
       });
 
       try {
-        const sheet = await addCsv(file.path, file.format);
-        if (sheet) {
-          onAdded(sheet);
+        const sheets = await addCsv(file.path, file.format);
+        if (sheets) {
+          sheets.forEach((sheet) => {
+            onAdded(sheet);
+          })
         }
 
         setFiles((prevFiles) => {
@@ -162,6 +165,8 @@ export default function AddCsv({
         format = 'tab';
       } else if (file.name.endsWith('.psv')) {
         format = 'pipe';
+      } else if (file.name.endsWith('.db') || file.name.endsWith('.sqlite')) {
+        format = 'sqlite';
       }
 
       newFiles.push({
@@ -193,7 +198,7 @@ export default function AddCsv({
       overlayClassName="modal-overlay"
     >
       <div className="add-csv">
-        <div className="header-panel">Add CSV files</div>
+        <div className="header-panel">Add files</div>
         <div
           className="file-upload-panel"
           onDragOver={(e) => {
@@ -210,7 +215,7 @@ export default function AddCsv({
             onChange={(event) => addFilesCallback(event.target.files)}
             style={{width: '1px', height: '1px', position: 'absolute', opacity: 0}}
           />
-          Drop CSV files or click here to add CSV files in order to add the list.
+          Drop files or click here to add files in order to add the list.
         </div>
         <div className="file-list-panel">
           {files.map((file, index) => {

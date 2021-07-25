@@ -16,7 +16,8 @@ export abstract class Datastore {
 
   protected tables: Array<string> = [];
 
-  abstract addCsv(filePath: string, separator: string, evaluationMode: boolean): Promise<Result>;
+  abstract addSqlite(filePath: string, evaluationMode: boolean): Promise<Result[]>;
+  abstract addCsv(filePath: string, separator: string, evaluationMode: boolean): Promise<Result[]>;
   abstract exportCsv(table: string, filePath: string): Promise<void>;
 
   abstract query(sql: string): Promise<Result>;
@@ -59,6 +60,7 @@ export abstract class Datastore {
         return this.getUniqueTableName(base, (number || 0) + 1);
       }
     }
+    this.tables.push(candidate);
     return candidate;
   }
 

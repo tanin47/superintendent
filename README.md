@@ -63,12 +63,12 @@ v2.1.0
 v2.2.0
 - [x] Support trial license - 14d
   - Can they request for another 14d? Yes, they can. But we'll do it manually.
-- [ ] Make the menu. Move vim/normal to menu.
+- [x] Make the menu. Move vim/normal to menu.
   - Disable toggling developer tool
-- [ ] Export a schema using the menu  
+- [x] Import a Sqlite file
+- [ ] Export a schema using the menu
   
 v2.3.0
-- [ ] Attach a Sqlite file
 - [ ] Save and open workspace
   - Use sqlite backup api
   
@@ -86,6 +86,7 @@ vmaybe
 - [ ] Show the loading time
 - [ ] Support JSON and ND-JSON
 - [ ] Support Parquet
+- [ ] Edit a cell
 
 Requests from actual users
 ---------------------------
