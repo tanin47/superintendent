@@ -11,8 +11,8 @@ export type Result = {
 }
 
 export abstract class Datastore {
-  static MAX_ROW = 100000;
-  static MAX_CHARACTERS = 300000;
+  static MAX_ROW = 1000;
+  static MAX_CHARACTERS = 100000;
 
   protected tables: Array<string> = [];
 
