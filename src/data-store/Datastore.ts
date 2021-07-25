@@ -20,6 +20,8 @@ export abstract class Datastore {
   abstract addCsv(filePath: string, separator: string, evaluationMode: boolean): Promise<Result[]>;
   abstract exportCsv(table: string, filePath: string): Promise<void>;
 
+  abstract exportSchema(filePath: string): Promise<void>;
+
   abstract query(sql: string): Promise<Result>;
   abstract drop(table: string): Promise<void>;
 

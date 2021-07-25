@@ -31,6 +31,22 @@ export default class Main {
     return file;
   }
 
+  private static async exportSchema(): Promise<void> {
+    const file = dialog.showSaveDialogSync(
+      this.mainWindow,
+      {
+        defaultPath: `schema.sql`,
+        filters: [{name: 'All files', extensions: ['*']}]
+      }
+    );
+
+    if (!file) {
+      return;
+    }
+
+    await Main.db.exportSchema(file);
+  }
+
   private static wrapResponse(resp: Promise<any>): Promise<any> {
     return resp
       .then((r) => ({
@@ -140,6 +156,17 @@ export default class Main {
           { role: 'zoomOut' },
           { type: 'separator' },
           { role: 'togglefullscreen' }
+        ]
+      },
+      {
+        label: 'Tools',
+        submenu: [
+          {
+            label: 'Export schema',
+            click: function () {
+              Main.exportSchema();
+            }
+          },
         ]
       },
       {
