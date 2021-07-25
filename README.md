@@ -66,7 +66,11 @@ v2.2.0
 - [x] Make the menu. Move vim/normal to menu.
   - Disable toggling developer tool
 - [x] Import a Sqlite file
-- [ ] Export a schema using the menu
+- [x] Export a schema using the menu
+- [ ] Send out the email
+- [ ] Expire the beta license
+- [ ] If a user has an expired beta license and submit for a trial license, then give one more trial license.
+  - Add the column for license type
   
 v2.3.0
 - [ ] Save and open workspace
