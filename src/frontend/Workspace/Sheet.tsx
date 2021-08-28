@@ -1,6 +1,7 @@
 import React from 'react';
 import {Sheet} from './types';
 import {Chart, ChartType, registerables} from 'chart.js';
+import randomColor from 'randomcolor';
 
 function Table({evaluationMode, sheet}: {evaluationMode: boolean, sheet: Sheet}): JSX.Element {
   const hasMore = sheet.rows.length < sheet.count;
@@ -65,6 +66,11 @@ function Graph({type, sheet}: {type: ChartType, sheet: Sheet}): JSX.Element {
 
       let colorOptionsMap: {backgroundColor?: string[], borderColor?: string} = {};
 
+      let colors = randomColor({
+        count: sheet.columns.length,
+        seed: 42
+      });
+      console.log(colors);
 
       const instance = new Chart(ctx, {
         type: type,
@@ -72,12 +78,15 @@ function Graph({type, sheet}: {type: ChartType, sheet: Sheet}): JSX.Element {
           labels: sheet.rows.map((r) => r[0]),
           datasets: sheet.columns.slice(1).map((column, index) => {
             if (type === 'pie') {
-              colorOptionsMap = {backgroundColor: sheet.rows.map(() => generateColor())};
+              colors = randomColor({
+                count: sheet.rows.length,
+                seed: 42
+              });
+              colorOptionsMap = {backgroundColor: sheet.rows.map((r, rowIndex) => colors[rowIndex])};
             } else {
-              const color = generateColor();
               colorOptionsMap = {
-                borderColor: color,
-                backgroundColor: sheet.rows.map(() => color),
+                borderColor: colors[index],
+                backgroundColor: sheet.rows.map(() => colors[index]),
               }
             }
             return {
@@ -89,6 +98,7 @@ function Graph({type, sheet}: {type: ChartType, sheet: Sheet}): JSX.Element {
         },
         options: {
           maintainAspectRatio: false,
+          normalized: true
         }
       });
 
