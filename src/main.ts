@@ -19,6 +19,10 @@ export default class Main {
     return process.platform === 'darwin';
   }
 
+  private static isWin(): boolean {
+    return process.platform === 'win32';
+  }
+
   private static async downloadCsv(table: string): Promise<string | null> {
     const file = dialog.showSaveDialogSync(
       this.mainWindow,
@@ -254,7 +258,14 @@ export default class Main {
 
     Main.mainWindow = new Main.BrowserWindow({ width: 1280, height: 800, webPreferences: {nodeIntegration: true, contextIsolation: false}});
 
-    const initialFile = Main.isMac() ? Main.initialFile : process.argv[process.env.SUPERINTENDENT_IS_PROD ? 1 : 2];
+    let initialFile: string | null = null;
+    if (Main.isMac()) {
+      initialFile = Main.initialFile;
+    } else if (Main.isWin()) {
+      initialFile = process.argv[1];
+    } else {
+      initialFile = process.argv[2];
+    }
     const initialFileMap: {[key: string]: string} = initialFile ? {initialFile} : {};
     await Main.mainWindow!.loadFile(
       `${__dirname}/index.html`,
