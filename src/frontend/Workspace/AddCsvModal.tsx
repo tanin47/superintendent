@@ -1,9 +1,12 @@
 import React, {ForwardedRef} from 'react';
 import Modal from 'react-modal';
 import './AddCsvModal.scss';
-import {addCsv} from "../api";
+import {addCsv, convertFileList, getInitialFile} from "../api";
 import {Sheet} from "./types";
 import {Format} from "../../types";
+import path from 'path';
+import {ipcRenderer} from "electron";
+import {IpcRendererEvent} from "electron/renderer";
 
 type Status = 'draft' | 'loading' | 'added' | 'errored';
 
@@ -91,7 +94,7 @@ function FileItem({
 }
 
 export type Ref = {
-  addFiles: (fileList: FileList | null) => void
+  addFiles: (fileList: string[] | null) => void
 }
 
 export default React.forwardRef(function AddCsv({
@@ -157,25 +160,26 @@ export default React.forwardRef(function AddCsv({
     onClose();
   }, [setIsLoading, onClose, onAdded, setFiles, files]);
 
-  const addFilesCallback = React.useCallback((fileList: FileList | null) => {
+  const addFilesCallback = React.useCallback((fileList: string[] | null) => {
     if (!fileList || isLoading) { return; }
 
     const newFiles: File[] = [];
     for (const file of fileList) {
 
       let format: Format = 'comma';
+      const basename = path.basename(file);
 
-      if (file.name.endsWith('.tsv')) {
+      if (basename.endsWith('.tsv')) {
         format = 'tab';
-      } else if (file.name.endsWith('.psv')) {
+      } else if (basename.endsWith('.psv')) {
         format = 'pipe';
-      } else if (file.name.endsWith('.db') || file.name.endsWith('.sqlite')) {
+      } else if (basename.endsWith('.db') || basename.endsWith('.sqlite')) {
         format = 'sqlite';
       }
 
       newFiles.push({
-        name: trimFilename(file.name),
-        path: file.path,
+        name: trimFilename(basename),
+        path: file,
         format: format,
         status: 'draft',
       });
@@ -191,7 +195,7 @@ export default React.forwardRef(function AddCsv({
   React.useImperativeHandle(
     ref,
     () => ({
-      addFiles: (fileList: FileList | null) => {
+      addFiles: (fileList: string[] | null) => {
         addFilesCallback(fileList);
       }
     }),
@@ -214,7 +218,7 @@ export default React.forwardRef(function AddCsv({
             ref={fileRef}
             type="file"
             multiple
-            onChange={(event) => addFilesCallback(event.target.files)}
+            onChange={(event) => addFilesCallback(convertFileList(event.target.files))}
             style={{width: '1px', height: '1px', position: 'absolute', opacity: 0}}
           />
           Drop files or click here to add files in order to add the list.

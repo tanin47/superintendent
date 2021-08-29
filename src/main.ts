@@ -11,8 +11,13 @@ export default class Main {
   static BrowserWindow;
   static db: Datastore;
   static store: Store;
+  static initialFile: string | null = null;
 
   static evaluationMode: boolean = true;
+
+  private static isMac(): boolean {
+    return process.platform === 'darwin';
+  }
 
   private static async downloadCsv(table: string): Promise<string | null> {
     const file = dialog.showSaveDialogSync(
@@ -61,7 +66,6 @@ export default class Main {
   }
 
   private static buildMenu(): void {
-    const isMac = process.platform === 'darwin'
     const devViewSubmenu = [
       { role: 'reload' },
       { role: 'forceReload' },
@@ -75,7 +79,7 @@ export default class Main {
     };
 
     const template = [
-      ...(isMac ? [{
+      ...(Main.isMac() ? [{
         label: 'Superintendent',
         submenu: [
           { role: 'about' },
@@ -92,7 +96,7 @@ export default class Main {
       {
         label: 'File',
         submenu: [
-          isMac ? { role: 'close' } : { role: 'quit' }
+          Main.isMac() ? { role: 'close' } : { role: 'quit' }
         ]
       },
       {
@@ -104,7 +108,7 @@ export default class Main {
           { role: 'cut' },
           { role: 'copy' },
           { role: 'paste' },
-          ...(isMac ? [
+          ...(Main.isMac() ? [
             { role: 'pasteAndMatchStyle' },
             { role: 'delete' },
             { role: 'selectAll' },
@@ -174,7 +178,7 @@ export default class Main {
         submenu: [
           { role: 'minimize' },
           { role: 'zoom' },
-          ...(isMac ? [
+          ...(Main.isMac() ? [
             { type: 'separator' },
             { role: 'front' },
             { type: 'separator' },
@@ -250,7 +254,14 @@ export default class Main {
 
     Main.mainWindow = new Main.BrowserWindow({ width: 1280, height: 800, webPreferences: {nodeIntegration: true, contextIsolation: false}});
 
-    await Main.mainWindow!.loadFile(`${__dirname}/index.html`, {query: {editorMode: Main.getEditorMode()}});
+    const initialFile = Main.isMac() ? Main.initialFile : process.argv[process.env.SUPERINTENDENT_IS_PROD ? 1 : 2];
+    const initialFileMap: {[key: string]: string} = initialFile ? {initialFile} : {};
+    await Main.mainWindow!.loadFile(
+      `${__dirname}/index.html`,
+      {
+        query: {editorMode: Main.getEditorMode(), ...initialFileMap}
+      }
+    );
     await Main.maybeEnableDev();
   }
 
@@ -267,6 +278,13 @@ export default class Main {
     Main.application.on('window-all-closed', () => {
       Main.application.quit();
     });
+    Main.application.on('open-file', (event, path) => {
+      if (Main.mainWindow) {
+        Main.mainWindow!.webContents.send('open-file', path);
+      } else {
+        Main.initialFile = path;
+      }
+    })
     Main.application.on('ready', Main.onReady);
   }
 }

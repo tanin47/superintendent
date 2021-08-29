@@ -1,6 +1,6 @@
 {
   "name": "superintendent",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Write SQLs on CSVs",
   "license": "UNLICENSED",
   "main": "dist/prod/main.js",
@@ -17,6 +17,13 @@
       "buildResources": "electron-builder/build",
       "output": "electron-builder/out"
     },
+    "fileAssociations": [
+      {"ext": "csv", "role": "Viewer", "name": "Comma-separated values"},
+      {"ext": "tsv", "role": "Viewer", "name": "Tab-separated values"},
+      {"ext": "psv", "role": "Viewer", "name": "Pipe-separated values"},
+      {"ext": "db", "role": "Viewer", "name": "SQLite database file"},
+      {"ext": "sqlite", "role": "Viewer", "name": "SQLite database file"}
+    ],
     "mac": {
       "category": "public.app-category.finance",
       "type": "distribution",

@@ -1,6 +1,6 @@
 import React, {ReactElement} from 'react';
 import './index.scss';
-import {downloadCsv, drop, getInitialEditorMode, query} from '../api';
+import {downloadCsv, drop, getInitialEditorMode, query, getInitialFile, convertFileList} from '../api';
 import {EditorMode, EditorModeChannel} from '../../types';
 import {PresentationType, Sheet} from './types';
 import SheetSection from './SheetSection';
@@ -13,6 +13,7 @@ import 'tippy.js/dist/tippy.css';
 import 'tippy.js/themes/material.css';
 import {ipcRenderer, shell} from "electron";
 import AddCsv, {Ref as AddCsvRef} from "./AddCsvModal";
+import { IpcRendererEvent } from 'electron/renderer';
 
 export default function Workspace({evaluationMode}: {evaluationMode: boolean}): ReactElement {
   const [editorMode, setEditorMode] = React.useState<EditorMode>(getInitialEditorMode());
@@ -132,13 +133,39 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
   }, [isResizing, setIsResizing]);
 
   const addCsvRef = React.createRef<AddCsvRef>();
+  const addFiles = React.useCallback((files: string[]) => {
+    addCsvRef.current!.addFiles(files);
+    setShouldOpenAddCsv(true);
+  }, [addCsvRef]);
   const fileDroppedCallback = React.useCallback((event) => {
     event.preventDefault();
     event.stopPropagation();
 
-    addCsvRef.current!.addFiles(event.dataTransfer?.files);
-    setShouldOpenAddCsv(true);
-  }, [addCsvRef]);
+    addFiles(convertFileList(event.dataTransfer?.files));
+  }, [addFiles]);
+
+  const alreadyInitialized = React.useRef<boolean>(false);
+  React.useEffect(() => {
+    if (alreadyInitialized.current) { return; }
+    if (!addCsvRef.current) { return; }
+
+    const file = getInitialFile();
+
+    if (!file) { return; }
+
+    addFiles([file]);
+    alreadyInitialized.current = true;
+  }, [addFiles])
+
+  React.useEffect(() => {
+    const listener = (event: IpcRendererEvent, path: string) => {
+      addFiles([path]);
+    };
+    ipcRenderer.on('open-file', listener);
+    return () => {
+      ipcRenderer.removeListener('open-file', listener);
+    }
+  }, [addFiles])
 
   return (
     <div

@@ -3,8 +3,8 @@ import './index.scss';
 import Workspace from './Workspace';
 import CheckLicense from './CheckLicense';
 import {ipcRenderer} from "electron";
+import {getInitialEditorMode, getInitialFile} from './api';
 
-const initialState: PageState = {page: 'check-license', evaluationMode: true};
 
 type Page = 'check-license' | 'workspace';
 
@@ -17,6 +17,8 @@ type Action = {
   changeTo: Page,
   setEvaluationMode?: boolean
 }
+
+const initialState: PageState = {page: 'check-license', evaluationMode: true};
 
 function reducer(state: PageState, action: Action): PageState {
   const optionals: {evaluationMode?: boolean} = {};

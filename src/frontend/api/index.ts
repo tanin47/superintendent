@@ -12,6 +12,22 @@ export function getInitialEditorMode(): EditorMode {
   return (urlParams.get('editorMode') as EditorMode) || 'default';
 }
 
+export function getInitialFile(): string | null {
+  return urlParams.get('initialFile');
+}
+
+export function convertFileList(fileList: FileList | null) {
+  const results: string[] = [];
+
+  if (fileList) {
+    for (const file of fileList) {
+      results.push(file.path);
+    }
+  }
+
+  return results;
+}
+
 export type CheckIfLicenseIsValidResult = {
   success: boolean,
   errorMessage?: string | null
