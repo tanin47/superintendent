@@ -74,6 +74,7 @@ export default React.forwardRef<Ref, Props>(function Editor({
         smartIndent: true,
         lineNumbers: true,
         matchBrackets: true,
+        dragDrop: false,
         keyMap: mode,
         tabSize: 2,
         autofocus: true,

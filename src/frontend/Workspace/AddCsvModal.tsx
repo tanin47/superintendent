@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {ForwardedRef} from 'react';
 import Modal from 'react-modal';
 import './AddCsvModal.scss';
 import {addCsv} from "../api";
@@ -90,7 +90,11 @@ function FileItem({
   )
 }
 
-export default function AddCsv({
+export type Ref = {
+  addFiles: (fileList: FileList | null) => void
+}
+
+export default React.forwardRef(function AddCsv({
   isOpen,
   onClose,
   onAdded
@@ -98,7 +102,7 @@ export default function AddCsv({
   isOpen: boolean,
   onClose: () => void,
   onAdded: (sheet: Sheet) => void
-}): JSX.Element {
+}, ref: React.ForwardedRef<Ref>): JSX.Element {
   const [files, setFiles] = React.useState<File[]>([]);
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
   const fileRef = React.createRef<HTMLInputElement>();
@@ -154,7 +158,7 @@ export default function AddCsv({
   }, [setIsLoading, onClose, onAdded, setFiles, files]);
 
   const addFilesCallback = React.useCallback((fileList: FileList | null) => {
-    if (!fileList) { return; }
+    if (!fileList || isLoading) { return; }
 
     const newFiles: File[] = [];
     for (const file of fileList) {
@@ -182,14 +186,17 @@ export default function AddCsv({
     }
 
     setFiles((prevFiles) => [...prevFiles, ...newFiles]);
-  }, [setFiles, fileRef]);
+  }, [setFiles, fileRef, isLoading]);
 
-  const fileDroppedCallback = React.useCallback((event) => {
-    event.preventDefault();
-    event.stopPropagation();
-
-    addFilesCallback(event.dataTransfer?.files);
-  }, [addFilesCallback]);
+  React.useImperativeHandle(
+    ref,
+    () => ({
+      addFiles: (fileList: FileList | null) => {
+        addFilesCallback(fileList);
+      }
+    }),
+    [addFilesCallback]
+  );
 
   return (
     <Modal
@@ -201,11 +208,6 @@ export default function AddCsv({
         <div className="header-panel">Add files</div>
         <div
           className="file-upload-panel"
-          onDragOver={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-          }}
-          onDrop={fileDroppedCallback}
           onClick={() => {fileRef.current!.click();}}
         >
           <input
@@ -261,4 +263,4 @@ export default function AddCsv({
       </div>
     </Modal>
   );
-}
+});

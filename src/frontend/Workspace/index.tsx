@@ -12,7 +12,7 @@ import Tippy from '@tippyjs/react';
 import 'tippy.js/dist/tippy.css';
 import 'tippy.js/themes/material.css';
 import {ipcRenderer, shell} from "electron";
-import AddCsv from "./AddCsvModal";
+import AddCsv, {Ref as AddCsvRef} from "./AddCsvModal";
 
 export default function Workspace({evaluationMode}: {evaluationMode: boolean}): ReactElement {
   const [editorMode, setEditorMode] = React.useState<EditorMode>(getInitialEditorMode());
@@ -131,9 +131,26 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
     }
   }, [isResizing, setIsResizing]);
 
+  const addCsvRef = React.createRef<AddCsvRef>();
+  const fileDroppedCallback = React.useCallback((event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    addCsvRef.current!.addFiles(event.dataTransfer?.files);
+    setShouldOpenAddCsv(true);
+  }, [addCsvRef]);
+
   return (
-    <div id="workspace">
+    <div
+      id="workspace"
+       onDragOver={(e) => {
+         e.stopPropagation();
+         e.preventDefault();
+       }}
+       onDrop={fileDroppedCallback}
+    >
       <AddCsv
+        ref={addCsvRef}
         isOpen={shouldOpenAddCsv}
         onClose={() => setShouldOpenAddCsv(false)}
         onAdded={(sheet) => addNewSheetCallback(sheet)}
