@@ -565,7 +565,6 @@ static int csvtabConnect(
   memset(pNew, 0, sizeof(*pNew));
 
   pNew->separator = CSV_SEPARATOR[0];
-
   if( nCol<0 ){
     do{
       csv_read_one_field(&sRdr, pNew->separator);
@@ -784,6 +783,10 @@ static int csvtabFilter(
     pCur->rdr.iIn = 0;
     pCur->rdr.nIn = 0;
   }
+  // Fix the case where the first field of the first row is an empty string.
+  // Since pCur->rdr->z would initially null, we would get a null when reading the first field and exit immediately.
+  // By initializing it with a character, we would get an empty string instead and the logic would continue as expected.
+  csv_append(&pCur->rdr, '?');
   return csvtabNext(pVtabCursor);
 }
 
