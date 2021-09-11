@@ -269,6 +269,16 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
               </span>
             </Button>
           </div>
+          <div className="right">
+            <Button
+              onClick={() => {
+                shell.openExternal("https://docs.superintendent.app")
+              }}
+              icon={<i className="fas fa-question-circle"/>}
+            >
+              Docs
+            </Button>
+          </div>
         </div>
       </div>
       <div id="editorSection" style={{height: editorHeight}}>
