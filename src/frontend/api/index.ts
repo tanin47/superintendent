@@ -173,3 +173,15 @@ export function drop(table: string): Promise<void> {
       // don't care
     });
 }
+
+export function rename(previousTableName: string, newTableName: string): Promise<void> {
+  return ipcRenderer
+    .invoke('rename', previousTableName, newTableName)
+    .then((result) => {
+      if (result.success) {
+        return;
+      } else {
+        throw result;
+      }
+    });
+}

@@ -24,6 +24,7 @@ export abstract class Datastore {
 
   abstract query(sql: string): Promise<Result>;
   abstract drop(table: string): Promise<void>;
+  abstract rename(previousTableName: string, newTableName: string): Promise<void>;
 
   static makePreview(columns: Column[], rows: Row[]): Array<Row> {
     let numRows = 0;

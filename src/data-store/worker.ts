@@ -29,5 +29,8 @@ expose({
   },
   async drop(table: string): Promise<void> {
     return sqlite!.drop(table);
+  },
+  async rename(previousTableName: string, newTableName: string): Promise<void> {
+    return sqlite!.rename(previousTableName, newTableName);
   }
 })

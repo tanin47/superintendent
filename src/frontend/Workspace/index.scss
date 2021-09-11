@@ -296,6 +296,10 @@
       left: 0;
       right: 0;
       background-color: #ddd;
+      -webkit-user-select: none; /* Safari */
+      -moz-user-select: none; /* Firefox */
+      -ms-user-select: none; /* IE10+/Edge */
+      user-select: none; /* Standard */
 
       div {
         position: relative;
@@ -315,7 +319,7 @@
         }
 
         i {
-          margin-left: 5px;
+          margin-left: 8px;
           color: #ccc;
 
           &:hover {

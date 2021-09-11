@@ -162,6 +162,21 @@ export class Sqlite extends Datastore {
     } catch (e) { }
   }
 
+  async rename(previousTableName: string, newTableName: string): Promise<void> {
+    try {
+      this.db.exec(`ALTER TABLE "${previousTableName}" RENAME TO "${newTableName}"`);
+    } catch (e) {
+      return Promise.reject(e);
+    }
+
+    for (let i=0;i<this.tables.length;i++) {
+      if (previousTableName === this.tables[i]) {
+        this.tables.splice(i, 1, newTableName);
+        break;
+      }
+    }
+  }
+
   async query(sql: string): Promise<Result> {
     const table = this.makeQueryTableName();
     this.db.exec(`CREATE TABLE "${table}" AS ${sql}`);

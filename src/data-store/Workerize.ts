@@ -45,4 +45,8 @@ export class Workerize extends Datastore {
   async drop(table: string): Promise<void> {
     return this.worker.drop(table);
   }
+
+  async rename(previousTableName: string, newTableName: string): Promise<void> {
+    return this.worker.rename(previousTableName, newTableName);
+  }
 }

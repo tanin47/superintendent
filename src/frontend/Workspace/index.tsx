@@ -1,6 +1,6 @@
 import React, {ReactElement} from 'react';
 import './index.scss';
-import {downloadCsv, drop, getInitialEditorMode, query, getInitialFile, convertFileList} from '../api';
+import {downloadCsv, drop, getInitialEditorMode, query, getInitialFile, convertFileList, rename} from '../api';
 import {EditorMode, EditorModeChannel} from '../../types';
 import {PresentationType, Sheet} from './types';
 import SheetSection from './SheetSection';
@@ -68,6 +68,24 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
       });
     },
     [setSheets]
+  )
+
+  const renamingSheetCallback = React.useCallback(
+    (renamingSheetIndex: number, newName: string): void => {
+      setSheets((prevSheets) => {
+        return prevSheets.map((sheet, index) => {
+          if (index === renamingSheetIndex) {
+            return {
+              ...sheet,
+              name: newName
+            }
+          } else {
+            return sheet;
+          }
+        });
+      });
+    },
+    [setSheets, sheets]
   )
 
   const submitHandler = React.useMemo(
@@ -313,6 +331,7 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
           evaluationMode={evaluationMode}
           sheets={sheets}
           selectedSheetIndex={selectedSheetIndex}
+          onSheetRenamed={(renamingSheetIndex, newName) => renamingSheetCallback(renamingSheetIndex, newName)}
           onSheetSelected={(index) => setSelectedSheetIndex(index)}
           onSheetDeleted={(deletedIndex) => deleteSheetCallback(deletedIndex)} />
       </div>

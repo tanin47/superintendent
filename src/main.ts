@@ -230,6 +230,10 @@ export default class Main {
       return Main.wrapResponse(Main.db.drop(arg));
     });
 
+    ipcMain.handle('rename', async (event, previousTableName, newTableName) => {
+      return Main.wrapResponse(Main.db.rename(previousTableName, newTableName));
+    });
+
     ipcMain.handle('add-csv', async (event, path, format: Format) => {
       let separator: string;
 

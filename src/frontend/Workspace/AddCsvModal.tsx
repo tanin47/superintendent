@@ -1,12 +1,10 @@
-import React, {ForwardedRef} from 'react';
+import React from 'react';
 import Modal from 'react-modal';
 import './AddCsvModal.scss';
-import {addCsv, convertFileList, getInitialFile} from "../api";
+import {addCsv, convertFileList} from "../api";
 import {Sheet} from "./types";
 import {Format} from "../../types";
 import path from 'path';
-import {ipcRenderer} from "electron";
-import {IpcRendererEvent} from "electron/renderer";
 
 type Status = 'draft' | 'loading' | 'added' | 'errored';
 
