@@ -1,11 +1,40 @@
-.rename-textbox {
-  width: 400px;
-  padding: 8px 12px;
-  margin: 6px 0;
-  box-sizing: border-box;
-  margin-right: 10px;
+.rename-form {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+
+  .rename-textbox {
+    width: 400px;
+    padding: 8px 12px;
+    margin: 6px 0;
+    box-sizing: border-box;
+
+    margin-right: 5px;
+  }
+
+  button.main {
+    margin-right: 5px;
+  }
 }
 
 .rename-error {
   color: #af0000;
+  margin-bottom: 10px;
+}
+
+.rename-tip {
+  font-size: 14px;
+  color: #666;
+  color: #666;
+
+  .short-key {
+    margin: 0px 2px;
+    padding: 1px 2px 1px 1px;
+    border-radius: 2px;
+    font-size: 12px;
+    background-color: #666;
+    color: #eee;
+    vertical-align: middle;
+  }
 }

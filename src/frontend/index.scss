@@ -61,18 +61,36 @@ html {
     padding: 8px 12px;
     font-size: 16px;
     cursor: pointer;
+    display: flex;
+    align-items: center;
 
     &.main {
       background-color: #228B22;
+
+      .short-key {
+        background-color: #66CF66;
+      }
     }
 
     &.cancel {
       background-color: #B22222;
+
+      .short-key {
+        background-color: #F66666;
+      }
     }
 
     &:disabled {
       opacity: 0.6;
       cursor: not-allowed;
+    }
+
+    .short-key {
+      margin-left: 8px;
+      padding: 1px 2px 1px 1px;
+      border-radius: 2px;
+      font-size: 10px;
+      color: #444;
     }
   }
 }

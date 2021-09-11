@@ -21,6 +21,16 @@
     text-align: center;
     padding: 10px;
     cursor: pointer;
+
+    .short-key {
+      margin-left: 5px;
+      padding: 1px 2px 1px 1px;
+      border-radius: 2px;
+      font-size: 12px;
+      background-color: #666;
+      color: #ddd;
+      vertical-align: middle;
+    }
   }
 
   .file-list-panel {

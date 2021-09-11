@@ -4,6 +4,7 @@ import Sheet from "./Sheet";
 import Modal from 'react-modal';
 import {rename} from "../api";
 import './SheetSection.scss';
+import {ctrlCmdChar} from "./constants";
 
 let timer: NodeJS.Timeout;
 
@@ -19,11 +20,11 @@ function RenameDialog({renamingSheet, onUpdated, onClosed}: {renamingSheet: Shee
   )
 
   const renameCallback = React.useCallback(
-    (newName) => {
+    () => {
       setErrorMsg(null); // Clear error message.
       if (!renamingSheet) return;
 
-      const sanitized = newName.trim();
+      const sanitized = tableName.trim();
 
       if (sanitized == renamingSheet.name) {
         onClosed();
@@ -38,8 +39,31 @@ function RenameDialog({renamingSheet, onUpdated, onClosed}: {renamingSheet: Shee
           setErrorMsg(error.message);
         });
     },
-    [renamingSheet, onClosed, setErrorMsg]
+    [renamingSheet, onClosed, setErrorMsg, tableName]
   );
+
+  React.useEffect(() => {
+    const handler = (event) => {
+      if (!renamingSheet) { return; }
+
+      if (event.code === 'Enter') {
+        event.stopPropagation();
+        renameCallback();
+        return;
+      }
+
+      if (event.code === 'Escape') {
+        event.stopPropagation();
+        onClosed();
+        return;
+      }
+    };
+    document.addEventListener('keyup', handler);
+
+    return () => {
+      document.removeEventListener('keyup', handler) ;
+    };
+  }, [renamingSheet, renameCallback, onClosed]);
 
   return (
     <Modal
@@ -47,7 +71,7 @@ function RenameDialog({renamingSheet, onUpdated, onClosed}: {renamingSheet: Shee
       className="modal"
       overlayClassName="modal-overlay"
     >
-      <div>
+      <div className="rename-form">
         <input
           type="text"
           className="rename-textbox"
@@ -56,10 +80,23 @@ function RenameDialog({renamingSheet, onUpdated, onClosed}: {renamingSheet: Shee
         />
         <button
           className="main"
-          onClick={() => renameCallback(tableName.trim())}
-        >Rename</button>
+          onClick={() => renameCallback()}
+        >
+          Rename
+          <span className="short-key">⏎</span>
+        </button>
+        <button
+          className="cancel"
+          onClick={() => onClosed()}
+        >
+          Cancel
+          <span className="short-key">ESC</span>
+        </button>
       </div>
       {errorMsg !== null && (<div className="rename-error">Error: {errorMsg}</div>)}
+      <div className="rename-tip">
+        Tip: you can use the shortcut <span className="short-key">{ctrlCmdChar} J</span> to rename a sheet.
+      </div>
     </Modal>
   );
 }
@@ -103,6 +140,23 @@ export default function SheetSection({
     },
     [onDoubleClick]
   );
+
+  React.useEffect(() => {
+    const handler = (event) => {
+      if (sheets.length === 0) { return; }
+      if (event.code === 'KeyJ' && (event.metaKey || event.ctrlKey)) {
+        onDoubleClick(selectedSheetIndex);
+        return false;
+      }
+
+      return true;
+    };
+    document.addEventListener('keydown', handler);
+
+    return () => {
+      document.removeEventListener('keydown', handler) ;
+    };
+  }, [onDoubleClick, selectedSheetIndex, sheets]);
 
   return (
     <>

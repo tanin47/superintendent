@@ -5,6 +5,7 @@ import {addCsv, convertFileList} from "../api";
 import {Sheet} from "./types";
 import {Format} from "../../types";
 import path from 'path';
+import {ctrlCmdChar} from "./constants";
 
 type Status = 'draft' | 'loading' | 'added' | 'errored';
 
@@ -200,6 +201,55 @@ export default React.forwardRef(function AddCsv({
     [addFilesCallback]
   );
 
+  const close = React.useCallback(
+    () => {
+      setFiles([]);
+      onClose();
+    },
+    [setFiles, onClose]
+  )
+
+  React.useEffect(() => {
+    const handler = (event) => {
+      if (!isOpen) { return; }
+
+      if (event.code === 'Enter') {
+        event.stopPropagation();
+        uploadFiles();
+        return;
+      }
+
+      if (event.code === 'Escape') {
+        event.stopPropagation();
+        close();
+        return;
+      }
+    };
+    document.addEventListener('keyup', handler);
+
+    return () => {
+      document.removeEventListener('keyup', handler) ;
+    };
+  }, [isOpen, uploadFiles]);
+
+  React.useEffect(() => {
+    const handler = (event) => {
+      if (!isOpen) { return true; }
+
+      if (event.code === 'KeyP' && (event.metaKey || event.ctrlKey)) {
+        fileRef.current!.click();
+        return false;
+      }
+
+      return true;
+    };
+    document.addEventListener('keydown', handler);
+
+    return () => {
+      document.removeEventListener('keydown', handler) ;
+    };
+  }, [isOpen, fileRef]);
+
   return (
     <Modal
       isOpen={isOpen}
@@ -220,6 +270,9 @@ export default React.forwardRef(function AddCsv({
             style={{width: '1px', height: '1px', position: 'absolute', opacity: 0}}
           />
           Drop files or click here to add files in order to add the list.
+          <span className="short-key">
+            {ctrlCmdChar} P
+          </span>
         </div>
         <div className="file-list-panel">
           {files.map((file, index) => {
@@ -249,17 +302,20 @@ export default React.forwardRef(function AddCsv({
               className="main"
               disabled={isLoading}
               onClick={() => uploadFiles()}
-            >Import all files</button>
+            >
+              Import all files
+              <span className="short-key">⏎</span>
+            </button>
           </div>
           <div className="right">
             <button
               className="cancel"
               disabled={isLoading}
-              onClick={() => {
-                setFiles([]);
-                onClose();
-              }}
-            >Cancel</button>
+              onClick={() => {close();}}
+            >
+              Cancel
+              <span className="short-key">ESC</span>
+            </button>
           </div>
         </div>
       </div>

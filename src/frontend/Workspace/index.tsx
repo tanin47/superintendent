@@ -14,6 +14,7 @@ import 'tippy.js/themes/material.css';
 import {ipcRenderer, shell} from "electron";
 import AddCsv, {Ref as AddCsvRef} from "./AddCsvModal";
 import { IpcRendererEvent } from 'electron/renderer';
+import {altOptionChar, ctrlCmdChar} from "./constants";
 
 export default function Workspace({evaluationMode}: {evaluationMode: boolean}): ReactElement {
   const [editorMode, setEditorMode] = React.useState<EditorMode>(getInitialEditorMode());
@@ -88,8 +89,8 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
     [setSheets, sheets]
   )
 
-  const submitHandler = React.useMemo(
-    () => () => {
+  const runSql = React.useCallback(
+    () => {
       if (isQueryLoading) { return; }
       if (!editorRef.current) { return; }
       const value = editorRef.current.getValue();
@@ -107,10 +108,64 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
     [setIsQueryLoading, setSheets, setSelectedSheetIndex, sheets, isQueryLoading, editorRef, addNewSheetCallback]
   );
 
+  const formatSql = React.useCallback(() => {editorRef.current!.format();}, [editorRef]);
+  const openAddCsvDialog = React.useCallback(() => {setShouldOpenAddCsv(true);}, [setShouldOpenAddCsv]);
+  const restoreSql = React.useCallback(
+    () => {
+      if (sheets.length === 0) { return; }
+      editorRef.current!.setValue(sheets[selectedSheetIndex].sql);
+    },
+[sheets, selectedSheetIndex, editorRef]
+  );
+  const exportCsv = React.useCallback(
+    () => {
+      setIsDownloadCsvLoading(true);
+      // Add some delay for the UI to be updated.
+      setTimeout(
+        () => {
+          downloadCsv(sheets[selectedSheetIndex].name)
+            .then((filePath) => {
+              if (!filePath) { return; }
+
+              dialog.showSuccess('Exported!', `The sheet has been exported to: ${filePath}`);
+            })
+            .catch((err) => {
+              dialog.showError('Found an error!', err.message);
+            })
+            .finally(() => {
+              setIsDownloadCsvLoading(false);
+            });
+        },
+        10
+      );
+    },
+    [setIsDownloadCsvLoading, sheets, selectedSheetIndex]
+  );
+
   React.useEffect(() => {
     const handler = (event) => {
       if (event.code === 'Enter' && (event.metaKey || event.ctrlKey)) {
-        submitHandler();
+        runSql();
+        return false;
+      }
+
+      if (event.code === 'Enter' && event.altKey) {
+        formatSql();
+        return false;
+      }
+
+      if (event.code === 'KeyP' && (event.metaKey || event.ctrlKey)) {
+        openAddCsvDialog();
+        return false;
+      }
+
+      if (event.code === 'KeyD' && (event.metaKey || event.ctrlKey)) {
+        restoreSql();
+        return false;
+      }
+
+      if (event.code === 'Slash' && (event.metaKey || event.ctrlKey)) {
+        exportCsv();
         return false;
       }
 
@@ -121,7 +176,7 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
     return () => {
       document.removeEventListener('keydown', handler) ;
     };
-  }, [submitHandler]);
+  }, [runSql, formatSql, openAddCsvDialog, restoreSql, exportCsv]);
 
   React.useEffect(() => {
     const handler = (event) => {
@@ -205,10 +260,13 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
           <div className="left">
             <Button
               onClick={() => {
-                setShouldOpenAddCsv(true);
+                openAddCsvDialog();
               }}
               icon={<i className="fas fa-file-upload"/>}>
               Add files
+              <span className="short-key">
+                {ctrlCmdChar} P
+              </span>
             </Button>
           </div>
         </div>
@@ -224,15 +282,33 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
         <div className="inner" unselectable="on">
           <div className="left">
             <Button
-              onClick={submitHandler}
+              onClick={() => {runSql();}}
               isLoading={isQueryLoading}
               icon={<i className="fas fa-play"/>}>
               Run SQL
+              <span className="short-key">
+                {ctrlCmdChar} ⏎
+              </span>
             </Button>
             <span className="separator" />
-            <Button onClick={() => editorRef.current!.format()} icon={<i className="fas fa-align-justify" />}>Format</Button>
+            <Button
+              onClick={() => {formatSql()}} icon={<i className="fas fa-align-justify" />}
+            >
+              Format
+              <span className="short-key">
+                {altOptionChar} ⏎
+              </span>
+            </Button>
             <span className="separator" />
-            <Button onClick={() => editorRef.current!.setValue(sheets[selectedSheetIndex].sql)} icon={<i className="fas fa-history" />}>Restore SQL</Button>
+            <Button
+              onClick={() => {restoreSql();}}
+              icon={<i className="fas fa-history" />}
+            >
+              Restore SQL
+              <span className="short-key">
+                {ctrlCmdChar} D
+              </span>
+            </Button>
           </div>
           <div className="right">
             {selectedSheetIndex < sheets.length && (
@@ -316,8 +392,12 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
               }}
               isLoading={isDownloadCsvLoading}
               disabled={sheets.length === 0}
-              icon={<i className="fas fa-file-download" />}>
+              icon={<i className="fas fa-file-download" />}
+            >
               Export sheet
+              <span className="short-key">
+                {ctrlCmdChar} /
+              </span>
             </Button>
           </div>
         </div>
