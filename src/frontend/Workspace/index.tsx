@@ -211,6 +211,14 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
     setShouldOpenAddCsv(true);
   }, [addCsvRef]);
   const fileDroppedCallback = React.useCallback((event) => {
+    if (!event.dataTransfer?.files) {
+      return;
+    }
+
+    if (event.dataTransfer.files.length === 0) {
+      return;
+    }
+
     event.preventDefault();
     event.stopPropagation();
 
