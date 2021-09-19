@@ -104,6 +104,25 @@ describe('Workerize', () => {
       );
     });
 
+    it('import dup column names', async () => {
+      await workerize.addCsv('./test/data-store/csv-samples/dup_column.csv', ',', false);
+      const result = await workerize.query("SELECT * FROM dup_column");
+
+      expect(result).toEqual(
+        {
+          count: 1,
+          columns: ['name', 'Name_dup'],
+          name: 'query_1',
+          sql: "SELECT * FROM dup_column",
+          rows: [['john', 'doe, do']]
+        }
+      );
+      await workerize.exportCsv('dup_column', exportedPath);
+      expect(fs.readFileSync(exportedPath, {encoding: 'utf8'})).toEqual(
+        'name,Name_dup\r\njohn,"doe, do"\r\n'
+      );
+    });
+
     it('import unicode', async () => {
       await workerize.addCsv('./test/data-store/csv-samples/unicode.csv', ',', false);
       const result = await workerize.query("SELECT * FROM unicode");

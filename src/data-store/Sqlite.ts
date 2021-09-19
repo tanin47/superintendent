@@ -84,9 +84,9 @@ export class Sqlite extends Datastore {
 
     const columns: Array<string> = [];
 
-    const columnNames: Set<string> = new Set();
+    const sanitizedColumnNames: Set<string> = new Set();
     const getColumnName = (candidate: string) => {
-      if (columnNames.has(candidate))  {
+      if (sanitizedColumnNames.has(candidate.toLowerCase()))  {
         return getColumnName(`${candidate}_dup`);
       } else {
         return candidate;
@@ -99,7 +99,7 @@ export class Sqlite extends Datastore {
         const newName = getColumnName(this.sanitizeName(candidate));
 
         columns.push(newName);
-        columnNames.add(newName);
+        sanitizedColumnNames.add(newName.toLowerCase());
       });
       createTable = `CREATE TABLE x(${columns.map((c) => `"${c}" TEXT`).join(', ')})`;
       break;

@@ -58,8 +58,9 @@ export abstract class Datastore {
 
   protected getUniqueTableName(base: string, number: number | null = null): string {
     const candidate = base + (number ? `_${number}` : '');
+    const sanitizedCandidate = candidate.toLowerCase()
     for (const table of this.tables) {
-      if (candidate === table) {
+      if (sanitizedCandidate === table.toLowerCase()) {
         return this.getUniqueTableName(base, (number || 0) + 1);
       }
     }
