@@ -261,6 +261,22 @@ export default class Main {
     });
 
     Main.mainWindow = new Main.BrowserWindow({ width: 1280, height: 800, webPreferences: {nodeIntegration: true, contextIsolation: false}});
+    Main.mainWindow.on('close',(e) => {
+      const choice = require('electron').dialog.showMessageBoxSync(
+        Main.mainWindow,
+      {
+          type: 'question',
+          buttons: ['Yes', 'No'],
+          title: 'Confirm',
+          message: 'Are you sure you want to quit?'
+        }
+      );
+
+      if(choice === 1){
+        e.preventDefault();
+      }
+
+    });
 
     let initialFile: string | null = null;
     if (Main.isMac()) {

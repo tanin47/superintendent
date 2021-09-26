@@ -334,17 +334,20 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
                 <span className="total">
                   {formatTotal(sheets[selectedSheetIndex].count)}
                   {sheets[selectedSheetIndex].rows.length < sheets[selectedSheetIndex].count &&
-                    <Tippy
-                      theme="material"
-                      interactive
-                      content={
-                        <span className="tooltip">
-                          Only {sheets[selectedSheetIndex].rows.length.toLocaleString('en-US')} rows are previewed. Please export the sheet to see all the rows.
+                    <>
+                      <span className="preview">(Only {sheets[selectedSheetIndex].rows.length.toLocaleString('en-US')} are shown)</span>
+                      <Tippy
+                        theme="material"
+                        interactive
+                        content={
+                          <span className="tooltip">
+                          Please export the sheet to see all the rows.
                         </span>
-                      }
-                    >
-                      <i className="fas fa-info-circle" />
-                    </Tippy>
+                        }
+                      >
+                        <i className="fas fa-info-circle" />
+                      </Tippy>
+                    </>
                   }
                   {evaluationMode && (
                     <Tippy
@@ -426,12 +429,12 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
       </div>
       <div id="sheetSection" className={sheets.length === 0 ? 'empty' : ''}>
         <SheetSection
-          evaluationMode={evaluationMode}
           sheets={sheets}
           selectedSheetIndex={selectedSheetIndex}
           onSheetRenamed={(renamingSheetIndex, newName) => renamingSheetCallback(renamingSheetIndex, newName)}
           onSheetSelected={(index) => setSelectedSheetIndex(index)}
-          onSheetDeleted={(deletedIndex) => deleteSheetCallback(deletedIndex)} />
+          onSheetDeleted={(deletedIndex) => deleteSheetCallback(deletedIndex)}
+        />
       </div>
     </div>
   );

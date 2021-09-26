@@ -102,19 +102,17 @@ function RenameDialog({renamingSheet, onUpdated, onClosed}: {renamingSheet: Shee
 }
 
 export default function SheetSection({
-  evaluationMode,
   sheets,
   selectedSheetIndex,
   onSheetRenamed,
   onSheetSelected,
-  onSheetDeleted
+  onSheetDeleted,
 }: {
-  evaluationMode: boolean,
   sheets: Array<SheetType>,
   selectedSheetIndex: number,
   onSheetRenamed: (renamingSheetIndex: number, newName: string) => void,
-  onSheetSelected: (selectedSheetIndex: number) => void
-  onSheetDeleted: (deletedSheetIndex: number) => void
+  onSheetSelected: (selectedSheetIndex: number) => void,
+  onSheetDeleted: (deletedSheetIndex: number) => void,
 }): ReactElement {
 
   const onSingleClick = (index: number) => {
@@ -172,16 +170,16 @@ export default function SheetSection({
       />
       {sheets.length > 0 && (
         <Sheet
-          evaluationMode={evaluationMode}
           sheet={sheets[Math.min(selectedSheetIndex, sheets.length - 1)]} />
       )}
       <div className="selector">
         {sheets.map((sheet, index) => {
           return (
             <div
-                key={`sheet${index}`}
-                className={selectedSheetIndex === index ? 'selected' : ''}
-                onClick={(event) => handleClick(event, index)}>
+              key={`sheet${index}`}
+              className={selectedSheetIndex === index ? 'selected' : ''}
+              onClick={(event) => handleClick(event, index)}
+            >
               {sheet.name}
               <i
                   className="fas fa-times"

@@ -124,7 +124,7 @@ export default React.forwardRef<Ref, Props>(function Editor({
 
     for (const sheet of sheets) {
       for (const column of sheet.columns) {
-        allColumns.add(getAutocompleteWord(column));
+        allColumns.add(getAutocompleteWord(column.name));
       }
     }
 

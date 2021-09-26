@@ -1,5 +1,8 @@
 
-export type Column = string;
+export type Column = {
+  name: string,
+  maxCharWidthCount: number
+};
 export type Row = string[];
 
 export type Result = {
@@ -11,8 +14,7 @@ export type Result = {
 }
 
 export abstract class Datastore {
-  static MAX_ROW = 1000;
-  static MAX_CHARACTERS = 100000;
+  static MAX_ROW = 186282;
 
   protected tables: Array<string> = [];
 
@@ -25,28 +27,6 @@ export abstract class Datastore {
   abstract query(sql: string): Promise<Result>;
   abstract drop(table: string): Promise<void>;
   abstract rename(previousTableName: string, newTableName: string): Promise<void>;
-
-  static makePreview(columns: Column[], rows: Row[]): Array<Row> {
-    let numRows = 0;
-    let numChars = 0;
-
-    for (const row of rows) {
-      for (const col of columns) {
-        if (typeof row[col] === 'string') {
-          numChars += row[col].length;
-        } else {
-          numChars += 3; // estimated for other fields
-        }
-      }
-
-      numRows++;
-
-      if (numChars > Datastore.MAX_CHARACTERS) break;
-      if (numRows > Datastore.MAX_ROW) break;
-    }
-
-    return rows.slice(0, numRows);
-  }
 
   protected sanitizeName(name: string): string {
     return name.replace(/[^a-zA-Z0-9_]/g, '_');

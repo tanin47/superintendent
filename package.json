@@ -104,6 +104,8 @@
     "nan": "^2.14.0",
     "randomcolor": "^0.6.2",
     "react-modal": "^3.14.3",
+    "react-virtualized-auto-sizer": "^1.0.5",
+    "react-window": "^1.8.6",
     "sql-formatter": "^4.0.2",
     "sweetalert2": "^11.0.18",
     "threads": "^1.6.5",

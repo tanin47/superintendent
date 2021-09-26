@@ -1,4 +1,4 @@
-import {Datastore, Result} from './Datastore';
+import {Column, Datastore, Result} from './Datastore';
 import sqlite, {Database, Statement} from 'better-sqlite3';
 import path from "path";
 import fs from "fs";
@@ -191,14 +191,42 @@ export class Sqlite extends Datastore {
     const statement = this.db.prepare(`SELECT * FROM "${table}" LIMIT ${Datastore.MAX_ROW}`).raw(true)
     const allRows = statement.all();
 
-    let columns = statement.columns().map((c) => c.name);
-    const rows = Datastore.makePreview(columns, allRows);
+    let previewedNumOfRows = Math.min(numOfRows, Datastore.MAX_ROW);
+
+    if (previewedNumOfRows < 2000) {
+      previewedNumOfRows = 2000;
+    }
+
+    const columnNames = statement.columns().map((c) => c.name);
+    const sampleSql = `SELECT * FROM "${table}" WHERE ((rowid - 1) % ${Math.ceil(previewedNumOfRows / 2000)}) = 0 OR rowid = ${previewedNumOfRows} LIMIT 2001`;
+    const metdataSql = `SELECT ${columnNames.map((col) => { return `MAX(COALESCE(NULLIF(INSTR(CAST("${col}" AS text), x'0a'), 0), LENGTH(CAST("${col}" AS text)))) AS "${col}"` }).join(',')} FROM (${sampleSql})`
+
+    const metadataResult = this.db.prepare(metdataSql).all();
+
+    let columns: Column[] = columnNames.map((col) => {
+      return {
+        name: col,
+        maxCharWidthCount: 0
+      };
+    });
+
+    if (metadataResult.length > 0) {
+      columns = [];
+      for (const key in metadataResult[0]) {
+        if (metadataResult[0].hasOwnProperty(key)) {
+          columns.push({
+            name: key,
+            maxCharWidthCount: metadataResult[0][key]
+          });
+        }
+      }
+    }
 
     return {
       name: table,
       sql,
       columns,
-      rows,
+      rows: allRows,
       count: numOfRows,
     };
   }
