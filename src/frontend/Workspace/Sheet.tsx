@@ -15,19 +15,23 @@ function getTextWidth(text: string, font: string): number {
 }
 
 function getRowHeight(row: string[]): number {
+  if ((row as any).height) {
+    return (row as any).height;
+  }
   const context = canvas.getContext("2d")!;
   context.font = '12px JetBrains Mono';
 
   let height = 20;
   row.forEach((value) => {
-    height = Math.max(height, value.split('\n').length * 20);
+    height = Math.max(height, `${value}`.split('\n').length * 20);
   });
 
-  return Math.ceil(height) + 1;
+  (row as any).height = Math.ceil(height) + 1;
+  return (row as any).height;
 }
 
 function getCellIndicies(child) {
-  return { row: child.props.rowIndex, column: child.props.columnIndex };
+  return {row: child.props.rowIndex, column: child.props.columnIndex};
 }
 
 function getShownIndicies(children) {
