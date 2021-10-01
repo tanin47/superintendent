@@ -64,7 +64,3 @@ Lrwz20PtxhqB/GdyfOtebJ43tI9TZHYQ2VuD1SZRHK2fQFPiNsqT9flX/yTfCWAj
 1HX9PcZ2WIKjqP8kbWfnAYcCAwEAAQ==
 ---- End of Superintendent license ----
 ```
-
-https://secure.ksoftware.net/codesigning/invoice.php?o=99717829U0307180Y
-
-https://secure.ksoftware.net/code_sign_complete.php?o=99717829U0307180Y
