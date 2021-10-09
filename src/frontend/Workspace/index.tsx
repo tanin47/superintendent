@@ -65,10 +65,36 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
           .then(() => {
             // don't care.
           });
+
         return prevSheets.filter((sheet, index) => index !== deletedSheetIndex);
       });
+
+      if (deletedSheetIndex <= selectedSheetIndex) {
+        setSelectedSheetIndex(Math.max(0, selectedSheetIndex - 1));
+      }
     },
-    [setSheets]
+    [setSheets, selectedSheetIndex, setSelectedSheetIndex]
+  )
+
+  const rearrangeSheetCallback = React.useCallback(
+    (movedSheetIndex: number, newIndex: number): void => {
+      setSheets((prevSheets) => {
+        const copied = [...prevSheets];
+
+        const movedSheet = copied.splice(movedSheetIndex, 1);
+        copied.splice(newIndex, 0, movedSheet[0]);
+
+        const selectedSheetName = prevSheets[selectedSheetIndex].name;
+        for (let i=0;i<copied.length;i++) {
+          if (copied[i].name === selectedSheetName) {
+            setSelectedSheetIndex(i);
+          }
+        }
+
+        return copied;
+      });
+    },
+    [setSheets, selectedSheetIndex, setSelectedSheetIndex]
   )
 
   const renamingSheetCallback = React.useCallback(
@@ -434,6 +460,7 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
           onSheetRenamed={(renamingSheetIndex, newName) => renamingSheetCallback(renamingSheetIndex, newName)}
           onSheetSelected={(index) => setSelectedSheetIndex(index)}
           onSheetDeleted={(deletedIndex) => deleteSheetCallback(deletedIndex)}
+          onSheetRearranged={(movedSheetIndex, newIndex) => rearrangeSheetCallback(movedSheetIndex, newIndex)}
         />
       </div>
     </div>

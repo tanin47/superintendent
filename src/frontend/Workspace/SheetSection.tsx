@@ -107,13 +107,17 @@ export default function SheetSection({
   onSheetRenamed,
   onSheetSelected,
   onSheetDeleted,
+  onSheetRearranged
 }: {
   sheets: Array<SheetType>,
   selectedSheetIndex: number,
   onSheetRenamed: (renamingSheetIndex: number, newName: string) => void,
   onSheetSelected: (selectedSheetIndex: number) => void,
   onSheetDeleted: (deletedSheetIndex: number) => void,
+  onSheetRearranged: (movedSheetIndex: number, newIndex: number) => void,
 }): ReactElement {
+
+  const [draggedIndex, setDraggedIndex] = React.useState<number | null>(null);
 
   const onSingleClick = (index: number) => {
     onSheetSelected(index);
@@ -172,18 +176,61 @@ export default function SheetSection({
         <Sheet
           sheet={sheets[Math.min(selectedSheetIndex, sheets.length - 1)]} />
       )}
-      <div className="selector">
+      <div
+        className="selector"
+        onDragOver={(event) => {
+          if (draggedIndex === null) {
+            return;
+          }
+          event.preventDefault();
+          event.stopPropagation();
+        }}
+        onDrop={(event) => {
+          if (draggedIndex === null) {
+            return;
+          }
+          event.preventDefault();
+          event.stopPropagation();
+          onSheetRearranged(draggedIndex, sheets.length);
+        }}
+      >
         {sheets.map((sheet, index) => {
           return (
             <div
               key={`sheet${index}`}
               className={selectedSheetIndex === index ? 'selected' : ''}
               onClick={(event) => handleClick(event, index)}
+              draggable={true}
+              onDrag={(event) => {
+                setDraggedIndex(index);
+                event.dataTransfer.effectAllowed = 'move';
+              }}
+              onDragOver={(event) => {
+                if (draggedIndex === null) {
+                  return;
+                }
+                event.preventDefault();
+                event.stopPropagation();
+              }}
+              onDrop={(event) => {
+                if (draggedIndex === null) {
+                  return;
+                }
+                event.preventDefault();
+                event.stopPropagation();
+
+                if (draggedIndex === index) { return; }
+                onSheetRearranged(draggedIndex, index);
+              }}
             >
               {sheet.name}
               <i
                   className="fas fa-times"
-                  onClick={() => onSheetDeleted(index)}/>
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation(); // don't trigger selecting sheet.
+                    onSheetDeleted(index)
+                  }}/>
             </div>
           );
         })}
