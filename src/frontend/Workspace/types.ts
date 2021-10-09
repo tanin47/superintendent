@@ -14,5 +14,6 @@ export type Sheet = {
   rows: string[][],
   presentationType: PresentationType,
   scrollLeft: number | null,
-  scrollTop: number | null
+  scrollTop: number | null,
+  resizedColumns: {[col:number]: number}
 };

@@ -126,7 +126,7 @@ function useInnerElementType(
   );
 }
 
-function Grid({
+const Grid = React.forwardRef(function Grid({
   rowCount,
   columnCount,
   computeRowHeight,
@@ -148,7 +148,8 @@ function Grid({
   initialScrollTop: number,
   onScrolled: (left: number, top: number) => void,
   children: any
-}): JSX.Element {
+},
+  ref: any): JSX.Element {
   const computeColumnWidth = React.useCallback(
     (index: number) => {
       return columnWidths[index];
@@ -156,8 +157,19 @@ function Grid({
     [columnWidths]
   );
 
+  const baseGridRef = React.createRef<any>();
+
+  React.useImperativeHandle(ref, () => ({
+    update: (colIndex: number) => {
+      if (baseGridRef.current) {
+        baseGridRef.current.resetAfterColumnIndex(colIndex, true);
+      }
+    }
+  }), [baseGridRef]);
+
   return (
     <BaseGrid
+      ref={baseGridRef}
       rowCount={rowCount}
       rowHeight={computeRowHeight}
       columnCount={columnCount}
@@ -176,17 +188,69 @@ function Grid({
       {children}
     </BaseGrid>
   )
-}
+});
 
 function Table({sheet}: {sheet: Sheet}): JSX.Element {
-  const columnWidths = sheet.columns.map((column) => {
+  const columnWidths = sheet.columns.map((column, index) => {
+    if (sheet.resizedColumns && sheet.resizedColumns[index]) {
+      return sheet.resizedColumns[index];
+    }
+
     const width = 1 + Math.max(
       getTextWidth(column.name, 'bold 12px JetBrains Mono'),
       getTextWidth('#'.repeat(column.maxCharWidthCount), '12px JetBrains Mono'),
+      20
     );
 
     return width;
   });
+  const [mouseDownX, setMouseDownX] = React.useState<number>(0);
+  const [mouseDownColWidth, setMouseDownColWidth] = React.useState<number>(0);
+  const [resizingColIndex, setResizingColIndex] = React.useState<number | null>(null);
+  const gridRef = React.createRef<any>();
+
+  const resizeColMouseDownHandler = (colIndex: number) => (event: React.MouseEvent) => {
+    if (!sheet.resizedColumns) {
+      sheet.resizedColumns = {};
+    }
+
+    if (!sheet.resizedColumns[colIndex]) {
+      sheet.resizedColumns[colIndex] = columnWidths[colIndex];
+    }
+    setMouseDownX(event.clientX);
+    setMouseDownColWidth(sheet.resizedColumns[colIndex]);
+    setResizingColIndex(colIndex);
+  };
+
+  React.useEffect(() => {
+    const handler = (event) => {
+      if (resizingColIndex === null) { return; }
+      if (!gridRef.current) { return; }
+
+      sheet.resizedColumns[resizingColIndex] = Math.max(event.clientX - mouseDownX + mouseDownColWidth, 20);
+      columnWidths[resizingColIndex] = sheet.resizedColumns[resizingColIndex];
+      gridRef.current.update(resizingColIndex);
+    };
+    document.addEventListener('mousemove', handler);
+
+    return () => {
+      document.removeEventListener('mousemove', handler) ;
+    };
+  }, [resizingColIndex, mouseDownColWidth, mouseDownX, gridRef]);
+
+  React.useEffect(() => {
+    const handler = (event) => {
+      if (resizingColIndex === null) {
+        return;
+      }
+      setResizingColIndex(null);
+    };
+    document.addEventListener('mouseup', handler);
+
+    return () => {
+      document.removeEventListener('mouseup', handler);
+    }
+  }, [resizingColIndex, setResizingColIndex]);
 
   const Cell = ({columnIndex, rowIndex, style}: {columnIndex: number, rowIndex: number, style: any}): JSX.Element => {
     if (rowIndex === 0) {
@@ -210,7 +274,17 @@ function Table({sheet}: {sheet: Sheet}): JSX.Element {
             overflow: 'hidden'
           }}
         >
+          {columnIndex > 0 && (
+            <div
+              className="resize-column-left-bar"
+              onMouseDown={resizeColMouseDownHandler(columnIndex-1)}
+            />
+          )}
           {sheet.columns[columnIndex].name}
+          <div
+            className="resize-column-right-bar"
+            onMouseDown={resizeColMouseDownHandler(columnIndex)}
+          />
         </div>
       );
     } else {
@@ -251,6 +325,7 @@ function Table({sheet}: {sheet: Sheet}): JSX.Element {
       {({height, width}) => {
         return (
           <Grid
+            ref={gridRef}
             key={sheet.name}
             rowCount={sheet.rows.length + 1}
             computeRowHeight={computeRowHeight}

@@ -193,12 +193,12 @@ export class Sqlite extends Datastore {
 
     let previewedNumOfRows = Math.min(numOfRows, Datastore.MAX_ROW);
 
-    if (previewedNumOfRows < 2000) {
-      previewedNumOfRows = 2000;
+    if (previewedNumOfRows < 100) {
+      previewedNumOfRows = 100;
     }
 
     const columnNames = statement.columns().map((c) => c.name);
-    const sampleSql = `SELECT * FROM "${table}" WHERE ((rowid - 1) % ${Math.ceil(previewedNumOfRows / 2000)}) = 0 OR rowid = ${previewedNumOfRows} LIMIT 2001`;
+    const sampleSql = `SELECT * FROM "${table}" WHERE ((rowid - 1) % ${Math.ceil(previewedNumOfRows / 100)}) = 0 OR rowid = ${previewedNumOfRows} LIMIT 101`;
     const metdataSql = `SELECT ${columnNames.map((col) => { return `MAX(COALESCE(NULLIF(INSTR(CAST("${col}" AS text), x'0a'), 0), LENGTH(CAST("${col}" AS text)))) AS "${col}"` }).join(',')} FROM (${sampleSql})`
 
     const metadataResult = this.db.prepare(metdataSql).all();
