@@ -34,7 +34,7 @@ function getCellIndicies(child) {
   return {row: child.props.rowIndex, column: child.props.columnIndex};
 }
 
-function getShownIndicies(children) {
+function getShownIndices(children) {
   let minRow = Infinity;
   let maxRow = -Infinity;
   let minColumn = Infinity;
@@ -64,12 +64,13 @@ function getShownIndicies(children) {
 function useInnerElementType(
   cell: any,
   columnWidths: number[],
+  cumulativeRowHeights: number[],
   computeRowHeight: (index: number) => number,
 ): React.ForwardRefExoticComponent<React.PropsWithoutRef<{}> & React.RefAttributes<HTMLDivElement>> {
   return React.useMemo(
     () =>
       React.forwardRef((props, ref: ForwardedRef<HTMLDivElement>) => {
-        const shownIndicies = getShownIndicies(props.children);
+        const shownIndices = getShownIndices(props.children);
 
         const children = React.Children.map(props.children, (child) => {
           const {row} = getCellIndicies(child);
@@ -87,16 +88,32 @@ function useInnerElementType(
           cumulativeColumnWidths[i] = columnWidths[i] + cumulativeColumnWidths[i - 1];
         }
 
-        const shownColumnsCount =
-          shownIndicies.to.column - shownIndicies.from.column;
+        children.push(
+          React.createElement(cell, {
+            key: "0:0",
+            rowIndex: 0,
+            columnIndex: 0,
+            style: {
+              display: "inline-flex",
+              width: columnWidths[0],
+              height: computeRowHeight(0),
+              position: "sticky",
+              top: 0,
+              left: 0,
+              zIndex: 4
+            }
+          })
+        );
 
-        for (let i = 0; i <= shownColumnsCount; i += 1) {
-          const columnIndex = i + shownIndicies.from.column;
+        const shownColumnsCount = shownIndices.to.column - shownIndices.from.column;
+
+        for (let i = 1; i <= shownColumnsCount; i += 1) {
+          const columnIndex = i + shownIndices.from.column;
           const rowIndex = 0;
           const width = columnWidths[columnIndex];
           const height = computeRowHeight(rowIndex);
 
-          const marginLeft = i === 0 && columnIndex > 0 ? cumulativeColumnWidths[columnIndex - 1] : undefined;
+          const marginLeft = i === 1 ? cumulativeColumnWidths[columnIndex - 1] - columnWidths[0] : undefined;
 
           children.push(
             React.createElement(cell, {
@@ -111,6 +128,34 @@ function useInnerElementType(
                 position: "sticky",
                 top: 0,
                 zIndex: 3
+              }
+            })
+          );
+        }
+
+        const shownRowsCount = shownIndices.to.row - shownIndices.from.row;
+        const headerRowHeight = computeRowHeight(0);
+
+        for (let i = 1; i <= shownRowsCount; i += 1) {
+          const columnIndex = 0;
+          const rowIndex = i + shownIndices.from.row;
+          const width = columnWidths[columnIndex];
+          const height = computeRowHeight(rowIndex);
+
+          const marginTop = i === 1 ? cumulativeRowHeights[rowIndex - 1] - headerRowHeight : undefined;
+
+          children.push(
+            React.createElement(cell, {
+              key: `${rowIndex}:${columnIndex}`,
+              rowIndex,
+              columnIndex,
+              style: {
+                marginTop,
+                width,
+                height,
+                position: "sticky",
+                left: 0,
+                zIndex: 2
               }
             })
           );
@@ -167,6 +212,11 @@ const Grid = React.forwardRef(function Grid({
     }
   }), [baseGridRef]);
 
+  const cumulativeRowHeights: number[] = [rowCount >= 0 ? computeRowHeight(0) : 0];
+  for (let i=1;i<rowCount;i++) {
+    cumulativeRowHeights[i] = computeRowHeight(i) + cumulativeRowHeights[i - 1];
+  }
+
   return (
     <BaseGrid
       ref={baseGridRef}
@@ -182,6 +232,7 @@ const Grid = React.forwardRef(function Grid({
       innerElementType={useInnerElementType(
         children,
         columnWidths,
+        cumulativeRowHeights,
         computeRowHeight,
       )}
     >
@@ -191,9 +242,11 @@ const Grid = React.forwardRef(function Grid({
 });
 
 function Table({sheet}: {sheet: Sheet}): JSX.Element {
-  const columnWidths = sheet.columns.map((column, index) => {
-    if (sheet.resizedColumns && sheet.resizedColumns[index]) {
-      return sheet.resizedColumns[index];
+  const columnWidths = [sheet.resizedColumns && sheet.resizedColumns[0] ? sheet.resizedColumns[0] : 30];
+  sheet.columns.forEach((column, index) => {
+    if (sheet.resizedColumns && sheet.resizedColumns[index + 1]) {
+      columnWidths.push(sheet.resizedColumns[index + 1]);
+      return;
     }
 
     const width = 1 + Math.max(
@@ -202,7 +255,7 @@ function Table({sheet}: {sheet: Sheet}): JSX.Element {
       20
     );
 
-    return width;
+    columnWidths.push(width);
   });
   const [mouseDownX, setMouseDownX] = React.useState<number>(0);
   const [mouseDownColWidth, setMouseDownColWidth] = React.useState<number>(0);
@@ -271,7 +324,9 @@ function Table({sheet}: {sheet: Sheet}): JSX.Element {
             lineHeight: '20px',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            textAlign: columnIndex === 0 ? 'center' : 'left',
+            userSelect: resizingColIndex !== null ? 'none' : '',
           }}
         >
           {columnIndex > 0 && (
@@ -280,7 +335,7 @@ function Table({sheet}: {sheet: Sheet}): JSX.Element {
               onMouseDown={resizeColMouseDownHandler(columnIndex-1)}
             />
           )}
-          {sheet.columns[columnIndex].name}
+          {columnIndex === 0 ? '\u00A0' : sheet.columns[columnIndex-1].name}
           <div
             className="resize-column-right-bar"
             onMouseDown={resizeColMouseDownHandler(columnIndex)}
@@ -300,14 +355,17 @@ function Table({sheet}: {sheet: Sheet}): JSX.Element {
             paddingLeft: '3px',
             paddingRight: '3px',
             fontFamily: 'JetBrains Mono, monospace',
-            fontSize: '12px',
+            fontSize: columnIndex === 0 ? '8px' : '12px',
+            backgroundColor: columnIndex === 0 ? '#eee' : '',
+            textAlign: columnIndex === 0 ? 'right' : 'left',
             lineHeight: '20px',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            userSelect: resizingColIndex !== null ? 'none' : '',
           }}
         >
-          {sheet.rows[rowIndex - 1][columnIndex]}
+          {columnIndex === 0 ? rowIndex : sheet.rows[rowIndex - 1][columnIndex - 1]}
         </div>
       );
     }
