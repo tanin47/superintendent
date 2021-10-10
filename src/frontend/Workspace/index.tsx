@@ -15,6 +15,7 @@ import {ipcRenderer, shell} from "electron";
 import AddCsv, {Ref as AddCsvRef} from "./AddCsvModal";
 import { IpcRendererEvent } from 'electron/renderer';
 import {altOptionChar, ctrlCmdChar} from "./constants";
+import MaybeTippy from "./MaybeTippy";
 
 export default function Workspace({evaluationMode}: {evaluationMode: boolean}): ReactElement {
   const [editorMode, setEditorMode] = React.useState<EditorMode>(getInitialEditorMode());
@@ -274,6 +275,8 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
     }
   }, [addFiles])
 
+  const isChartSelectorDisabled = sheets.length === 0 || sheets[selectedSheetIndex].count > 10000;
+
   return (
     <div
       id="workspace"
@@ -393,26 +396,37 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
               </>
             )}
             <div className="selector">
-              <div className={`select ${sheets.length === 0 ? 'disabled' : ''}`}>
-                <select
-                  value={sheets[selectedSheetIndex]?.presentationType || 'table'}
-                  onChange={(event) => {
-                     setSheets(sheets.map((sheet, index) => {
-                       if (selectedSheetIndex === index) {
-                          sheet.presentationType = event.target.value as PresentationType;
-                       }
+              <MaybeTippy
+                theme="material"
+                interactive
+                content={
+                  <span className="tooltip">
+                    Charts cannot render more than 10,000 rows.
+                  </span>
+                }
+                shown={sheets.length > 0 && sheets[selectedSheetIndex].count > 10000}
+              >
+                <div className={`select ${isChartSelectorDisabled ? 'disabled' : ''}`}>
+                  <select
+                    value={sheets[selectedSheetIndex]?.presentationType || 'table'}
+                    onChange={(event) => {
+                       setSheets(sheets.map((sheet, index) => {
+                         if (selectedSheetIndex === index) {
+                            sheet.presentationType = event.target.value as PresentationType;
+                         }
 
-                       return sheet;
-                     }));
-                  }}
-                  disabled={sheets.length === 0}
-                >
-                  <option value="table">Table</option>
-                  <option value="line">Line chart</option>
-                  <option value="bar">Bar chart</option>
-                  <option value="pie">Pie chart</option>
-                </select>
-              </div>
+                         return sheet;
+                       }));
+                    }}
+                    disabled={isChartSelectorDisabled}
+                  >
+                    <option value="table">Table</option>
+                    <option value="line">Line chart</option>
+                    <option value="bar">Bar chart</option>
+                    <option value="pie">Pie chart</option>
+                  </select>
+                </div>
+              </MaybeTippy>
             </div>
             <span className="separator" />
             <Button
