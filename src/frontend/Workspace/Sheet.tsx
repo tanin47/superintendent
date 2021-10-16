@@ -478,10 +478,13 @@ function Table({
     (startIndex: number, stopIndex: number): Promise<void> => {
       return loadMore(sheet.name, sheet.rows.length)
         .then((rows) => {
-          const current = gridRef.current!; // onRowsAdded clears gridRef, so we need to save it first.
+          const current = gridRef.current; // onRowsAdded clears gridRef, so we need to save it first.
           const loadingRow = sheet.rows.length;
           onRowsAdded(rows);
-          current.updateRow(loadingRow); // update the height of the load more row.
+
+          if (current) {
+            current.updateRow(loadingRow); // update the height of the load more row.
+          }
         });
     },
     [sheet, gridRef]
