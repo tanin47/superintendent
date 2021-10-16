@@ -1,4 +1,4 @@
-import {Column, Datastore, Result} from './Datastore';
+import {Column, Datastore, Result, Row} from './Datastore';
 import sqlite, {Database, Statement} from 'better-sqlite3';
 import path from "path";
 import fs from "fs";
@@ -184,6 +184,13 @@ export class Sqlite extends Datastore {
     return Promise.resolve(this.queryAllFromTable(table, sql));
   }
 
+  async loadMore(table: string, offset: number): Promise<Row[]> {
+    const statement = this.db.prepare(`SELECT * FROM "${table}" LIMIT ${Datastore.MAX_ROW_LOAD_MORE} OFFSET ${offset}`).raw(true)
+    const allRows = statement.all();
+
+    return Promise.resolve(allRows);
+  }
+
   private queryAllFromTable(table: string, sql: string): Result {
     const numOfRowsResult = this.db.prepare(`SELECT COUNT(*) AS number_of_rows FROM "${table}"`).all();
     const numOfRows = numOfRowsResult.length == 0 ? 0 : numOfRowsResult[0].number_of_rows;
@@ -198,7 +205,7 @@ export class Sqlite extends Datastore {
     }
 
     const columnNames = statement.columns().map((c) => c.name);
-    const sampleSql = `SELECT * FROM "${table}" WHERE ((rowid - 1) % ${Math.ceil(previewedNumOfRows / 100)}) = 0 OR rowid = ${previewedNumOfRows} LIMIT 101`;
+    const sampleSql = `SELECT * FROM (SELECT rowid, * FROM "${table}" LIMIT ${Datastore.MAX_ROW}) WHERE ((rowid - 1) % ${Math.ceil(previewedNumOfRows / 100)}) = 0 OR rowid = ${previewedNumOfRows}`;
     const metdataSql = `SELECT ${columnNames.map((col) => { return `MAX(COALESCE(NULLIF(INSTR(CAST("${col}" AS text), x'0a'), 0), LENGTH(CAST("${col}" AS text)))) AS "${col}"` }).join(',')} FROM (${sampleSql})`
 
     const metadataResult = this.db.prepare(metdataSql).all();

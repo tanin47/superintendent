@@ -226,6 +226,10 @@ export default class Main {
       return Main.wrapResponse(Main.db.query(arg));
     });
 
+    ipcMain.handle('load-more', async (event, table, offset) => {
+      return Main.wrapResponse(Main.db.loadMore(table, offset));
+    });
+
     ipcMain.handle('drop', async (event, arg) => {
       return Main.wrapResponse(Main.db.drop(arg));
     });

@@ -1,6 +1,6 @@
 import { expose } from 'threads/worker';
 import {Env, Sqlite} from "./Sqlite";
-import {Result} from "./Datastore";
+import {Result, Row} from "./Datastore";
 
 let sqlite: Sqlite | null;
 
@@ -26,6 +26,9 @@ expose({
   },
   async query(sql: string): Promise<Result> {
     return sqlite!.query(sql);
+  },
+  async loadMore(table: string, offset: number): Promise<Row[]> {
+    return sqlite!.loadMore(table, offset);
   },
   async drop(table: string): Promise<void> {
     return sqlite!.drop(table);

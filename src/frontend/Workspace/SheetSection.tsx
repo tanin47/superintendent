@@ -107,7 +107,8 @@ export default function SheetSection({
   onSheetRenamed,
   onSheetSelected,
   onSheetDeleted,
-  onSheetRearranged
+  onSheetRearranged,
+  onRowsAdded
 }: {
   sheets: Array<SheetType>,
   selectedSheetIndex: number,
@@ -115,6 +116,7 @@ export default function SheetSection({
   onSheetSelected: (selectedSheetIndex: number) => void,
   onSheetDeleted: (deletedSheetIndex: number) => void,
   onSheetRearranged: (movedSheetIndex: number, newIndex: number) => void,
+  onRowsAdded: (rows: string[][]) => void
 }): ReactElement {
 
   const [draggedIndex, setDraggedIndex] = React.useState<number | null>(null);
@@ -174,7 +176,9 @@ export default function SheetSection({
       />
       {sheets.length > 0 && (
         <Sheet
-          sheet={sheets[Math.min(selectedSheetIndex, sheets.length - 1)]} />
+          sheet={sheets[Math.min(selectedSheetIndex, sheets.length - 1)]}
+          onRowsAdded={onRowsAdded}
+        />
       )}
       <div
         className="selector"

@@ -1,4 +1,4 @@
-import {Datastore, Result} from './Datastore';
+import {Datastore, Result, Row} from './Datastore';
 import path from "path";
 import {spawn, Thread, Worker} from 'threads';
 
@@ -40,6 +40,10 @@ export class Workerize extends Datastore {
 
   async query(sql: string): Promise<Result> {
     return this.worker.query(sql);
+  }
+
+  async loadMore(table: string, offset: number): Promise<Row[]> {
+    return this.worker.loadMore(table, offset);
   }
 
   async drop(table: string): Promise<void> {

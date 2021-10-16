@@ -133,6 +133,18 @@ export function query(q: string): Promise<Sheet> {
     });
 }
 
+export function loadMore(table: string, offset: number): Promise<string[][]> {
+  return ipcRenderer
+    .invoke('load-more', table, offset)
+    .then((result) => {
+      if (result.success) {
+        return result.data;
+      } else {
+        throw result;
+      }
+    });
+}
+
 export function addCsv(path: string, format: string): Promise<Sheet[] | null> {
   return ipcRenderer
     .invoke('add-csv', path, format)

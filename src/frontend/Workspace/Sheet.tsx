@@ -4,6 +4,8 @@ import {Chart, ChartType, registerables} from 'chart.js';
 import randomColor from 'randomcolor';
 import {VariableSizeGrid as BaseGrid} from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
+import InfiniteLoader from 'react-window-infinite-loader';
+import {loadMore} from "../api";
 
 let canvas: HTMLCanvasElement = document.createElement("canvas");
 
@@ -64,8 +66,8 @@ function getShownIndices(children) {
 function useInnerElementType(
   cell: any,
   columnWidths: number[],
-  cumulativeRowHeights: number[],
   computeRowHeight: (index: number) => number,
+  computeCumulativeRowHeight: (index: number) => number,
 ): React.ForwardRefExoticComponent<React.PropsWithoutRef<{}> & React.RefAttributes<HTMLDivElement>> {
   return React.useMemo(
     () =>
@@ -73,10 +75,10 @@ function useInnerElementType(
         const shownIndices = getShownIndices(props.children);
 
         const children = React.Children.map(props.children, (child) => {
-          const {row} = getCellIndicies(child);
+          const {row, column} = getCellIndicies(child);
 
           // do not show non-sticky cell
-          if (row === 0) {
+          if (row === 0 || column === 0) {
             return null;
           }
 
@@ -142,7 +144,7 @@ function useInnerElementType(
           const width = columnWidths[columnIndex];
           const height = computeRowHeight(rowIndex);
 
-          const marginTop = i === 1 ? cumulativeRowHeights[rowIndex - 1] - headerRowHeight : undefined;
+          const marginTop = i === 1 ? computeCumulativeRowHeight(rowIndex - 1) - headerRowHeight : undefined;
 
           children.push(
             React.createElement(cell, {
@@ -175,23 +177,29 @@ const Grid = React.forwardRef(function Grid({
   rowCount,
   columnCount,
   computeRowHeight,
+  computeCumulativeRowHeight,
   columnWidths,
   width,
   height,
   initialScrollLeft,
   initialScrollTop,
   onScrolled,
+  infiniteLoaderRef,
+  onItemsRendered,
   children
 }: {
   rowCount: number,
   columnCount: number,
   computeRowHeight: (index: number) => number,
+  computeCumulativeRowHeight: (index: number) => number,
   columnWidths: number[],
   width: number,
   height: number,
   initialScrollLeft: number,
   initialScrollTop: number,
   onScrolled: (left: number, top: number) => void,
+  onItemsRendered: (params: any) => void,
+  infiniteLoaderRef: (r: any) => void,
   children: any
 },
   ref: any): JSX.Element {
@@ -202,24 +210,27 @@ const Grid = React.forwardRef(function Grid({
     [columnWidths]
   );
 
-  const baseGridRef = React.createRef<any>();
+  const baseGridRef = React.useRef<any>();
 
   React.useImperativeHandle(ref, () => ({
-    update: (colIndex: number) => {
+    updateColumn: (colIndex: number) => {
       if (baseGridRef.current) {
         baseGridRef.current.resetAfterColumnIndex(colIndex, true);
+      }
+    },
+    updateRow: (rowIndex: number) => {
+      if (baseGridRef.current) {
+        baseGridRef.current.resetAfterRowIndex(rowIndex, true);
       }
     }
   }), [baseGridRef]);
 
-  const cumulativeRowHeights: number[] = [rowCount >= 0 ? computeRowHeight(0) : 0];
-  for (let i=1;i<rowCount;i++) {
-    cumulativeRowHeights[i] = computeRowHeight(i) + cumulativeRowHeights[i - 1];
-  }
-
   return (
     <BaseGrid
-      ref={baseGridRef}
+      ref={(r) => {
+        baseGridRef.current = r;
+        infiniteLoaderRef(r)
+      }}
       rowCount={rowCount}
       rowHeight={computeRowHeight}
       columnCount={columnCount}
@@ -229,11 +240,24 @@ const Grid = React.forwardRef(function Grid({
       initialScrollLeft={initialScrollLeft}
       initialScrollTop={initialScrollTop}
       onScroll={({scrollLeft, scrollTop}) => onScrolled(scrollLeft, scrollTop)}
+      onItemsRendered={({
+        visibleRowStartIndex,
+        visibleRowStopIndex,
+        overscanRowStopIndex,
+        overscanRowStartIndex,
+      }) => {
+        onItemsRendered({
+          overscanStartIndex: overscanRowStartIndex,
+          overscanStopIndex: overscanRowStopIndex,
+          visibleStartIndex: visibleRowStartIndex,
+          visibleStopIndex: visibleRowStopIndex,
+        });
+      }}
       innerElementType={useInnerElementType(
         children,
         columnWidths,
-        cumulativeRowHeights,
         computeRowHeight,
+        computeCumulativeRowHeight,
       )}
     >
       {children}
@@ -241,7 +265,13 @@ const Grid = React.forwardRef(function Grid({
   )
 });
 
-function Table({sheet}: {sheet: Sheet}): JSX.Element {
+function Table({
+  sheet,
+  onRowsAdded
+}: {
+  sheet: Sheet,
+  onRowsAdded: (rows: string[][]) => void
+}): JSX.Element {
   const columnWidths = [sheet.resizedColumns && sheet.resizedColumns[0] ? sheet.resizedColumns[0] : 30];
   sheet.columns.forEach((column, index) => {
     if (sheet.resizedColumns && sheet.resizedColumns[index + 1]) {
@@ -282,7 +312,8 @@ function Table({sheet}: {sheet: Sheet}): JSX.Element {
 
       sheet.resizedColumns[resizingColIndex] = Math.max(event.clientX - mouseDownX + mouseDownColWidth, 20);
       columnWidths[resizingColIndex] = sheet.resizedColumns[resizingColIndex];
-      gridRef.current.update(resizingColIndex);
+
+      gridRef.current.updateColumn(resizingColIndex);
     };
     document.addEventListener('mousemove', handler);
 
@@ -332,14 +363,36 @@ function Table({sheet}: {sheet: Sheet}): JSX.Element {
           {columnIndex > 0 && (
             <div
               className="resize-column-left-bar"
-              onMouseDown={resizeColMouseDownHandler(columnIndex-1)}
+              onMouseDown={resizeColMouseDownHandler(columnIndex - 1)}
             />
           )}
-          {columnIndex === 0 ? '\u00A0' : sheet.columns[columnIndex-1].name}
+          {columnIndex === 0 ? '\u00A0' : sheet.columns[columnIndex - 1].name}
           <div
             className="resize-column-right-bar"
             onMouseDown={resizeColMouseDownHandler(columnIndex)}
           />
+        </div>
+      );
+    } else if (rowIndex === sheet.rows.length + 1) {
+      return (
+        <div
+          key={`loading-next-${columnIndex}`}
+          style={{
+            ...style,
+            maxWidth: `${columnWidths[columnIndex]}px`,
+            minWidth: `${columnWidths[columnIndex]}px`,
+            paddingLeft: '4px',
+            fontFamily: 'JetBrains Mono, monospace',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            backgroundColor: '#ccc',
+            lineHeight: '20px',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+          }}
+        >
+          &nbsp;
         </div>
       );
     } else {
@@ -371,35 +424,107 @@ function Table({sheet}: {sheet: Sheet}): JSX.Element {
     }
   };
 
+  const gridRowCount = sheet.rows.length + 1 + ((sheet.rows.length < sheet.count) ? 1 : 0);
+
   const computeRowHeight = React.useCallback(
     (index: number) => {
-      return index === 0 ? getRowHeight(sheet.columns.map((c) => c.name)) : getRowHeight(sheet.rows[index - 1]);
+      if (index === 0) {
+        return getRowHeight(sheet.columns.map((c) => c.name));
+      } else if (index === sheet.rows.length + 1) {
+        return 20;
+      } else {
+        return getRowHeight(sheet.rows[index - 1]);
+      }
     },
     [sheet]
   );
+
+  const computeCumulativeRowHeight = React.useCallback(
+    (index: number) => {
+      if (index === 0) {
+        return getRowHeight(sheet.columns.map((c) => c.name));
+      } else if (index === sheet.rows.length + 1) {
+        return 20 + computeCumulativeRowHeight(sheet.rows.length);
+      } else {
+        const row = sheet.rows[index - 1];
+        if ((row as any).cumulativeHeight) {
+          return (row as any).cumulativeHeight;
+        }
+
+        let i = index;
+        let cumulativeHeight = computeRowHeight(i);
+        i--;
+
+        for (;i>=0;i--) {
+          if (i > 0 && i < (sheet.rows.length + 1)) {
+            const thisRow = sheet.rows[i-1];
+
+            if ((thisRow as any).cumulativeHeight) {
+              cumulativeHeight += (thisRow as any).cumulativeHeight;
+              break;
+            }
+          }
+          cumulativeHeight += computeRowHeight(i);
+        }
+
+        (row as any).cumulativeHeight = cumulativeHeight;
+        return (row as any).cumulativeHeight;
+      }
+    },
+    [sheet, computeRowHeight]
+  );
+
+  const loadMoreItems = React.useCallback(
+    (startIndex: number, stopIndex: number): Promise<void> => {
+      return loadMore(sheet.name, sheet.rows.length)
+        .then((rows) => {
+          const current = gridRef.current!; // onRowsAdded clears gridRef, so we need to save it first.
+          const loadingRow = sheet.rows.length;
+          onRowsAdded(rows);
+          current.updateRow(loadingRow); // update the height of the load more row.
+        });
+    },
+    [sheet, gridRef]
+  );
+
+  const isItemLoaded = React.useCallback(
+    (index) => (index < (sheet.rows.length + 1)),
+    [sheet]
+  )
 
   return (
     <AutoSizer>
       {({height, width}) => {
         return (
-          <Grid
-            ref={gridRef}
-            key={sheet.name}
-            rowCount={sheet.rows.length + 1}
-            computeRowHeight={computeRowHeight}
-            columnCount={columnWidths.length}
-            columnWidths={columnWidths}
-            initialScrollLeft={sheet.scrollLeft || 0}
-            initialScrollTop={sheet.scrollTop || 0}
-            width={width}
-            height={height}
-            onScrolled={(left, top) => {
-              sheet.scrollLeft = left;
-              sheet.scrollTop = top;
-            }}
+          <InfiniteLoader
+            itemCount={gridRowCount}
+            isItemLoaded={isItemLoaded}
+            loadMoreItems={loadMoreItems}
           >
-            {Cell}
-          </Grid>
+            {({ onItemsRendered, ref }) => (
+              <Grid
+                ref={gridRef}
+                infiniteLoaderRef={ref}
+                key={sheet.name}
+                rowCount={gridRowCount}
+                computeRowHeight={computeRowHeight}
+                computeCumulativeRowHeight={computeCumulativeRowHeight}
+                columnCount={columnWidths.length}
+                columnWidths={columnWidths}
+                initialScrollLeft={sheet.scrollLeft || 0}
+                initialScrollTop={sheet.scrollTop || 0}
+                width={width}
+                height={height}
+                onItemsRendered={onItemsRendered}
+                onScrolled={(left, top) => {
+                  sheet.scrollLeft = left;
+                  sheet.scrollTop = top;
+                }}
+              >
+                {Cell}
+              </Grid>
+            )}
+          </InfiniteLoader>
         );
       }}
     </AutoSizer>
@@ -465,7 +590,7 @@ function Graph({type, sheet}: {type: ChartType, sheet: Sheet}): JSX.Element {
   );
 }
 
-export default function Sheet(props: {sheet: Sheet}): JSX.Element {
+export default function Sheet({sheet, onRowsAdded}: {sheet: Sheet, onRowsAdded: (rows: string[][]) => void}): JSX.Element {
 
   React.useEffect(
     () => {
@@ -476,18 +601,18 @@ export default function Sheet(props: {sheet: Sheet}): JSX.Element {
 
   let view: JSX.Element;
 
-  switch (props.sheet.presentationType) {
+  switch (sheet.presentationType) {
     case 'table':
-      view = <Table {...props} />;
+      view = <Table sheet={sheet} onRowsAdded={onRowsAdded} />;
       break;
     case 'line':
-      view = <Graph type="line" {...props} />;
+      view = <Graph type="line" sheet={sheet} />;
       break;
     case 'bar':
-      view = <Graph type="bar" {...props} />;
+      view = <Graph type="bar" sheet={sheet} />;
       break;
     case 'pie':
-      view = <Graph type="pie" {...props} />;
+      view = <Graph type="pie" sheet={sheet} />;
       break;
     default:
       throw new Error();

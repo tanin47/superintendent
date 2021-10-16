@@ -98,6 +98,17 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
     [setSheets, selectedSheetIndex, setSelectedSheetIndex]
   )
 
+  const addRowsCallback = React.useCallback(
+    (addedRows: string[][]): void => {
+      setSheets((prevSheets) => {
+        prevSheets[selectedSheetIndex].rows = prevSheets[selectedSheetIndex].rows.concat(addedRows);
+
+        return [...prevSheets];
+      });
+    },
+    [setSheets, selectedSheetIndex]
+  )
+
   const renamingSheetCallback = React.useCallback(
     (renamingSheetIndex: number, newName: string): void => {
       setSheets((prevSheets) => {
@@ -475,6 +486,7 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
           onSheetSelected={(index) => setSelectedSheetIndex(index)}
           onSheetDeleted={(deletedIndex) => deleteSheetCallback(deletedIndex)}
           onSheetRearranged={(movedSheetIndex, newIndex) => rearrangeSheetCallback(movedSheetIndex, newIndex)}
+          onRowsAdded={(rows) => addRowsCallback(rows)}
         />
       </div>
     </div>

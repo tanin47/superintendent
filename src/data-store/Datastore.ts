@@ -14,7 +14,8 @@ export type Result = {
 }
 
 export abstract class Datastore {
-  static MAX_ROW = 186282;
+  static MAX_ROW = 1000;
+  static MAX_ROW_LOAD_MORE = 10000;
 
   protected tables: Array<string> = [];
 
@@ -25,6 +26,7 @@ export abstract class Datastore {
   abstract exportSchema(filePath: string): Promise<void>;
 
   abstract query(sql: string): Promise<Result>;
+  abstract loadMore(table: string, offset: number): Promise<Row[]>;
   abstract drop(table: string): Promise<void>;
   abstract rename(previousTableName: string, newTableName: string): Promise<void>;
 
