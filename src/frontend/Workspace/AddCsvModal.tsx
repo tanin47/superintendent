@@ -142,7 +142,11 @@ export default React.forwardRef(function AddCsv({
           return [...prevFiles];
         });
       } catch (e) {
-        alert(e.message);
+        if (e instanceof Error) {
+          alert(e.message);
+        } else {
+          alert(`Unknown error: ${e}`);
+        }
         setFiles((prevFiles) => {
           prevFiles[index] = {
             ...prevFiles[index],
