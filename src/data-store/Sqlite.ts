@@ -79,7 +79,8 @@ export class Sqlite extends Datastore {
         bom: true,
         trim: true,
         delimiter: separator,
-        skipEmptyLines: true
+        skipEmptyLines: true,
+        relax: true,
       }));
 
     const columns: Array<string> = [];
@@ -223,7 +224,7 @@ export class Sqlite extends Datastore {
         if (metadataResult[0].hasOwnProperty(key)) {
           columns.push({
             name: key,
-            maxCharWidthCount: metadataResult[0][key]
+            maxCharWidthCount: metadataResult[0][key] || 0
           });
         }
       }

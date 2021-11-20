@@ -54,6 +54,7 @@ describe('Workerize', () => {
 
   describe('different formats', () => {
     const formats = [
+      {filename: 'csv.csv', separator: ','},
       {filename: 'colon.csv', separator: ':'},
       {filename: 'semicolon.csv', separator: ';'},
       {filename: 'pipe.psv', separator: '|'},
@@ -70,11 +71,11 @@ describe('Workerize', () => {
         expect(result).toEqual(
           {
             count: 2,
-            columns: ['firstname', 'lastname', 'email'],
+            columns: [{name: 'firstname', maxCharWidthCount: 8}, {name: 'last_quote_name', maxCharWidthCount: 17}, {name: 'email', maxCharWidthCount: 33}],
             name: 'query_1',
             sql,
             rows: [
-              ['Harmonia', 'Waite', 'Harmonia.Waite@yopmail.com'],
+              ['Harmonia', 'Waite', 'Har"quote"monia.Waite@yopmail.com'],
               ['Joy', `something${format.separator}another`, 'Joy.Haerr@yopmail.com']
             ]
           }
@@ -91,7 +92,7 @@ describe('Workerize', () => {
       expect(result).toEqual(
         {
           count: 1,
-          columns: ['bom_column_1', 'bom_column_2'],
+          columns: [{name: 'bom_column_1', maxCharWidthCount: 6}, {name: 'bom_column_2', maxCharWidthCount: 6}],
           name: 'query_1',
           sql: "SELECT * FROM bom",
           rows: [['value1', 'value2']]
@@ -111,7 +112,7 @@ describe('Workerize', () => {
       expect(result).toEqual(
         {
           count: 1,
-          columns: ['name', 'Name_dup'],
+          columns: [{name: 'name', maxCharWidthCount: 4}, {name: 'Name_dup', maxCharWidthCount: 7}],
           name: 'query_1',
           sql: "SELECT * FROM dup_column",
           rows: [['john', 'doe, do']]
@@ -130,7 +131,7 @@ describe('Workerize', () => {
       expect(result).toEqual(
         {
           count: 1,
-          columns: ['something', 'another'],
+          columns: [{name: 'something', maxCharWidthCount: 5}, {name: 'another', maxCharWidthCount: 5}],
           name: 'query_1',
           sql: "SELECT * FROM unicode",
           rows: [['ก ไก่', 'ข ไข่']]
@@ -149,7 +150,7 @@ describe('Workerize', () => {
       expect(result).toEqual(
         {
           count: 2,
-          columns: ['first_name', 'last_name', 'email'],
+          columns: [{name: 'first_name', maxCharWidthCount: 17}, {name: 'last_name', maxCharWidthCount: 10}, {name: 'email', maxCharWidthCount: 15}],
           name: 'query_1',
           sql: "SELECT * FROM quote",
           rows: [
@@ -173,7 +174,7 @@ describe('Workerize', () => {
       expect(result).toEqual(
         {
           count: 1,
-          columns: ['month'],
+          columns: [{name: 'month', maxCharWidthCount: 1}],
           name: 'query_1',
           sql: "SELECT regex_extract('[0-9]+/([0-9]+)/[0-9]+', '3/7/2019') AS month",
           rows: [['7']]
@@ -187,7 +188,7 @@ describe('Workerize', () => {
       expect(result).toEqual(
         {
           count: 1,
-          columns: ['month'],
+          columns: [{name: 'month', maxCharWidthCount: 1}],
           name: 'query_1',
           sql: "SELECT regex_extract('([0-9]+)/([0-9]+)/([0-9]+)', '3/7/2019') AS month",
           rows: [['3']]
@@ -201,7 +202,7 @@ describe('Workerize', () => {
       expect(result).toEqual(
         {
           count: 1,
-          columns: ['month'],
+          columns: [{name: 'month', maxCharWidthCount: 0}],
           name: 'query_1',
           sql: "SELECT regex_extract('([0-9]+)/([0-9]+)/([0-9]+)', 'abcd') AS month",
           rows: [[null]]
@@ -215,7 +216,7 @@ describe('Workerize', () => {
       expect(result).toEqual(
         {
           count: 1,
-          columns: ['month'],
+          columns: [{name: 'month', maxCharWidthCount: 0}],
           name: 'query_1',
           sql: "SELECT regex_extract('([0-9+)/([0-9]+/([0-9]+', 'abcd') AS month",
           rows: [[null]]
@@ -231,7 +232,7 @@ describe('Workerize', () => {
       expect(result).toEqual(
         {
           count: 1,
-          columns: ['date'],
+          columns: [{name: 'date', maxCharWidthCount: 10}],
           name: 'query_1',
           sql: "SELECT date_parse('%m/%d/%Y', '3/7/2019') AS date",
           rows: [['2019-03-07']]
@@ -245,7 +246,7 @@ describe('Workerize', () => {
       expect(result).toEqual(
         {
           count: 1,
-          columns: ['date'],
+          columns: [{name: 'date', maxCharWidthCount: 24}],
           name: 'query_1',
           sql: "SELECT date_parse('%m/%d/%Y %I:%M %p', '3/7/2019 7:12 pm') AS date",
           rows: [['2019-03-07T19:12:00.000Z']]
@@ -259,7 +260,7 @@ describe('Workerize', () => {
       expect(result).toEqual(
         {
           count: 1,
-          columns: ['date'],
+          columns: [{name: 'date', maxCharWidthCount: 0}],
           name: 'query_1',
           sql: "SELECT date_parse('%m/%d/%Y %I:%M %p', 'abcd') AS date",
           rows: [[null]]
@@ -273,7 +274,7 @@ describe('Workerize', () => {
       expect(result).toEqual(
         {
           count: 1,
-          columns: ['date'],
+          columns: [{name: 'date', maxCharWidthCount: 0}],
           name: 'query_1',
           sql: "SELECT date_parse('%uslkajf%n', '3/7/2019 7:12 pm') AS date",
           rows: [[null]]
