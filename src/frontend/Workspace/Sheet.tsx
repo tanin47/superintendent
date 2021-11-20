@@ -2,6 +2,7 @@ import React, {ForwardedRef} from 'react';
 import {Sheet} from './types';
 import {Chart, ChartType, registerables} from 'chart.js';
 import randomColor from 'randomcolor';
+// @ts-ignore
 import {VariableSizeGrid as BaseGrid} from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import InfiniteLoader from 'react-window-infinite-loader';
@@ -225,6 +226,14 @@ const Grid = React.forwardRef(function Grid({
     }
   }), [baseGridRef]);
 
+  const totalWidth = React.useMemo(() => {
+    let totalWidth = 0;
+    for (const w of columnWidths) {
+      totalWidth += w;
+    }
+    return totalWidth;
+  }, [columnWidths])
+
   return (
     <BaseGrid
       ref={(r) => {
@@ -237,6 +246,8 @@ const Grid = React.forwardRef(function Grid({
       columnWidth={computeColumnWidth}
       width={width}
       height={height}
+      totalWidth={totalWidth} // @ts-ignore
+      computeTotalHeight={computeCumulativeRowHeight} // @ts-ignore
       initialScrollLeft={initialScrollLeft}
       initialScrollTop={initialScrollTop}
       onScroll={({scrollLeft, scrollTop}) => onScrolled(scrollLeft, scrollTop)}
@@ -342,7 +353,6 @@ function Table({
         <div
           key={`column-${columnIndex}`}
           style={{
-            ...style,
             borderRight: '1px solid #ccc',
             borderBottom: 'thin solid #ccc',
             maxWidth: `${columnWidths[columnIndex]}px`,
@@ -358,6 +368,7 @@ function Table({
             overflow: 'hidden',
             textAlign: columnIndex === 0 ? 'center' : 'left',
             userSelect: resizingColIndex !== null ? 'none' : '',
+            ...style,
           }}
         >
           {columnIndex > 0 && (
@@ -378,7 +389,6 @@ function Table({
         <div
           key={`loading-next-${columnIndex}`}
           style={{
-            ...style,
             maxWidth: `${columnWidths[columnIndex]}px`,
             minWidth: `${columnWidths[columnIndex]}px`,
             paddingLeft: '4px',
@@ -390,6 +400,7 @@ function Table({
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
+            ...style,
           }}
         >
           &nbsp;
@@ -400,7 +411,6 @@ function Table({
         <div
           key={`cell-${rowIndex}-${columnIndex}`}
           style={{
-            ...style,
             borderRight: '1px solid #ccc',
             borderBottom: 'thin solid #ccc',
             maxWidth: `${columnWidths[columnIndex]}px`,
@@ -416,6 +426,7 @@ function Table({
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             userSelect: resizingColIndex !== null ? 'none' : '',
+            ...style,
           }}
         >
           {columnIndex === 0 ? rowIndex : sheet.rows[rowIndex - 1][columnIndex - 1]}
