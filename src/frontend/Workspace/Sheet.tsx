@@ -226,14 +226,6 @@ const Grid = React.forwardRef(function Grid({
     }
   }), [baseGridRef]);
 
-  const totalWidth = React.useMemo(() => {
-    let totalWidth = 0;
-    for (const w of columnWidths) {
-      totalWidth += w;
-    }
-    return totalWidth;
-  }, [columnWidths])
-
   return (
     <BaseGrid
       ref={(r) => {
@@ -246,8 +238,6 @@ const Grid = React.forwardRef(function Grid({
       columnWidth={computeColumnWidth}
       width={width}
       height={height}
-      totalWidth={totalWidth} // @ts-ignore
-      computeTotalHeight={computeCumulativeRowHeight} // @ts-ignore
       initialScrollLeft={initialScrollLeft}
       initialScrollTop={initialScrollTop}
       onScroll={({scrollLeft, scrollTop}) => onScrolled(scrollLeft, scrollTop)}

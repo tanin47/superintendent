@@ -130,7 +130,7 @@
     "randomcolor": "^0.6.2",
     "react-modal": "^3.14.3",
     "react-virtualized-auto-sizer": "^1.0.5",
-    "react-window": "tanin47/react-window#19d2ac8acfba85f4738d67894c54fdec43a32923",
+    "react-window": "tanin47/react-window#4bed2c46bc9342a527a40c1495d9037e0def4fd7",
     "react-window-infinite-loader": "^1.0.7",
     "sql-formatter": "^4.0.2",
     "sweetalert2": "^11.0.18",
