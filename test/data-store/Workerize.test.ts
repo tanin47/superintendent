@@ -167,7 +167,109 @@ describe('Workerize', () => {
     });
   });
 
+  describe('regex_replace_once', () => {
+    it('handle null', async () => {
+      const result = await workerize.query("SELECT regex_replace_once('[0-9]+', NULL, '0') AS month");
+
+      expect(result).toEqual(
+        {
+          count: 1,
+          columns: [{name: 'month', maxCharWidthCount: 0}],
+          name: 'query_1',
+          sql: "SELECT regex_replace_once('[0-9]+', NULL, '0') AS month",
+          rows: [[null]]
+        }
+      );
+    });
+
+    it('replace only once', async () => {
+      const result = await workerize.query("SELECT regex_replace_once('[0-9]+', '123.456.789', '00') AS month");
+
+      expect(result).toEqual(
+        {
+          count: 1,
+          columns: [{name: 'month', maxCharWidthCount: 10}],
+          name: 'query_1',
+          sql: "SELECT regex_replace_once('[0-9]+', '123.456.789', '00') AS month",
+          rows: [['00.456.789']]
+        }
+      );
+    });
+
+    it('invalid regex', async () => {
+      const result = await workerize.query("SELECT regex_replace_once('([0-9+)/([0-9]+/([0-9]+', 'abcd', '00') AS month");
+
+      expect(result).toEqual(
+        {
+          count: 1,
+          columns: [{name: 'month', maxCharWidthCount: 0}],
+          name: 'query_1',
+          sql: "SELECT regex_replace_once('([0-9+)/([0-9]+/([0-9]+', 'abcd', '00') AS month",
+          rows: [[null]]
+        }
+      );
+    });
+  });
+
+  describe('regex_replace_all', () => {
+    it('handle null', async () => {
+      const result = await workerize.query("SELECT regex_replace_all('[0-9]+', NULL, '0') AS month");
+
+      expect(result).toEqual(
+        {
+          count: 1,
+          columns: [{name: 'month', maxCharWidthCount: 0}],
+          name: 'query_1',
+          sql: "SELECT regex_replace_all('[0-9]+', NULL, '0') AS month",
+          rows: [[null]]
+        }
+      );
+    });
+
+    it('replace only once', async () => {
+      const result = await workerize.query("SELECT regex_replace_all('[0-9]', '123.456.789', '0') AS month");
+
+      expect(result).toEqual(
+        {
+          count: 1,
+          columns: [{name: 'month', maxCharWidthCount: 11}],
+          name: 'query_1',
+          sql: "SELECT regex_replace_all('[0-9]', '123.456.789', '0') AS month",
+          rows: [['000.000.000']]
+        }
+      );
+    });
+
+    it('invalid regex', async () => {
+      const result = await workerize.query("SELECT regex_replace_all('([0-9+)/([0-9]+/([0-9]+', 'abcd', '00') AS month");
+
+      expect(result).toEqual(
+        {
+          count: 1,
+          columns: [{name: 'month', maxCharWidthCount: 0}],
+          name: 'query_1',
+          sql: "SELECT regex_replace_all('([0-9+)/([0-9]+/([0-9]+', 'abcd', '00') AS month",
+          rows: [[null]]
+        }
+      );
+    });
+  });
+
   describe('regex_extract', () => {
+    it('handle null', async () => {
+      const result = await workerize.query("SELECT regex_extract('[0-9]+', NULL) AS month");
+
+      expect(result).toEqual(
+        {
+          count: 1,
+          columns: [{name: 'month', maxCharWidthCount: 0}],
+          name: 'query_1',
+          sql: "SELECT regex_extract('[0-9]+', NULL) AS month",
+          rows: [[null]]
+        }
+      );
+    });
+
     it('extract date', async () => {
       const result = await workerize.query("SELECT regex_extract('[0-9]+/([0-9]+)/[0-9]+', '3/7/2019') AS month");
 
@@ -226,6 +328,19 @@ describe('Workerize', () => {
   });
 
   describe('date_parse', () => {
+    it('handles null', async () => {
+      const result = await workerize.query("SELECT date_parse('%m/%d/%Y', NULL) AS date");
+
+      expect(result).toEqual(
+        {
+          count: 1,
+          columns: [{name: 'date', maxCharWidthCount: 0}],
+          name: 'query_1',
+          sql: "SELECT date_parse('%m/%d/%Y', NULL) AS date",
+          rows: [[null]]
+        }
+      );
+    });
     it('parse date', async () => {
       const result = await workerize.query("SELECT date_parse('%m/%d/%Y', '3/7/2019') AS date");
 

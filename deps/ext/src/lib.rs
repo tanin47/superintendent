@@ -66,3 +66,41 @@ pub extern "C" fn regex_extract(
 
     return to_c_char_pointer(caps.get(1).unwrap().as_str().to_owned());
 }
+
+#[no_mangle]
+pub extern "C" fn regex_replace_once(
+    pattern: *mut c_char,
+    value: *mut c_char,
+    rep: *mut c_char,
+) -> *const c_char {
+    let pattern = get_string(pattern);
+    let value = get_string(value);
+    let rep = get_string(rep);
+
+    let re = match Regex::new(&pattern) {
+        Ok(re) => re,
+        Err(_) => return null()
+    };
+    let replaced = re.replace(&value, &rep);
+
+    return to_c_char_pointer(replaced.as_ref().to_owned());
+}
+
+#[no_mangle]
+pub extern "C" fn regex_replace_all(
+    pattern: *mut c_char,
+    value: *mut c_char,
+    rep: *mut c_char,
+) -> *const c_char {
+    let pattern = get_string(pattern);
+    let value = get_string(value);
+    let rep = get_string(rep);
+
+    let re = match Regex::new(&pattern) {
+        Ok(re) => re,
+        Err(_) => return null()
+    };
+    let replaced = re.replace_all(&value, &rep);
+
+    return to_c_char_pointer(replaced.as_ref().to_owned());
+}

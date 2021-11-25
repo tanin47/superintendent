@@ -10,6 +10,12 @@ static void wrap_date_parse(
 ){
   char *pattern = (char*) sqlite3_value_text(argv[0]);
   char *value = (char*) sqlite3_value_text(argv[1]);
+
+  if (value == NULL) {
+    sqlite3_result_null(context);
+    return;
+  }
+
   char *ret = date_parse(pattern, value);
 
   if (ret != NULL) {
@@ -26,7 +32,59 @@ static void wrap_regex_extract(
 ){
   char *pattern = (char*) sqlite3_value_text(argv[0]);
   char *value = (char*) sqlite3_value_text(argv[1]);
+
+  if (value == NULL) {
+    sqlite3_result_null(context);
+    return;
+  }
+
   char *ret = regex_extract(pattern, value);
+
+  if (ret != NULL) {
+    sqlite3_result_text(context, ret, -1, free);
+  } else {
+    sqlite3_result_null(context);
+  }
+}
+
+static void wrap_regex_replace_once(
+  sqlite3_context *context,
+  int argc,
+  sqlite3_value **argv
+){
+  char *pattern = (char*) sqlite3_value_text(argv[0]);
+  char *value = (char*) sqlite3_value_text(argv[1]);
+  char *rep = (char*) sqlite3_value_text(argv[2]);
+
+  if (value == NULL) {
+    sqlite3_result_null(context);
+    return;
+  }
+
+  char *ret = regex_replace_once(pattern, value, rep);
+
+  if (ret != NULL) {
+    sqlite3_result_text(context, ret, -1, free);
+  } else {
+    sqlite3_result_null(context);
+  }
+}
+
+static void wrap_regex_replace_all(
+  sqlite3_context *context,
+  int argc,
+  sqlite3_value **argv
+){
+  char *pattern = (char*) sqlite3_value_text(argv[0]);
+  char *value = (char*) sqlite3_value_text(argv[1]);
+  char *rep = (char*) sqlite3_value_text(argv[2]);
+
+  if (value == NULL) {
+    sqlite3_result_null(context);
+    return;
+  }
+
+  char *ret = regex_replace_all(pattern, value, rep);
 
   if (ret != NULL) {
     sqlite3_result_text(context, ret, -1, free);
@@ -48,6 +106,16 @@ int sqlite3_ext_init(
   (void)pzErrMsg;  /* Unused */
 
   rc = sqlite3_create_function(db, "regex_extract", 2, SQLITE_UTF8|SQLITE_INNOCUOUS, 0, wrap_regex_extract, 0, 0);
+  if (rc != SQLITE_OK)  {
+    return rc;
+  }
+
+  rc = sqlite3_create_function(db, "regex_replace_once", 3, SQLITE_UTF8|SQLITE_INNOCUOUS, 0, wrap_regex_replace_once, 0, 0);
+  if (rc != SQLITE_OK)  {
+    return rc;
+  }
+
+  rc = sqlite3_create_function(db, "regex_replace_all", 3, SQLITE_UTF8|SQLITE_INNOCUOUS, 0, wrap_regex_replace_all, 0, 0);
   if (rc != SQLITE_OK)  {
     return rc;
   }
