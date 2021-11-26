@@ -47,7 +47,7 @@ static void wrap_regex_extract(
   }
 }
 
-static void wrap_regex_replace_once(
+static void wrap_regex_replace(
   sqlite3_context *context,
   int argc,
   sqlite3_value **argv
@@ -55,36 +55,14 @@ static void wrap_regex_replace_once(
   char *pattern = (char*) sqlite3_value_text(argv[0]);
   char *value = (char*) sqlite3_value_text(argv[1]);
   char *rep = (char*) sqlite3_value_text(argv[2]);
+  int once = sqlite3_value_int(argv[3]);
 
   if (value == NULL) {
     sqlite3_result_null(context);
     return;
   }
 
-  char *ret = regex_replace_once(pattern, value, rep);
-
-  if (ret != NULL) {
-    sqlite3_result_text(context, ret, -1, free);
-  } else {
-    sqlite3_result_null(context);
-  }
-}
-
-static void wrap_regex_replace_all(
-  sqlite3_context *context,
-  int argc,
-  sqlite3_value **argv
-){
-  char *pattern = (char*) sqlite3_value_text(argv[0]);
-  char *value = (char*) sqlite3_value_text(argv[1]);
-  char *rep = (char*) sqlite3_value_text(argv[2]);
-
-  if (value == NULL) {
-    sqlite3_result_null(context);
-    return;
-  }
-
-  char *ret = regex_replace_all(pattern, value, rep);
+  char *ret = regex_replace(pattern, value, rep, once);
 
   if (ret != NULL) {
     sqlite3_result_text(context, ret, -1, free);
@@ -110,12 +88,7 @@ int sqlite3_ext_init(
     return rc;
   }
 
-  rc = sqlite3_create_function(db, "regex_replace_once", 3, SQLITE_UTF8|SQLITE_INNOCUOUS, 0, wrap_regex_replace_once, 0, 0);
-  if (rc != SQLITE_OK)  {
-    return rc;
-  }
-
-  rc = sqlite3_create_function(db, "regex_replace_all", 3, SQLITE_UTF8|SQLITE_INNOCUOUS, 0, wrap_regex_replace_all, 0, 0);
+  rc = sqlite3_create_function(db, "regex_replace", 4, SQLITE_UTF8|SQLITE_INNOCUOUS, 0, wrap_regex_replace, 0, 0);
   if (rc != SQLITE_OK)  {
     return rc;
   }

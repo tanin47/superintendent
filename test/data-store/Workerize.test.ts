@@ -167,88 +167,58 @@ describe('Workerize', () => {
     });
   });
 
-  describe('regex_replace_once', () => {
+  describe('regex_replace', () => {
     it('handle null', async () => {
-      const result = await workerize.query("SELECT regex_replace_once('[0-9]+', NULL, '0') AS month");
+      const result = await workerize.query("SELECT regex_replace('[0-9]+', NULL, '0', false) AS month");
 
       expect(result).toEqual(
         {
           count: 1,
           columns: [{name: 'month', maxCharWidthCount: 0}],
           name: 'query_1',
-          sql: "SELECT regex_replace_once('[0-9]+', NULL, '0') AS month",
+          sql: "SELECT regex_replace('[0-9]+', NULL, '0', false) AS month",
           rows: [[null]]
         }
       );
     });
 
     it('replace only once', async () => {
-      const result = await workerize.query("SELECT regex_replace_once('[0-9]+', '123.456.789', '00') AS month");
+      const result = await workerize.query("SELECT regex_replace('[0-9]+', '123.456.789', '00', true) AS month");
 
       expect(result).toEqual(
         {
           count: 1,
           columns: [{name: 'month', maxCharWidthCount: 10}],
           name: 'query_1',
-          sql: "SELECT regex_replace_once('[0-9]+', '123.456.789', '00') AS month",
+          sql: "SELECT regex_replace('[0-9]+', '123.456.789', '00', true) AS month",
           rows: [['00.456.789']]
         }
       );
     });
 
-    it('invalid regex', async () => {
-      const result = await workerize.query("SELECT regex_replace_once('([0-9+)/([0-9]+/([0-9]+', 'abcd', '00') AS month");
+    it('replace all', async () => {
+      const result = await workerize.query("SELECT regex_replace('[0-9]+', '123.456.789', '00', false) AS month");
 
       expect(result).toEqual(
         {
           count: 1,
-          columns: [{name: 'month', maxCharWidthCount: 0}],
+          columns: [{name: 'month', maxCharWidthCount: 8}],
           name: 'query_1',
-          sql: "SELECT regex_replace_once('([0-9+)/([0-9]+/([0-9]+', 'abcd', '00') AS month",
-          rows: [[null]]
-        }
-      );
-    });
-  });
-
-  describe('regex_replace_all', () => {
-    it('handle null', async () => {
-      const result = await workerize.query("SELECT regex_replace_all('[0-9]+', NULL, '0') AS month");
-
-      expect(result).toEqual(
-        {
-          count: 1,
-          columns: [{name: 'month', maxCharWidthCount: 0}],
-          name: 'query_1',
-          sql: "SELECT regex_replace_all('[0-9]+', NULL, '0') AS month",
-          rows: [[null]]
-        }
-      );
-    });
-
-    it('replace only once', async () => {
-      const result = await workerize.query("SELECT regex_replace_all('[0-9]', '123.456.789', '0') AS month");
-
-      expect(result).toEqual(
-        {
-          count: 1,
-          columns: [{name: 'month', maxCharWidthCount: 11}],
-          name: 'query_1',
-          sql: "SELECT regex_replace_all('[0-9]', '123.456.789', '0') AS month",
-          rows: [['000.000.000']]
+          sql: "SELECT regex_replace('[0-9]+', '123.456.789', '00', false) AS month",
+          rows: [['00.00.00']]
         }
       );
     });
 
     it('invalid regex', async () => {
-      const result = await workerize.query("SELECT regex_replace_all('([0-9+)/([0-9]+/([0-9]+', 'abcd', '00') AS month");
+      const result = await workerize.query("SELECT regex_replace('([0-9+)/([0-9]+/([0-9]+', 'abcd', '00', false) AS month");
 
       expect(result).toEqual(
         {
           count: 1,
           columns: [{name: 'month', maxCharWidthCount: 0}],
           name: 'query_1',
-          sql: "SELECT regex_replace_all('([0-9+)/([0-9]+/([0-9]+', 'abcd', '00') AS month",
+          sql: "SELECT regex_replace('([0-9+)/([0-9]+/([0-9]+', 'abcd', '00', false) AS month",
           rows: [[null]]
         }
       );

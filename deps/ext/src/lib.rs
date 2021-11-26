@@ -68,10 +68,11 @@ pub extern "C" fn regex_extract(
 }
 
 #[no_mangle]
-pub extern "C" fn regex_replace_once(
+pub extern "C" fn regex_replace(
     pattern: *mut c_char,
     value: *mut c_char,
     rep: *mut c_char,
+    once: i64,
 ) -> *const c_char {
     let pattern = get_string(pattern);
     let value = get_string(value);
@@ -81,26 +82,11 @@ pub extern "C" fn regex_replace_once(
         Ok(re) => re,
         Err(_) => return null()
     };
-    let replaced = re.replace(&value, &rep);
-
-    return to_c_char_pointer(replaced.as_ref().to_owned());
-}
-
-#[no_mangle]
-pub extern "C" fn regex_replace_all(
-    pattern: *mut c_char,
-    value: *mut c_char,
-    rep: *mut c_char,
-) -> *const c_char {
-    let pattern = get_string(pattern);
-    let value = get_string(value);
-    let rep = get_string(rep);
-
-    let re = match Regex::new(&pattern) {
-        Ok(re) => re,
-        Err(_) => return null()
+    let replaced = if once != 0 {
+        re.replace(&value, &rep)
+    } else {
+        re.replace_all(&value, &rep)
     };
-    let replaced = re.replace_all(&value, &rep);
 
     return to_c_char_pointer(replaced.as_ref().to_owned());
 }
