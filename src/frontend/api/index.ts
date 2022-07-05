@@ -4,7 +4,7 @@ import {Sheet} from "../Workspace/types";
 import axios from "axios";
 import Store from "electron-store";
 import crypto from 'crypto';
-import {EditorMode} from "../../types";
+import {CopySelection, EditorMode} from "../../types";
 
 const urlParams = new URLSearchParams(window.location.search);
 
@@ -139,6 +139,18 @@ export function loadMore(table: string, offset: number): Promise<string[][]> {
     .then((result) => {
       if (result.success) {
         return result.data;
+      } else {
+        throw result;
+      }
+    });
+}
+
+export function copy(table: string, selection: CopySelection): Promise<boolean> {
+  return ipcRenderer
+    .invoke('copy', table, selection)
+    .then((result) => {
+      if (result.success) {
+        return true;
       } else {
         throw result;
       }

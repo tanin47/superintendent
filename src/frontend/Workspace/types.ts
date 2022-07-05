@@ -1,4 +1,3 @@
-
 export type PresentationType = 'table' | 'line' | 'bar' | 'pie';
 
 export type Column = {
@@ -15,5 +14,13 @@ export type Sheet = {
   presentationType: PresentationType,
   scrollLeft: number | null,
   scrollTop: number | null,
-  resizedColumns: {[col:number]: number}
+  resizedColumns: {[col:number]: number},
+  selection: Selection | null,
+};
+
+export type Selection = {
+  startRow: number,
+  endRow: number,
+  startCol: number,
+  endCol: number,
 };

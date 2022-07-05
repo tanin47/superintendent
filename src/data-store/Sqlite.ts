@@ -1,8 +1,9 @@
 import {Column, Datastore, Result, Row} from './Datastore';
-import sqlite, {Database, Statement} from 'better-sqlite3';
+import sqlite, {Database} from 'better-sqlite3';
 import path from "path";
 import fs from "fs";
 import {Parser} from "csv-parse";
+import {CopySelection} from "../types";
 
 export type Env = {
   resourcePath: string,
@@ -183,6 +184,59 @@ export class Sqlite extends Datastore {
     this.db.exec(`CREATE TABLE "${table}" AS ${sql}`);
 
     return Promise.resolve(this.queryAllFromTable(table, sql));
+  }
+
+  async copy(table: string, selection: CopySelection): Promise<{text: string, html: string}> {
+    const sql = `select ${selection.columns.map((c) => `"${c}"`).join(',')} from "${table}" limit ${selection.endRow - selection.startRow + 1} offset ${selection.startRow}`;
+    const statement = this.db.prepare(sql).raw(true);
+
+    let html = "";
+    let text = "";
+
+    html += '<table style="border-collapse: collapse;"><tr>';
+
+    if (selection.includeRowNumbers) {
+      html += '<th style="border: 1px solid #ccc;">*</th>';
+    }
+
+    for (let i=0;i<selection.columns.length;i++) {
+      html += '<th style="border: 1px solid #ccc;">';
+      html += selection.columns[i];
+      html += '</th>';
+
+      if (i > 0) {
+        text += ',';
+      }
+      text += selection.columns[i];
+    }
+
+    html += '</tr>';
+    text += '\n';
+
+    for (const row of statement.iterate()) {
+      const textItems: Array<string> = [];
+      const htmlItems: Array<string> = [];
+
+      html += '<tr>';
+
+      for (let i=0;i<row.length;i++) {
+        htmlItems.push('<td style="border: 1px solid #ccc;">');
+
+        textItems.push(row[i]);
+        htmlItems.push(row[i]);
+
+        htmlItems.push('</td>');
+      }
+
+      text += textItems.join(',');
+      html += htmlItems.join('');
+      html += '</tr>';
+      text += '\n';
+    }
+
+    html += '</table>';
+
+    return Promise.resolve({text, html});
   }
 
   async loadMore(table: string, offset: number): Promise<Row[]> {

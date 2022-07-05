@@ -1,12 +1,19 @@
 import React, {ForwardedRef} from 'react';
-import {Sheet} from './types';
+import {Sheet, Selection} from './types';
 import {Chart, ChartType, registerables} from 'chart.js';
 import randomColor from 'randomcolor';
 // @ts-ignore
 import {VariableSizeGrid as BaseGrid} from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import InfiniteLoader from 'react-window-infinite-loader';
-import {loadMore} from "../api";
+import {loadMore, copy} from "../api";
+import './Sheet.scss';
+import {CopySelection} from "../../types";
+import CopyingModal from "./CopyingModal";
+
+type CopyingData = {
+  cellCount: number
+};
 
 let canvas: HTMLCanvasElement = document.createElement("canvas");
 
@@ -268,10 +275,14 @@ const Grid = React.forwardRef(function Grid({
 
 function Table({
   sheet,
-  onRowsAdded
+  onRowsAdded,
+  onCopyingStarted,
+  onCopyingFinished
 }: {
   sheet: Sheet,
-  onRowsAdded: (rows: string[][]) => void
+  onRowsAdded: (rows: string[][]) => void,
+  onCopyingStarted: (data: CopyingData) => void,
+  onCopyingFinished: () => void
 }): JSX.Element {
   const columnWidths = [sheet.resizedColumns && sheet.resizedColumns[0] ? sheet.resizedColumns[0] : 30];
   sheet.columns.forEach((column, index) => {
@@ -288,6 +299,40 @@ function Table({
 
     columnWidths.push(width);
   });
+
+  const [selection, setSelection] = React.useState<Selection | null>(null);
+  const [isSelecting, setIsSelecting] = React.useState<boolean>(false);
+
+  React.useEffect(() => setSelection(sheet.selection), [sheet, setSelection]);
+
+  const startSelection = (rowIndex: number, colIndex: number) => (event: React.MouseEvent) => {
+    if (event.button !== 0) return; // not a left click
+    setIsSelecting(true);
+    const newSelection = {
+      startRow: rowIndex,
+      endRow: rowIndex,
+      startCol: colIndex,
+      endCol: colIndex,
+    };
+    setSelection(newSelection);
+    sheet.selection = {...newSelection};
+  };
+
+  const addSelection = (rowIndex: number, colIndex: number) => (event: React.MouseEvent) => {
+    if (!isSelecting) return;
+    if (selection === null) return;
+
+    const newSelection = {
+      startRow: selection.startRow,
+      endRow: rowIndex,
+      startCol: selection.startCol,
+      endCol: colIndex,
+    };
+
+    setSelection(newSelection);
+    sheet.selection = {...newSelection};
+  };
+
   const [mouseDownX, setMouseDownX] = React.useState<number>(0);
   const [mouseDownColWidth, setMouseDownColWidth] = React.useState<number>(0);
   const [resizingColIndex, setResizingColIndex] = React.useState<number | null>(null);
@@ -304,6 +349,8 @@ function Table({
     setMouseDownX(event.clientX);
     setMouseDownColWidth(sheet.resizedColumns[colIndex]);
     setResizingColIndex(colIndex);
+
+    event.stopPropagation();
   };
 
   React.useEffect(() => {
@@ -325,23 +372,130 @@ function Table({
 
   React.useEffect(() => {
     const handler = (event) => {
-      if (resizingColIndex === null) {
-        return;
+      if (resizingColIndex !== null) {
+        setResizingColIndex(null);
       }
-      setResizingColIndex(null);
+
+      if (isSelecting) {
+        setIsSelecting(false);
+      }
     };
     document.addEventListener('mouseup', handler);
 
     return () => {
       document.removeEventListener('mouseup', handler);
     }
-  }, [resizingColIndex, setResizingColIndex]);
+  }, [resizingColIndex, setResizingColIndex, isSelecting, setIsSelecting]);
+
+  React.useEffect(() => {
+    const handler = async (event): Promise<void> => {
+      if (event.target.tagName.toLocaleLowerCase() !== 'body' && event.target.className !== 'cell') return; // if it's body, it's not textarea. Therefore, we copy what is selected.
+      if (selection === null) return;
+
+      let copySelection: CopySelection;
+      let cellCount = 0;
+
+      const startRow = Math.min(selection.startRow, selection.endRow);
+      const endRow = Math.max(selection.startRow, selection.endRow);
+      const startCol = Math.min(selection.startCol, selection.endCol);
+      const endCol = Math.max(selection.startCol, selection.endCol);
+
+      if (selection.startCol === 0 && selection.endCol === 0 && selection.startRow === 0 && selection.endRow === 0) {
+        copySelection = {
+          columns: sheet.columns.map((c) => c.name),
+          startRow: 0,
+          endRow: sheet.count - 1,
+          includeRowNumbers: true,
+        };
+        cellCount = sheet.count * sheet.columns.length;
+      } else if (selection.startCol === 0 && selection.endCol === 0) {
+        copySelection = {
+          columns: sheet.columns.map((c) => c.name),
+          startRow: startRow - 1,
+          endRow: endRow - 1,
+          includeRowNumbers: true,
+        };
+        cellCount = Math.abs(endRow - startRow + 1) * sheet.columns.length;
+      } else if (selection.startRow === 0 && selection.endRow === 0) {
+        copySelection = {
+          columns: sheet.columns.slice(startCol - 1, endCol).map((c, i) => c.name),
+          startRow: 0,
+          endRow: sheet.count - 1,
+          includeRowNumbers: false,
+        };
+        cellCount = sheet.count * Math.abs(endCol - startCol + 1);
+      } else {
+        copySelection = {
+          columns: sheet.columns.slice(startCol - 1, endCol).map((c, i) => c.name),
+          startRow: startRow - 1,
+          endRow: endRow - 1,
+          includeRowNumbers: false,
+        };
+        cellCount = Math.abs(endRow - startRow + 1) * Math.abs(endCol - startCol + 1);
+      }
+
+      onCopyingStarted({cellCount})
+      copy(sheet.name, copySelection)
+        .then((result) => {
+          setTimeout(
+            () => onCopyingFinished(),
+            300
+          );
+        })
+        .catch((e) => {
+          console.log(e);
+          alert("Error while copying.");
+          onCopyingFinished();
+        });
+
+      event.stopPropagation();
+      event.preventDefault();
+    };
+
+    document.addEventListener('copy', handler);
+    document.addEventListener('cut', handler);
+
+    return () => {
+      document.removeEventListener('copy', handler);
+      document.removeEventListener('cut', handler);
+    }
+  }, [selection]);
+
+  const isWithinRange = (value: number, start: number, end: number): boolean => {
+    return (start <= value && value <= end) || (end <= value && value <= start);
+  };
 
   const Cell = ({columnIndex, rowIndex, style}: {columnIndex: number, rowIndex: number, style: any}): JSX.Element => {
+    let backgroundColor = '';
+
+    if (
+      !!selection &&
+      (
+        (selection.startCol === 0 && selection.endCol === 0 && selection.startRow === 0 && selection.endRow === 0) || // all
+        (selection.startCol === 0 && selection.endCol === 0 && isWithinRange(rowIndex, selection.startRow, selection.endRow)) || // whole rows
+        (selection.startRow === 0 && selection.endRow === 0 && isWithinRange(columnIndex, selection.startCol, selection.endCol)) || // whole columns
+        (
+          isWithinRange(rowIndex, selection.startRow, selection.endRow) &&
+          isWithinRange(columnIndex, selection.startCol, selection.endCol)
+        )
+      )
+    ) {
+      if (columnIndex === 0 || rowIndex === 0) { // the row number or the header column
+        backgroundColor = '#77dd77';
+      } else {
+        backgroundColor = '#DAF7A6';
+      }
+    } else {
+      if (columnIndex === 0 || rowIndex === 0) { // the row number column
+        backgroundColor = '#eee';
+      }
+    }
+
     if (rowIndex === 0) {
       return (
         <div
           key={`column-${columnIndex}`}
+          className="cell"
           style={{
             borderRight: '1px solid #ccc',
             borderBottom: 'thin solid #ccc',
@@ -351,15 +505,17 @@ function Table({
             fontFamily: 'JetBrains Mono, monospace',
             fontSize: '12px',
             fontWeight: 'bold',
-            backgroundColor: '#eee',
+            backgroundColor,
             lineHeight: '20px',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textAlign: columnIndex === 0 ? 'center' : 'left',
-            userSelect: resizingColIndex !== null ? 'none' : '',
             ...style,
           }}
+          onCopy={() => {}}
+          onMouseDown={startSelection(rowIndex, columnIndex)}
+          onMouseEnter={addSelection(rowIndex, columnIndex)}
         >
           {columnIndex > 0 && (
             <div
@@ -390,6 +546,7 @@ function Table({
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
+            userSelect: 'none',
             ...style,
           }}
         >
@@ -400,6 +557,7 @@ function Table({
       return (
         <div
           key={`cell-${rowIndex}-${columnIndex}`}
+          className="cell"
           style={{
             borderRight: '1px solid #ccc',
             borderBottom: 'thin solid #ccc',
@@ -409,15 +567,16 @@ function Table({
             paddingRight: '3px',
             fontFamily: 'JetBrains Mono, monospace',
             fontSize: columnIndex === 0 ? '8px' : '12px',
-            backgroundColor: columnIndex === 0 ? '#eee' : '',
+            backgroundColor,
             textAlign: columnIndex === 0 ? 'right' : 'left',
             lineHeight: '20px',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
-            userSelect: resizingColIndex !== null ? 'none' : '',
             ...style,
           }}
+          onMouseDown={startSelection(rowIndex, columnIndex)}
+          onMouseEnter={addSelection(rowIndex, columnIndex)}
         >
           {columnIndex === 0 ? rowIndex : sheet.rows[rowIndex - 1][columnIndex - 1]}
         </div>
@@ -605,9 +764,11 @@ export default function Sheet({sheet, onRowsAdded}: {sheet: Sheet, onRowsAdded: 
 
   let view: JSX.Element;
 
+  const [copyingData, setCopyingData] = React.useState<CopyingData | null>(null);
+
   switch (sheet.presentationType) {
     case 'table':
-      view = <Table sheet={sheet} onRowsAdded={onRowsAdded} />;
+      view = <Table sheet={sheet} onRowsAdded={onRowsAdded} onCopyingStarted={(data) => setCopyingData(data)} onCopyingFinished={() => setCopyingData(null)} />;
       break;
     case 'line':
       view = <Graph type="line" sheet={sheet} />;
@@ -623,10 +784,13 @@ export default function Sheet({sheet, onRowsAdded}: {sheet: Sheet, onRowsAdded: 
   }
 
   return (
-    <div className="sheet">
-      <div className="inner">
-        {view}
+    <>
+      <CopyingModal isOpen={!!copyingData} cellCount={copyingData?.cellCount || 0} />
+      <div className="sheet" tabIndex={-1}>
+        <div className="inner">
+          {view}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

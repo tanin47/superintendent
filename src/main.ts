@@ -1,9 +1,8 @@
-import {BrowserWindow, dialog, ipcMain, Menu} from 'electron';
+import {BrowserWindow, dialog, ipcMain, Menu, clipboard} from 'electron';
 import Store from 'electron-store';
 import {Datastore} from "./data-store/Datastore";
 import {Workerize} from "./data-store/Workerize";
 import {EditorMode, EditorModeChannel, Format} from "./types";
-
 
 export default class Main {
   static mainWindow: Electron.BrowserWindow;
@@ -62,7 +61,11 @@ export default class Main {
           success: true,
           data: r
       }))
-      .catch((e) => ({success: false, message: e.message}));
+      .catch((e) => {
+        console.log(e);
+
+        return {success: false, message: e.message};
+      });
   }
 
   private static getEditorMode(): EditorMode {
@@ -226,6 +229,16 @@ export default class Main {
       return Main.wrapResponse(Main.db.query(arg));
     });
 
+    ipcMain.handle('copy', async (event, table, selection) => {
+      return Main.wrapResponse(
+        Main.db.copy(table, selection)
+          .then(({text, html}) => {
+            clipboard.write({text, html});
+            return true;
+          })
+      );
+    });
+
     ipcMain.handle('load-more', async (event, table, offset) => {
       return Main.wrapResponse(Main.db.loadMore(table, offset));
     });
@@ -264,7 +277,7 @@ export default class Main {
       return Main.wrapResponse(Main.downloadCsv(arg));
     });
 
-    Main.mainWindow = new Main.BrowserWindow({ width: 1280, height: 800, webPreferences: {nodeIntegration: true, contextIsolation: false}});
+    Main.mainWindow = new Main.BrowserWindow({ width: 1280, height: 800, webPreferences: {nodeIntegration: true, nodeIntegrationInWorker: true, contextIsolation: false, sandbox: false}});
     Main.mainWindow.on('close',(e) => {
       const choice = require('electron').dialog.showMessageBoxSync(
         Main.mainWindow,

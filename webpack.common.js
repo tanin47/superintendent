@@ -3,7 +3,7 @@ const ThreadsPlugin = require('threads-plugin');
 
 const electronWorkerConfiguration = {
   entry: './src/data-store/worker.ts',
-  target: 'async-node',
+  target: 'node',
   resolve: {
     extensions: ['.ts', '.js'],
   },
@@ -22,11 +22,6 @@ const electronWorkerConfiguration = {
   output: {
     filename: 'worker.js',
   },
-  plugins: [
-    new ThreadsPlugin({
-      target: 'electron-node-worker'
-    }),
-  ],
   externals: {
     'better-sqlite3': 'commonjs better-sqlite3'
   },

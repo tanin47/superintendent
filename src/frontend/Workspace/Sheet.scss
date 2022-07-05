@@ -1,0 +1,7 @@
+.cell {
+  &::selection {
+    background: none;
+  }
+
+  cursor: default;
+}

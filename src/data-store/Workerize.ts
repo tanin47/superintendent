@@ -1,6 +1,7 @@
 import {Datastore, Result, Row} from './Datastore';
 import path from "path";
 import {spawn, Thread, Worker} from 'threads';
+import {CopySelection} from "../types";
 
 export class Workerize extends Datastore {
   private worker: any;
@@ -40,6 +41,10 @@ export class Workerize extends Datastore {
 
   async query(sql: string): Promise<Result> {
     return this.worker.query(sql);
+  }
+
+  async copy(table: string, selection: CopySelection): Promise<{text: string, html: string}> {
+    return this.worker.copy(table, selection);
   }
 
   async loadMore(table: string, offset: number): Promise<Row[]> {

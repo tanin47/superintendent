@@ -1,3 +1,4 @@
+import {CopySelection} from "../types";
 
 export type Column = {
   name: string,
@@ -26,6 +27,7 @@ export abstract class Datastore {
   abstract exportSchema(filePath: string): Promise<void>;
 
   abstract query(sql: string): Promise<Result>;
+  abstract copy(table: string, selection: CopySelection): Promise<{text: string, html: string}>;
   abstract loadMore(table: string, offset: number): Promise<Row[]>;
   abstract drop(table: string): Promise<void>;
   abstract rename(previousTableName: string, newTableName: string): Promise<void>;
