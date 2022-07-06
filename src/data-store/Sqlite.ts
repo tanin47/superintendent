@@ -193,31 +193,41 @@ export class Sqlite extends Datastore {
     let html = "";
     let text = "";
 
-    html += '<table style="border-collapse: collapse;"><tr>';
+    html += '<table style="border-collapse: collapse;">';
 
-    if (selection.includeRowNumbers) {
-      html += '<th style="border: 1px solid #ccc;">*</th>';
-    }
+    if (selection.includeColumnNames) {
+      html += '<tr>';
 
-    for (let i=0;i<selection.columns.length;i++) {
-      html += '<th style="border: 1px solid #ccc;">';
-      html += selection.columns[i];
-      html += '</th>';
-
-      if (i > 0) {
-        text += ',';
+      if (selection.includeRowNumbers) {
+        html += '<th style="border: 1px solid #ccc;">*</th>';
       }
-      text += selection.columns[i];
+
+      for (let i=0;i<selection.columns.length;i++) {
+        html += '<th style="border: 1px solid #ccc;">';
+        html += selection.columns[i];
+        html += '</th>';
+
+        if (i > 0) {
+          text += ',';
+        }
+        text += selection.columns[i];
+      }
+
+      html += '</tr>';
+      text += '\n';
     }
 
-    html += '</tr>';
-    text += '\n';
+    let count = 0;
 
     for (const row of statement.iterate()) {
       const textItems: Array<string> = [];
       const htmlItems: Array<string> = [];
 
       html += '<tr>';
+
+      if (selection.includeRowNumbers) {
+        html += `<td style="border: 1px solid #ccc;">${selection.startRow + 1 + count++}</td>`;
+      }
 
       for (let i=0;i<row.length;i++) {
         htmlItems.push('<td style="border: 1px solid #ccc;">');

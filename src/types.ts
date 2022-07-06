@@ -9,4 +9,5 @@ export type CopySelection = {
   startRow: number,
   endRow: number,
   includeRowNumbers: boolean,
+  includeColumnNames: boolean,
 };

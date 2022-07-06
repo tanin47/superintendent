@@ -406,6 +406,7 @@ function Table({
           startRow: 0,
           endRow: sheet.count - 1,
           includeRowNumbers: true,
+          includeColumnNames: true
         };
         cellCount = sheet.count * sheet.columns.length;
       } else if (selection.startCol === 0 && selection.endCol === 0) {
@@ -414,6 +415,7 @@ function Table({
           startRow: startRow - 1,
           endRow: endRow - 1,
           includeRowNumbers: true,
+          includeColumnNames: false
         };
         cellCount = Math.abs(endRow - startRow + 1) * sheet.columns.length;
       } else if (selection.startRow === 0 && selection.endRow === 0) {
@@ -422,6 +424,7 @@ function Table({
           startRow: 0,
           endRow: sheet.count - 1,
           includeRowNumbers: false,
+          includeColumnNames: true
         };
         cellCount = sheet.count * Math.abs(endCol - startCol + 1);
       } else {
@@ -430,6 +433,7 @@ function Table({
           startRow: startRow - 1,
           endRow: endRow - 1,
           includeRowNumbers: false,
+          includeColumnNames: false
         };
         cellCount = Math.abs(endRow - startRow + 1) * Math.abs(endCol - startCol + 1);
       }
