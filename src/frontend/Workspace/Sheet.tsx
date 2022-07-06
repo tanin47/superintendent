@@ -395,48 +395,36 @@ function Table({
       let copySelection: CopySelection;
       let cellCount = 0;
 
-      const startRow = Math.min(selection.startRow, selection.endRow);
-      const endRow = Math.max(selection.startRow, selection.endRow);
-      const startCol = Math.min(selection.startCol, selection.endCol);
-      const endCol = Math.max(selection.startCol, selection.endCol);
+      let startRow = Math.min(selection.startRow, selection.endRow);
+      let endRow = Math.max(selection.startRow, selection.endRow);
+      let startCol = Math.min(selection.startCol, selection.endCol);
+      let endCol = Math.max(selection.startCol, selection.endCol);
+      let includeColumnNames = false;
+      let includeRowNumbers = false;
 
-      if (selection.startCol === 0 && selection.endCol === 0 && selection.startRow === 0 && selection.endRow === 0) {
-        copySelection = {
-          columns: sheet.columns.map((c) => c.name),
-          startRow: 0,
-          endRow: sheet.count - 1,
-          includeRowNumbers: true,
-          includeColumnNames: true
-        };
-        cellCount = sheet.count * sheet.columns.length;
-      } else if (selection.startCol === 0 && selection.endCol === 0) {
-        copySelection = {
-          columns: sheet.columns.map((c) => c.name),
-          startRow: startRow - 1,
-          endRow: endRow - 1,
-          includeRowNumbers: true,
-          includeColumnNames: false
-        };
-        cellCount = Math.abs(endRow - startRow + 1) * sheet.columns.length;
-      } else if (selection.startRow === 0 && selection.endRow === 0) {
-        copySelection = {
-          columns: sheet.columns.slice(startCol - 1, endCol).map((c, i) => c.name),
-          startRow: 0,
-          endRow: sheet.count - 1,
-          includeRowNumbers: false,
-          includeColumnNames: true
-        };
-        cellCount = sheet.count * Math.abs(endCol - startCol + 1);
+      if (startRow === 0) {
+        includeColumnNames = true;
       } else {
-        copySelection = {
-          columns: sheet.columns.slice(startCol - 1, endCol).map((c, i) => c.name),
-          startRow: startRow - 1,
-          endRow: endRow - 1,
-          includeRowNumbers: false,
-          includeColumnNames: false
-        };
-        cellCount = Math.abs(endRow - startRow + 1) * Math.abs(endCol - startCol + 1);
+        startRow--;
       }
+
+      if (startCol === 0) {
+        includeRowNumbers = true;
+      } else {
+        startCol--;
+      }
+
+      endRow = endRow === 0 ? sheet.count - 1 : endRow - 1;
+      endCol = endCol === 0 ? sheet.columns.length - 1 : endCol - 1;
+
+      copySelection = {
+        columns: sheet.columns.slice(startCol, endCol + 1).map((c, i) => c.name),
+        startRow,
+        endRow,
+        includeRowNumbers,
+        includeColumnNames
+      };
+      cellCount = (endRow - startRow + 1) * (endCol - startCol + 1);
 
       onCopyingStarted({cellCount})
       copy(sheet.name, copySelection)
