@@ -1,6 +1,6 @@
 {
   "name": "superintendent",
-  "version": "3.0.1-beta",
+  "version": "3.0.1",
   "description": "Write SQLs on CSVs",
   "license": "UNLICENSED",
   "main": "dist/prod/main.js",
@@ -120,7 +120,7 @@
   "dependencies": {
     "@tippyjs/react": "^4.2.5",
     "axios": "^0.21.1",
-    "better-sqlite3": "^7.5.3",
+    "better-sqlite3": "^7.6.0",
     "chart.js": "^3.3.2",
     "codemirror": "^5.61.1",
     "csv-parse": "4.15.4",
