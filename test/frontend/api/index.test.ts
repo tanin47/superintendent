@@ -1,39 +1,49 @@
-import {extractPublicKey, verifySignature} from '../../../src/frontend/api';
+import {checkIfLicenseIsValid, extractLicenseInfo, verifyExpiredAt, verifySignature} from '../../../src/frontend/api';
 import fs from 'fs';
 
 describe('api', () => {
   it('extractPublicKey', () => {
     const publicKey = [
-      'MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAqCU0F3A1hyJOxuWy3/+u',
-      'w7ZXPdCe3iCZ8JQRWFoX9j23MZyJLHSHWqUdAEM/JU5bJjzKX/583lbrwOdJSRzK',
-      'eJthZ8fhomibrpBPF2486WsDiRy7gHF/oT4kZJioH85TzjvigtBojIJ86PT0Ivqf',
-      'ZPatnRhBrT7OGo2+bspjJNj5pPMNz+z7ZURvX8KuJKvzHRsg9zu4/ks7J4WbFwp1',
-      'CTnMUZLaeXoRnBNm/cQ3LcWOmAUUe3rrwRDGfCPQeu5/TT38uNJ/3RdlzxN+WD2F',
-      '0t8Cgfizhrd52/MwUzV5ytwWWF6X7hSIMhALZ0Scuna/qUP72CdfsM7n4Opx7osr',
-      'FVmD5m8z5TiO7r5zLxCAgi5veoniYEqfB8nHh5WdBJSteR2ELLqUVg1C07SRRLpu',
-      'lA0+IO2SWROvknqpxCNVcqfmxplt14a5d5lNH4dMd+f+9HUyC0ftsfIWfjNp2Bzl',
-      '7tLQKwHWGkcftyssxTk0m504bwfPIjpgK5vT3P88RTK80iSW8uy6hLyy71V7NYAZ',
-      'c7x3pZnE1VrI3hEFkIIOAfksmaQtDO14B4oIihQA6DNC/Gth4dkSgXkTJYwT6xMo',
-      'PmB2pIKXd1PRtqo+aMi1r/ilh4HMy6Lsv3tTx8Tj98UZlXxCHdDL8sS+p5kfh3aK'
+      'MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDq1CPIZIySiU31CGhezrVWey8x',
+      '6R+FBPhUlEpvnz9y6ymIteKHAn/lHbqLz51TTZOb7KTdTq5NEYS4h5zYvhg9U1r9',
+      'Ipvg7H5cYVWj1/Pl+xqoQwEMKv8OED9THWUdV5QWaH8Sh1FujFUoxCccKMlGncy7',
+      'Ib4GUvBOn8ZPIDRD4wIDAQAB'
     ].join('\n');
-    const key = extractPublicKey(
-      `---- Superintendent license ----
-Type: Beta
+    const signature = [
+      'EE23Rboqr16LKsFjIXwleYwrUs7nxTF7AZ6iOXF2ji5pkDLVeTfjGVhVJeTMMPXc',
+      'P5AI9S8dx6252B6JkrZfJ43b9F7qghcqN+vZ38+3rzzYLsNC3Rl0TDDaesHI8fnz',
+      'uCLvs+fFmn48RBy+ffHRDv8lyB4HvVwL61XBVE2yO6o='
+    ].join('\n');
+    const expired = '2022-07-31T02:16:32.579864';
+    const license = `---- Superintendent license ----
 Name: Tanin
-Email: someemail@example.com
-Key0: BZzBwpg2R2tXNzAHhzecqs5L6WODozDcyDYlmkCfkLNjPEu==
-Key1:
+Email: tanin47@gmail.com
+Expired: ${expired}
+Key:
 ${publicKey}
----- End of Superintendent license ----`
-    )
+Signature:
+${signature}
+---- End of Superintendent license ----`;
 
-    expect(key).toEqual(publicKey);
+    expect(extractLicenseInfo(license, 'Key')).toEqual(publicKey);
+    expect(extractLicenseInfo(license, 'Signature')).toEqual(signature);
+    expect(extractLicenseInfo(license, 'Expired')).toEqual(expired);
   });
 
   it('validates the license key correctly', () => {
+    jest.useFakeTimers().setSystemTime(new Date('2022-07-23'));
     const contract = JSON.parse(fs.readFileSync('./test/frontend/api/contract/license.json').toString());
 
-    expect(verifySignature(contract.licenseKey, contract.message, contract.signature)).toBe(true);
-    expect(verifySignature(contract.licenseKey, contract.message + '1', contract.signature)).toBe(false);
+    expect(checkIfLicenseIsValid(contract.licenseKey)).toStrictEqual({success: true});
+    expect(checkIfLicenseIsValid(contract.licenseKey.replace('tanin', 'tnn'))).toStrictEqual({
+      success: false,
+      errorMessage: 'The license key is not valid. Please contact support@superintendent.app.'
+    });
+    // Expire
+    jest.useFakeTimers().setSystemTime(new Date('2022-08-02'))
+    expect(checkIfLicenseIsValid(contract.licenseKey)).toStrictEqual({
+      success: false,
+      errorMessage: 'The license key has expired. Please buy a new license at superintendent.app.'
+    });
   });
 });

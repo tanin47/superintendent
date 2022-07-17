@@ -1,7 +1,6 @@
 
 import {ipcRenderer} from 'electron';
 import {Sheet} from "../Workspace/types";
-import axios from "axios";
 import Store from "electron-store";
 import crypto from 'crypto';
 import {CopySelection, EditorMode} from "../../types";
@@ -33,89 +32,111 @@ export type CheckIfLicenseIsValidResult = {
   errorMessage?: string | null
 }
 
-export function extractPublicKey(licenseKey: string): string | null {
-  const publicKeyLines: Array<string> = [];
-  let isPublicKeyLine = false;
+export function extractLicenseInfo(licenseKey: string, key: string): string | null {
+  const lines: Array<string> = [];
+  let isMatched = false;
 
   licenseKey.split('\n').forEach((line) => {
-    if (line.startsWith('Key1:')) {
-      isPublicKeyLine = true;
+    if (line.startsWith(`${key}:`)) {
+      isMatched = true;
+      lines.push(line.substring(`${key}:`.length).trim());
       return;
     }
 
-    if (line.startsWith('---') && isPublicKeyLine) {
-      isPublicKeyLine = false;
+    if ((line.startsWith('---') || line.match(/^[a-zA-Z0-9]+:/)) && isMatched) {
+      isMatched = false;
       return;
     }
 
-    if (isPublicKeyLine) {
-      publicKeyLines.push(line);
+    if (isMatched) {
+      lines.push(line.trim());
     }
   });
 
-  if (publicKeyLines.length === 0) { return null; }
+  if (lines.length === 0) { return null; }
 
-  return publicKeyLines.join('\n');
+  return lines.join('\n').trim();
 }
 
-export function verifySignature(licenseKey: string, message: string, signature: string): boolean {
-  const publicKey = extractPublicKey(licenseKey);
+export function extractInput(licenseKey: string): string {
+  const lines: Array<string> = [];
+  let isMatched = false;
 
-  if (!publicKey) { return false; }
+  licenseKey.split('\n').forEach((line) => {
+    if (line.startsWith(`---`)) {
+      isMatched = true;
+      return;
+    }
+
+    if (line.startsWith("Signature:") && isMatched) {
+      isMatched = false;
+      return;
+    }
+
+    if (isMatched) {
+      lines.push(line.trim());
+    }
+  });
+
+  return lines.join('\n').trim();
+}
+
+export function verifySignature(licenseKey: string): boolean {
+  const publicKey = extractLicenseInfo(licenseKey, 'Key');
+  const signature = extractLicenseInfo(licenseKey, 'Signature');
+  const input = extractInput(licenseKey);
+
+  if (!publicKey || !signature || !input) { return false; }
 
   const cryptoPublicKey = crypto.createPublicKey('-----BEGIN PUBLIC KEY-----\n' + publicKey + '\n-----END PUBLIC KEY-----');
 
   return crypto.verify(
     'sha1',
-    Buffer.from(message),
+    Buffer.from(input),
     cryptoPublicKey,
     Buffer.from(signature, 'base64')
   );
 }
 
-export function checkIfLicenseIsValid(licenseKey: string): Promise<CheckIfLicenseIsValidResult> {
-  const message = `${new Date().getTime()}--${Math.random()}`;
+export function verifyExpiredAt(licenseKey: string): boolean {
+  const expiredAt = extractLicenseInfo(licenseKey, 'Expired');
 
-  const defaultErrorMessage = 'The license key is not valid. Please contact support@superintendent.app.';
-  const store = new Store();
+  if (!expiredAt) { return false; }
 
-  return new Promise<CheckIfLicenseIsValidResult>((resolve, reject) => {
-    axios
-      .post(
-        `${process.env.SUPERINTENDENT_SERVER_BASE_URL}/api/check-license`,
-        {
-          key: licenseKey,
-          message: message
-        }
-      )
-      .then((resp) => {
-        if (!resp.data.success) {
-          resolve({
-            success: false,
-            errorMessage: resp.data.errors?.join('\n') || defaultErrorMessage
-          });
-          return;
-        }
+  const expiredDateInMillis = Date.parse(expiredAt.endsWith('Z') ? expiredAt : `${expiredAt}Z`);
+  const now = new Date();
 
-        if (!verifySignature(licenseKey, message, resp.data.signature)) {
-          resolve({
-            success: false,
-            errorMessage: defaultErrorMessage
-          });
-          return;
-        }
+  return now.getTime() < expiredDateInMillis;
+}
 
-        store.set('license-key', licenseKey);
+export function checkIfLicenseIsValid(licenseKey: string): CheckIfLicenseIsValidResult {
+  try {
+    const store = new Store();
 
-        resolve({success: true});
-      })
-      .catch(() => {
-        resolve({
-          success: false,
-          errorMessage: defaultErrorMessage
-        });
-      })
-  });
+    if (!verifySignature(licenseKey)) {
+      return {
+        success: false,
+        errorMessage: 'The license key is not valid. Please contact support@superintendent.app.'
+      };
+    }
+
+    if (!verifyExpiredAt(licenseKey)) {
+      return {
+        success: false,
+        errorMessage: 'The license key has expired. Please buy a new license at superintendent.app.'
+      };
+    }
+
+    store.set('license-key', licenseKey);
+
+    return {success: true};
+  } catch (error) {
+    console.log(error);
+    return {
+      success: false,
+      errorMessage: 'The license key is not valid. Please contact support@superintendent.app.'
+    };
+  }
 }
 
 export function query(q: string): Promise<Sheet> {

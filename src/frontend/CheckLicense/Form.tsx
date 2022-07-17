@@ -45,16 +45,13 @@ export default function CheckLicenseForm({onFinished}: {onFinished: (evaluationM
             <button
               disabled={isLoading}
               onClick={() => {
-                setIsLoading(true);
-                checkIfLicenseIsValid(licenseKey)
-                  .then((result) => {
-                    if (result.success) {
-                      onFinished(false);
-                    } else {
-                      setErrorMessage(result.errorMessage!);
-                    }
-                  })
-                  .finally(() => setIsLoading(false));
+                const result = checkIfLicenseIsValid(licenseKey);
+
+                if (result.success) {
+                  onFinished(false);
+                } else {
+                  setErrorMessage(result.errorMessage!);
+                }
               }}
             >Submit</button>
             <button onClick={() => onFinished(true)}>

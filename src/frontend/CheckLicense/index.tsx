@@ -20,17 +20,13 @@ export default function CheckLicense({onFinished}: {onFinished: (evaluationMode:
           return;
         }
 
-        checkIfLicenseIsValid(licenseKey)
-          .then((result) => {
-            if (result.success) {
-              onFinished(false);
-            } else {
-              setResult('failed');
-            }
-          })
-          .catch(() => {
-            setResult('failed');
-          })
+        const result = checkIfLicenseIsValid(licenseKey)
+
+        if (result.success) {
+          onFinished(false);
+        } else {
+          setResult('failed');
+        }
       },
       100
     )
