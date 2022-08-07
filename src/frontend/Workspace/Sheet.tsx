@@ -1,5 +1,5 @@
 import React, {ForwardedRef} from 'react';
-import {Sheet, Selection} from './types';
+import {Sheet, Selection, UserSelectTarget} from './types';
 import {Chart, ChartType, registerables} from 'chart.js';
 import randomColor from 'randomcolor';
 // @ts-ignore
@@ -10,6 +10,7 @@ import {loadMore, copy} from "../api";
 import './Sheet.scss';
 import {CopySelection} from "../../types";
 import CopyingModal from "./CopyingModal";
+import {makeCopy} from "./helper";
 
 type CopyingData = {
   cellCount: number
@@ -300,13 +301,42 @@ function Table({
     columnWidths.push(width);
   });
 
-  const [selection, setSelection] = React.useState<Selection | null>(null);
+  const [userSelect, _setUserSelect] = React.useState<UserSelectTarget | null>(null);
+  const setUserSelect = (newUserSelect: UserSelectTarget | null) => {
+    _setUserSelect(makeCopy(newUserSelect));
+    sheet.userSelect = makeCopy(newUserSelect);
+  };
+  const doubleClickHandler = (rowIndex: number, colIndex: number) => (event: React.MouseEvent) => {
+    if (event.detail < 2) { // not a double click
+      return;
+    }
+    setUserSelect({rowIndex, colIndex});
+  };
+
+  const [selection, _setSelection] = React.useState<Selection | null>(null);
+  const setSelection = (newSelection: Selection | null) => {
+    _setSelection(makeCopy(newSelection));
+    sheet.selection = makeCopy(newSelection);
+  };
   const [isSelecting, setIsSelecting] = React.useState<boolean>(false);
 
-  React.useEffect(() => setSelection(sheet.selection), [sheet, setSelection]);
+  React.useEffect(
+    () => {
+      _setSelection(sheet.selection);
+      _setUserSelect(sheet.userSelect);
+    },
+    [sheet, _setSelection, _setUserSelect]
+  );
 
   const startSelection = (rowIndex: number, colIndex: number) => (event: React.MouseEvent) => {
     if (event.button !== 0) return; // not a left click
+    if (
+      sheet.selection &&
+      sheet.selection.startRow === rowIndex && sheet.selection.endRow === rowIndex &&
+      sheet.selection.startCol === colIndex && sheet.selection.endCol === colIndex
+    ) {
+      return; // no change.
+    }
     setIsSelecting(true);
     const newSelection = {
       startRow: rowIndex,
@@ -315,7 +345,7 @@ function Table({
       endCol: colIndex,
     };
     setSelection(newSelection);
-    sheet.selection = {...newSelection};
+    setUserSelect(null);
   };
 
   const addSelection = (rowIndex: number, colIndex: number) => (event: React.MouseEvent) => {
@@ -330,7 +360,6 @@ function Table({
     };
 
     setSelection(newSelection);
-    sheet.selection = {...newSelection};
   };
 
   const [mouseDownX, setMouseDownX] = React.useState<number>(0);
@@ -389,7 +418,8 @@ function Table({
 
   React.useEffect(() => {
     const handler = async (event): Promise<void> => {
-      if (event.target.tagName.toLocaleLowerCase() !== 'body' && event.target.className !== 'cell') return; // if it's body, it's not textarea. Therefore, we copy what is selected.
+      if (userSelect !== null) return; // selecting text instead
+      if (event.target.tagName.toLocaleLowerCase() === 'textarea') return; // The target is a text area. We skip this custom copy logic.
       if (selection === null) return;
 
       let copySelection: CopySelection;
@@ -451,7 +481,7 @@ function Table({
       document.removeEventListener('copy', handler);
       document.removeEventListener('cut', handler);
     }
-  }, [selection]);
+  }, [selection, userSelect]);
 
   const isWithinRange = (value: number, start: number, end: number): boolean => {
     return (start <= value && value <= end) || (end <= value && value <= start);
@@ -483,6 +513,19 @@ function Table({
       }
     }
 
+    let userSelectStyle: {[key: string]: string} = {userSelect: 'none'};
+    if (!!userSelect && userSelect.rowIndex === rowIndex && userSelect.colIndex === columnIndex) {
+      userSelectStyle = {
+        userSelect: 'text',
+        borderColor: '#80bdff',
+        outline: '0',
+        boxShadow: '0 0 0 .2rem rgba(0, 123, 255, .25)',
+        cursor: 'text',
+        zIndex: '1000',
+      };
+    }
+
+
     if (rowIndex === 0) {
       return (
         <div
@@ -502,6 +545,7 @@ function Table({
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
+            userSelect: 'none',
             textAlign: columnIndex === 0 ? 'center' : 'left',
             ...style,
           }}
@@ -513,6 +557,7 @@ function Table({
             <div
               className="resize-column-left-bar"
               onMouseDown={resizeColMouseDownHandler(columnIndex - 1)}
+
             />
           )}
           {columnIndex === 0 ? '\u00A0' : sheet.columns[columnIndex - 1].name}
@@ -565,10 +610,12 @@ function Table({
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
+            ...userSelectStyle,
             ...style,
           }}
           onMouseDown={startSelection(rowIndex, columnIndex)}
           onMouseEnter={addSelection(rowIndex, columnIndex)}
+          onClick={doubleClickHandler(rowIndex, columnIndex)}
         >
           {columnIndex === 0 ? rowIndex : sheet.rows[rowIndex - 1][columnIndex - 1]}
         </div>

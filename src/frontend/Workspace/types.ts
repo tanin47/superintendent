@@ -5,6 +5,11 @@ export type Column = {
   maxCharWidthCount: number
 }
 
+export type UserSelectTarget = {
+  rowIndex: number,
+  colIndex: number,
+};
+
 export type Sheet = {
   name: string,
   sql: string,
@@ -16,6 +21,7 @@ export type Sheet = {
   scrollTop: number | null,
   resizedColumns: {[col:number]: number},
   selection: Selection | null,
+  userSelect: UserSelectTarget | null,
 };
 
 export type Selection = {
