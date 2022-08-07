@@ -81,14 +81,14 @@ export function extractInput(licenseKey: string): string {
   return lines.join('\n').trim();
 }
 
+const SIGNATURE_PUBLIC_KEY = 'MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCJMEv39KhGzE6g/nuB1WZpi8CiTl9GVIH3lWclNI/FToulPEm+fz3oaU+47E/VCbW8dKUHkCJhql3qy3AObUyQqYYkoACLHukLnS0e8B7mOtrh2BsV0J7b0ESPBuQcYJbIEijm0lRpFhYzj1rea7xHaU2spezWm0OvaSSdeyBXfQIDAQAB';
 export function verifySignature(licenseKey: string): boolean {
-  const publicKey = extractLicenseInfo(licenseKey, 'Key');
   const signature = extractLicenseInfo(licenseKey, 'Signature');
   const input = extractInput(licenseKey);
 
-  if (!publicKey || !signature || !input) { return false; }
+  if (!signature || !input) { return false; }
 
-  const cryptoPublicKey = crypto.createPublicKey('-----BEGIN PUBLIC KEY-----\n' + publicKey + '\n-----END PUBLIC KEY-----');
+  const cryptoPublicKey = crypto.createPublicKey('-----BEGIN PUBLIC KEY-----\n' + SIGNATURE_PUBLIC_KEY + '\n-----END PUBLIC KEY-----');
 
   return crypto.verify(
     'sha1',
