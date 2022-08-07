@@ -306,12 +306,14 @@ function Table({
     _setUserSelect(makeCopy(newUserSelect));
     sheet.userSelect = makeCopy(newUserSelect);
   };
-  const doubleClickHandler = (rowIndex: number, colIndex: number) => (event: React.MouseEvent) => {
-    if (event.detail < 2) { // not a double click
-      return;
-    }
-    setUserSelect({rowIndex, colIndex});
-  };
+  const doubleClickHandler = React.useCallback(
+    (rowIndex: number, colIndex: number) => (event: React.MouseEvent) => {
+      if (event.detail < 2) return; // not a double click.
+      if (userSelect && userSelect.rowIndex === rowIndex && userSelect.colIndex === colIndex) return; // selecting text the cell.
+      setUserSelect({rowIndex, colIndex});
+    },
+    [setUserSelect, userSelect]
+  );
 
   const [selection, _setSelection] = React.useState<Selection | null>(null);
   const setSelection = (newSelection: Selection | null) => {
@@ -328,59 +330,63 @@ function Table({
     [sheet, _setSelection, _setUserSelect]
   );
 
-  const startSelection = (rowIndex: number, colIndex: number) => (event: React.MouseEvent) => {
-    if (event.button !== 0) return; // not a left click
-    if (
-      sheet.selection &&
-      sheet.selection.startRow === rowIndex && sheet.selection.endRow === rowIndex &&
-      sheet.selection.startCol === colIndex && sheet.selection.endCol === colIndex
-    ) {
-      return; // no change.
-    }
-    setIsSelecting(true);
-    const newSelection = {
-      startRow: rowIndex,
-      endRow: rowIndex,
-      startCol: colIndex,
-      endCol: colIndex,
-    };
-    setSelection(newSelection);
-    setUserSelect(null);
-  };
+  const startSelection = React.useCallback(
+    (rowIndex: number, colIndex: number) => (event: React.MouseEvent) => {
+      if (event.button !== 0) return; // not a left click
+      if (event.detail >= 2) return; // A double click is for selecting the text.
+      if (userSelect && userSelect.rowIndex === rowIndex && userSelect.colIndex === colIndex) return; // selecting text the cell.
+      setIsSelecting(true);
+      const newSelection = {
+        startRow: rowIndex,
+        endRow: rowIndex,
+        startCol: colIndex,
+        endCol: colIndex,
+      };
+      setSelection(newSelection);
+      setUserSelect(null);
+    },
+      [setIsSelecting, setSelection, setUserSelect, userSelect]
+  );
 
-  const addSelection = (rowIndex: number, colIndex: number) => (event: React.MouseEvent) => {
-    if (!isSelecting) return;
-    if (selection === null) return;
+  const addSelection = React.useCallback(
+    (rowIndex: number, colIndex: number) => (event: React.MouseEvent) => {
+      if (!isSelecting) return;
+      if (selection === null) return;
 
-    const newSelection = {
-      startRow: selection.startRow,
-      endRow: rowIndex,
-      startCol: selection.startCol,
-      endCol: colIndex,
-    };
+      const newSelection = {
+        startRow: selection.startRow,
+        endRow: rowIndex,
+        startCol: selection.startCol,
+        endCol: colIndex,
+      };
 
-    setSelection(newSelection);
-  };
+      setSelection(newSelection);
+    },
+    [setSelection, selection, isSelecting]
+  );
 
   const [mouseDownX, setMouseDownX] = React.useState<number>(0);
   const [mouseDownColWidth, setMouseDownColWidth] = React.useState<number>(0);
   const [resizingColIndex, setResizingColIndex] = React.useState<number | null>(null);
   const gridRef = React.createRef<any>();
 
-  const resizeColMouseDownHandler = (colIndex: number) => (event: React.MouseEvent) => {
-    if (!sheet.resizedColumns) {
-      sheet.resizedColumns = {};
-    }
+  const resizeColMouseDownHandler = React.useCallback(
+    (colIndex: number) => (event: React.MouseEvent) => {
+      if (!sheet.resizedColumns) {
+        sheet.resizedColumns = {};
+      }
 
-    if (!sheet.resizedColumns[colIndex]) {
-      sheet.resizedColumns[colIndex] = columnWidths[colIndex];
-    }
-    setMouseDownX(event.clientX);
-    setMouseDownColWidth(sheet.resizedColumns[colIndex]);
-    setResizingColIndex(colIndex);
+      if (!sheet.resizedColumns[colIndex]) {
+        sheet.resizedColumns[colIndex] = columnWidths[colIndex];
+      }
+      setMouseDownX(event.clientX);
+      setMouseDownColWidth(sheet.resizedColumns[colIndex]);
+      setResizingColIndex(colIndex);
 
-    event.stopPropagation();
-  };
+      event.stopPropagation();
+    },
+    [setMouseDownX, setMouseDownColWidth, setResizingColIndex]
+  );
 
   React.useEffect(() => {
     const handler = (event) => {
