@@ -385,7 +385,7 @@ function Table({
 
       event.stopPropagation();
     },
-    [setMouseDownX, setMouseDownColWidth, setResizingColIndex]
+    [setMouseDownX, setMouseDownColWidth, setResizingColIndex, sheet]
   );
 
   React.useEffect(() => {
@@ -403,7 +403,7 @@ function Table({
     return () => {
       document.removeEventListener('mousemove', handler) ;
     };
-  }, [resizingColIndex, mouseDownColWidth, mouseDownX, gridRef]);
+  }, [resizingColIndex, mouseDownColWidth, mouseDownX, gridRef, sheet]);
 
   React.useEffect(() => {
     const handler = (event) => {
