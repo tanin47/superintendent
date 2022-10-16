@@ -5,7 +5,7 @@
    - or `yarn run gulp start`
 4. To build the prod artifacts:
    - Mac: run `APPLEID=<EMAIL> APPLEIDPASS=<PASS> yarn run gulp release`
-   - Windows: run `set CSC_LINK=c:\Users\tanin\projects\tanin_na_nakorn.p12`, `set CSC_KEY_PASSWORD=<ssl.com password>` and `yarn run gulp release`
+   - Windows: run `set CSC_LINK=c:\Users\tanin\projects\tanin_na_nakorn.p12`, `set CSC_KEY_PASSWORD=474747` and `yarn run gulp release`
    - Linux: run `yarn run gulp release`
 
 Testing
