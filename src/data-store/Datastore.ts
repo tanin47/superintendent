@@ -1,4 +1,5 @@
 import {CopySelection} from "../types";
+import {getRandomBird} from "./Birds";
 
 export type Column = {
   name: string,
@@ -21,7 +22,7 @@ export abstract class Datastore {
   protected tables: Array<string> = [];
 
   abstract addSqlite(filePath: string, evaluationMode: boolean): Promise<Result[]>;
-  abstract addCsv(filePath: string, separator: string, evaluationMode: boolean): Promise<Result[]>;
+  abstract addCsv(filePath: string, withHeader: boolean, separator: string, evaluationMode: boolean): Promise<Result[]>;
   abstract exportCsv(table: string, filePath: string): Promise<void>;
 
   abstract exportSchema(filePath: string): Promise<void>;
@@ -53,6 +54,6 @@ export abstract class Datastore {
   }
 
   protected makeQueryTableName(): string {
-    return this.getTableName('query', 1);
+    return this.getTableName(getRandomBird());
   }
 }

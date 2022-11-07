@@ -1,6 +1,6 @@
 export type EditorMode = 'default' | 'vim';
 
-export type Format = 'comma' | 'tab' | 'pipe' | 'semicolon' | 'colon' | 'sqlite';
+export type Format = 'comma' | 'tab' | 'pipe' | 'semicolon' | 'colon' | 'tilde' | 'sqlite';
 
 export const EditorModeChannel = 'editor-mode-changed';
 

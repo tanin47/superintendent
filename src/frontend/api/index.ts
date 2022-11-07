@@ -178,9 +178,9 @@ export function copy(table: string, selection: CopySelection): Promise<boolean> 
     });
 }
 
-export function addCsv(path: string, format: string): Promise<Sheet[] | null> {
+export function addCsv(path: string, withHeader: boolean, format: string): Promise<Sheet[] | null> {
   return ipcRenderer
-    .invoke('add-csv', path, format)
+    .invoke('add-csv', path, withHeader, format)
     .then((result) => {
       if (result.success) {
         if (!result.data) {

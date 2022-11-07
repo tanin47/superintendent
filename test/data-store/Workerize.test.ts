@@ -34,7 +34,7 @@ describe('Workerize', () => {
     });
 
     it('only loads 100 rows because of the evaluation mode', async () => {
-      await workerize.addCsv(evaluationTestCsvFilePath, ',', true);
+      await workerize.addCsv(evaluationTestCsvFilePath, true, ',', true);
 
       const result = await workerize.query("SELECT * FROM evaluation_test");
 
@@ -43,7 +43,7 @@ describe('Workerize', () => {
     })
 
     it('loads all rows', async () => {
-      await workerize.addCsv(evaluationTestCsvFilePath, ',', false);
+      await workerize.addCsv(evaluationTestCsvFilePath, true, ',', false);
 
       const result = await workerize.query("SELECT * FROM evaluation_test");
 
@@ -63,7 +63,7 @@ describe('Workerize', () => {
 
     for (const format of formats) {
       it(`Import ${format.filename}`, async () => {
-        await workerize.addCsv(`./test/data-store/csv-samples/${format.filename}`, format.separator, false);
+        await workerize.addCsv(`./test/data-store/csv-samples/${format.filename}`, true, format.separator, false);
 
         const sql = `SELECT * FROM ${format.filename.split('.')[0]}`;
         const result = await workerize.query(sql);
@@ -72,7 +72,7 @@ describe('Workerize', () => {
           {
             count: 2,
             columns: [{name: 'firstname', maxCharWidthCount: 8}, {name: 'last_quote_name', maxCharWidthCount: 17}, {name: 'email', maxCharWidthCount: 33}],
-            name: 'query_1',
+            name: expect.any(String),
             sql,
             rows: [
               ['Harmonia', 'Waite', 'Har"quote"monia.Waite@yopmail.com'],
@@ -84,16 +84,36 @@ describe('Workerize', () => {
     }
   });
 
+  it("imports CSV with no header and incomplete line", async () => {
+    await workerize.addCsv(`./test/data-store/csv-samples/tilde_incomplete_line_no_header.csv`, false, '~', false);
+
+    const sql = "SELECT * FROM tilde_incomplete_line_no_header";
+    const result = await workerize.query(sql);
+
+    expect(result.count).toEqual(7);
+    expect(result.columns.length).toEqual(6);
+    expect(result.sql).toEqual(sql);
+    expect(result.rows).toEqual([
+      ["test", "last", "1234", "usa", "50", "male"],
+      ["test", "last", "1234", "usa", "50", null],
+      ["test", "last", "1234", "usa", null, null],
+      ["test", "last", "1234", null, null, null],
+      ["test", "last", null, null, null, null],
+      ["test", null, null, null, null, null],
+      ["test", "last", "1234", "usa", "50", "male"]
+    ]);
+  });
+
   describe('import/export', () => {
     it('import bom', async () => {
-      await workerize.addCsv('./test/data-store/csv-samples/bom.csv', ',', false);
+      await workerize.addCsv('./test/data-store/csv-samples/bom.csv', true, ',', false);
       const result = await workerize.query("SELECT * FROM bom");
 
       expect(result).toEqual(
         {
           count: 1,
           columns: [{name: 'bom_column_1', maxCharWidthCount: 6}, {name: 'bom_column_2', maxCharWidthCount: 6}],
-          name: 'query_1',
+          name: expect.any(String),
           sql: "SELECT * FROM bom",
           rows: [['value1', 'value2']]
         }
@@ -106,14 +126,14 @@ describe('Workerize', () => {
     });
 
     it('import dup column names', async () => {
-      await workerize.addCsv('./test/data-store/csv-samples/dup_column.csv', ',', false);
+      await workerize.addCsv('./test/data-store/csv-samples/dup_column.csv', true, ',', false);
       const result = await workerize.query("SELECT * FROM dup_column");
 
       expect(result).toEqual(
         {
           count: 1,
           columns: [{name: 'name', maxCharWidthCount: 4}, {name: 'Name_dup', maxCharWidthCount: 7}],
-          name: 'query_1',
+          name: expect.any(String),
           sql: "SELECT * FROM dup_column",
           rows: [['john', 'doe, do']]
         }
@@ -125,14 +145,14 @@ describe('Workerize', () => {
     });
 
     it('import unicode', async () => {
-      await workerize.addCsv('./test/data-store/csv-samples/unicode.csv', ',', false);
+      await workerize.addCsv('./test/data-store/csv-samples/unicode.csv', true, ',', false);
       const result = await workerize.query("SELECT * FROM unicode");
 
       expect(result).toEqual(
         {
           count: 1,
           columns: [{name: 'something', maxCharWidthCount: 5}, {name: 'another', maxCharWidthCount: 5}],
-          name: 'query_1',
+          name: expect.any(String),
           sql: "SELECT * FROM unicode",
           rows: [['ก ไก่', 'ข ไข่']]
         }
@@ -144,14 +164,14 @@ describe('Workerize', () => {
     });
 
     it('import quote', async () => {
-      await workerize.addCsv('./test/data-store/csv-samples/quote.csv', ',', false);
+      await workerize.addCsv('./test/data-store/csv-samples/quote.csv', true, ',', false);
       const result = await workerize.query("SELECT * FROM quote");
 
       expect(result).toEqual(
         {
           count: 2,
           columns: [{name: 'first_name', maxCharWidthCount: 17}, {name: 'last_name', maxCharWidthCount: 10}, {name: 'email', maxCharWidthCount: 15}],
-          name: 'query_1',
+          name: expect.any(String),
           sql: "SELECT * FROM quote",
           rows: [
             ['john', 'doe, do', ' "test@doe.com"'],
@@ -175,7 +195,7 @@ describe('Workerize', () => {
         {
           count: 1,
           columns: [{name: 'month', maxCharWidthCount: 0}],
-          name: 'query_1',
+          name: expect.any(String),
           sql: "SELECT regex_replace('[0-9]+', NULL, '0', false) AS month",
           rows: [[null]]
         }
@@ -189,7 +209,7 @@ describe('Workerize', () => {
         {
           count: 1,
           columns: [{name: 'month', maxCharWidthCount: 10}],
-          name: 'query_1',
+          name: expect.any(String),
           sql: "SELECT regex_replace('[0-9]+', '123.456.789', '00', true) AS month",
           rows: [['00.456.789']]
         }
@@ -203,7 +223,7 @@ describe('Workerize', () => {
         {
           count: 1,
           columns: [{name: 'month', maxCharWidthCount: 8}],
-          name: 'query_1',
+          name: expect.any(String),
           sql: "SELECT regex_replace('[0-9]+', '123.456.789', '00', false) AS month",
           rows: [['00.00.00']]
         }
@@ -217,7 +237,7 @@ describe('Workerize', () => {
         {
           count: 1,
           columns: [{name: 'month', maxCharWidthCount: 0}],
-          name: 'query_1',
+          name: expect.any(String),
           sql: "SELECT regex_replace('([0-9+)/([0-9]+/([0-9]+', 'abcd', '00', false) AS month",
           rows: [[null]]
         }
@@ -233,7 +253,7 @@ describe('Workerize', () => {
         {
           count: 1,
           columns: [{name: 'month', maxCharWidthCount: 0}],
-          name: 'query_1',
+          name: expect.any(String),
           sql: "SELECT regex_extract('[0-9]+', NULL) AS month",
           rows: [[null]]
         }
@@ -247,7 +267,7 @@ describe('Workerize', () => {
         {
           count: 1,
           columns: [{name: 'month', maxCharWidthCount: 1}],
-          name: 'query_1',
+          name: expect.any(String),
           sql: "SELECT regex_extract('[0-9]+/([0-9]+)/[0-9]+', '3/7/2019') AS month",
           rows: [['7']]
         }
@@ -261,7 +281,7 @@ describe('Workerize', () => {
         {
           count: 1,
           columns: [{name: 'month', maxCharWidthCount: 1}],
-          name: 'query_1',
+          name: expect.any(String),
           sql: "SELECT regex_extract('([0-9]+)/([0-9]+)/([0-9]+)', '3/7/2019') AS month",
           rows: [['3']]
         }
@@ -275,7 +295,7 @@ describe('Workerize', () => {
         {
           count: 1,
           columns: [{name: 'month', maxCharWidthCount: 0}],
-          name: 'query_1',
+          name: expect.any(String),
           sql: "SELECT regex_extract('([0-9]+)/([0-9]+)/([0-9]+)', 'abcd') AS month",
           rows: [[null]]
         }
@@ -289,7 +309,7 @@ describe('Workerize', () => {
         {
           count: 1,
           columns: [{name: 'month', maxCharWidthCount: 0}],
-          name: 'query_1',
+          name: expect.any(String),
           sql: "SELECT regex_extract('([0-9+)/([0-9]+/([0-9]+', 'abcd') AS month",
           rows: [[null]]
         }
@@ -305,7 +325,7 @@ describe('Workerize', () => {
         {
           count: 1,
           columns: [{name: 'date', maxCharWidthCount: 0}],
-          name: 'query_1',
+          name: expect.any(String),
           sql: "SELECT date_parse('%m/%d/%Y', NULL) AS date",
           rows: [[null]]
         }
@@ -318,7 +338,7 @@ describe('Workerize', () => {
         {
           count: 1,
           columns: [{name: 'date', maxCharWidthCount: 10}],
-          name: 'query_1',
+          name: expect.any(String),
           sql: "SELECT date_parse('%m/%d/%Y', '3/7/2019') AS date",
           rows: [['2019-03-07']]
         }
@@ -332,7 +352,7 @@ describe('Workerize', () => {
         {
           count: 1,
           columns: [{name: 'date', maxCharWidthCount: 24}],
-          name: 'query_1',
+          name: expect.any(String),
           sql: "SELECT date_parse('%m/%d/%Y %I:%M %p', '3/7/2019 7:12 pm') AS date",
           rows: [['2019-03-07T19:12:00.000Z']]
         }
@@ -346,7 +366,7 @@ describe('Workerize', () => {
         {
           count: 1,
           columns: [{name: 'date', maxCharWidthCount: 0}],
-          name: 'query_1',
+          name: expect.any(String),
           sql: "SELECT date_parse('%m/%d/%Y %I:%M %p', 'abcd') AS date",
           rows: [[null]]
         }
@@ -360,7 +380,7 @@ describe('Workerize', () => {
         {
           count: 1,
           columns: [{name: 'date', maxCharWidthCount: 0}],
-          name: 'query_1',
+          name: expect.any(String),
           sql: "SELECT date_parse('%uslkajf%n', '3/7/2019 7:12 pm') AS date",
           rows: [[null]]
         }

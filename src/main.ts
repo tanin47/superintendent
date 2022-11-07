@@ -251,7 +251,7 @@ export default class Main {
       return Main.wrapResponse(Main.db.rename(previousTableName, newTableName));
     });
 
-    ipcMain.handle('add-csv', async (event, path, format: Format) => {
+    ipcMain.handle('add-csv', async (event, path, withHeader: boolean, format: Format) => {
       let separator: string;
 
       if (format === 'comma') {
@@ -264,13 +264,15 @@ export default class Main {
         separator = ';';
       } else if (format === 'colon') {
         separator = ':';
+      } else if (format === 'tilde') {
+        separator = '~';
       } else if (format === 'sqlite') {
         return Main.wrapResponse(Main.db.addSqlite(path, Main.evaluationMode));
       } else {
         throw new Error();
       }
 
-      return Main.wrapResponse(Main.db.addCsv(path, separator, Main.evaluationMode));
+      return Main.wrapResponse(Main.db.addCsv(path, withHeader, separator, Main.evaluationMode));
     });
 
     ipcMain.handle('download-csv', async (event, arg) => {

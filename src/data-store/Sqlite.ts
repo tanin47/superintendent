@@ -4,6 +4,7 @@ import path from "path";
 import fs from "fs";
 import {Parser} from "csv-parse";
 import {CopySelection} from "../types";
+import {getRandomBird} from "./Birds";
 
 export type Env = {
   resourcePath: string,
@@ -71,7 +72,7 @@ export class Sqlite extends Datastore {
     return results;
   }
 
-  async addCsv(filePath: string, separator: string, evaluationMode: boolean): Promise<Result[]> {
+  async addCsv(filePath: string, withHeader: boolean, separator: string, evaluationMode: boolean): Promise<Result[]> {
     const table = this.getTableName(path.parse(filePath).name);
 
     const stream = fs
@@ -82,6 +83,7 @@ export class Sqlite extends Datastore {
         delimiter: separator,
         skipEmptyLines: true,
         relax: true,
+        relax_column_count: true
       }));
 
     const columns: Array<string> = [];
@@ -95,20 +97,23 @@ export class Sqlite extends Datastore {
       }
     };
 
-    let createTable: string;
     for await (let row of stream) {
       row.forEach((candidate: string) => {
+        if (!withHeader) {
+          candidate = getRandomBird();
+        }
+
         const newName = getColumnName(this.sanitizeName(candidate));
 
         columns.push(newName);
         sanitizedColumnNames.add(newName.toLowerCase());
       });
-      createTable = `CREATE TABLE x(${columns.map((c) => `"${c}" TEXT`).join(', ')})`;
       break;
     }
+    let createTable = `CREATE TABLE x(${columns.map((c) => `"${c}" TEXT`).join(', ')})`;
 
     const virtualTable = this.getTableName("virtual_" + table);
-    this.db.exec(`CREATE VIRTUAL TABLE "${virtualTable}" USING csv(filename='${filePath}', header=true, schema='${createTable!}', separator='${separator}')`);
+    this.db.exec(`CREATE VIRTUAL TABLE "${virtualTable}" USING csv(filename='${filePath}', header=${withHeader}, schema='${createTable!}', separator='${separator}')`);
     this.db.exec(`CREATE TABLE "${table}" AS SELECT * FROM "${virtualTable}" ${evaluationMode ? 'LIMIT 100' : ''}`);
     this.db.exec(`DROP TABLE "${virtualTable}"`);
 
@@ -283,13 +288,14 @@ export class Sqlite extends Datastore {
     });
 
     if (metadataResult.length > 0) {
-      columns = [];
+      const columnMap = {};
+      for (const col of columns) {
+        columnMap[col.name] = col;
+      }
+
       for (const key in metadataResult[0]) {
-        if (metadataResult[0].hasOwnProperty(key)) {
-          columns.push({
-            name: key,
-            maxCharWidthCount: metadataResult[0][key] || 0
-          });
+        if (metadataResult[0].hasOwnProperty(key) && columnMap.hasOwnProperty(key)) {
+          columnMap[key].maxCharWidthCount = metadataResult[0][key] || 0;
         }
       }
     }

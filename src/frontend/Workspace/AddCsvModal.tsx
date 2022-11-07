@@ -12,11 +12,12 @@ type Status = 'draft' | 'loading' | 'added' | 'errored';
 type File = {
   name: string,
   path: string,
+  withHeader: boolean,
   format: Format,
   status: Status
 };
 
-const MAX_LENGTH = 40;
+const MAX_LENGTH = 30;
 
 function trimFilename(name: string): string {
   const length = MAX_LENGTH - 3;
@@ -25,21 +26,24 @@ function trimFilename(name: string): string {
   }
 
   const half = length / 2;
-  return `${name.substr(0, half)}...${name.substr(name.length - half + 1, half)}`;
+  return `${name.substring(0, half)}...${name.substring(name.length - half, name.length)}`;
 }
 
 function FileItem({
   file,
   disabled,
+  onWithHeaderChanged,
   onFormatChanged,
   onDeleted
 }: {
   file: File,
   disabled: boolean,
+  onWithHeaderChanged: (newWithHeader: boolean) => void,
   onFormatChanged: (newFormat: Format) => void,
   onDeleted: () => void
 }): JSX.Element {
   const [format, setFormat] = React.useState(file.format);
+  const [withHeader, setWithHeader] = React.useState(file.withHeader);
 
   let icon = <i className="fas fa-file draft icon" />;
 
@@ -62,6 +66,22 @@ function FileItem({
         <div className="selector">
           <div className="select">
             <select
+              value={`${withHeader}`}
+              onChange={(event) => {
+                const newWithHeader = event.target.value == "true";
+                setWithHeader(newWithHeader);
+                onWithHeaderChanged(newWithHeader);
+              }}
+              disabled={disabled}
+            >
+              <option value="true">With header</option>
+              <option value="false">No header</option>
+            </select>
+          </div>
+        </div>
+        <div className="selector">
+          <div className="select">
+            <select
               value={format}
               onChange={(event) => {
                 const newFormat = event.target.value as Format;
@@ -75,6 +95,7 @@ function FileItem({
               <option value="pipe">Pipe (|)</option>
               <option value="semicolon">Semicolon (;)</option>
               <option value="colon">Colon (:)</option>
+              <option value="tilde">Tilde (~)</option>
               <option value="sqlite">Sqlite</option>
             </select>
           </div>
@@ -126,7 +147,7 @@ export default React.forwardRef(function AddCsv({
       });
 
       try {
-        const sheets = await addCsv(file.path, file.format);
+        const sheets = await addCsv(file.path, file.withHeader, file.format);
         if (sheets) {
           sheets.forEach((sheet) => {
             onAdded(sheet);
@@ -183,6 +204,7 @@ export default React.forwardRef(function AddCsv({
       newFiles.push({
         name: trimFilename(basename),
         path: file,
+        withHeader: true,
         format: format,
         status: 'draft',
       });
@@ -284,6 +306,16 @@ export default React.forwardRef(function AddCsv({
               key={index}
               file={file}
               disabled={isLoading}
+              onWithHeaderChanged={(newWithHeader) => {
+                setFiles((prevFiles) => {
+                  prevFiles[index] = {
+                    ...prevFiles[index],
+                    withHeader: newWithHeader
+                  };
+
+                  return [...prevFiles];
+                })
+              }}
               onFormatChanged={(newFormat) => {
                 setFiles((prevFiles) => {
                   prevFiles[index] = {

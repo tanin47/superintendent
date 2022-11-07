@@ -597,6 +597,19 @@ function Table({
         </div>
       );
     } else {
+      const value = columnIndex === 0 ? rowIndex : sheet.rows[rowIndex - 1][columnIndex - 1];
+      let nullStyles = {};
+      let renderedValue = value;
+
+      if (value === null || value === undefined) {
+        renderedValue = "NULL";
+        nullStyles = {
+          fontStyle: 'italic',
+          color: '#666',
+          fontSize: '8px'
+        };
+      }
+
       return (
         <div
           key={`cell-${rowIndex}-${columnIndex}`}
@@ -618,12 +631,13 @@ function Table({
             overflow: 'hidden',
             ...userSelectStyle,
             ...style,
+            ...nullStyles
           }}
           onMouseDown={startSelection(rowIndex, columnIndex)}
           onMouseEnter={addSelection(rowIndex, columnIndex)}
           onClick={doubleClickHandler(rowIndex, columnIndex)}
         >
-          {columnIndex === 0 ? rowIndex : sheet.rows[rowIndex - 1][columnIndex - 1]}
+          {renderedValue}
         </div>
       );
     }
