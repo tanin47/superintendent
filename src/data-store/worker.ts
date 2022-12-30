@@ -8,10 +8,12 @@ let sqlite: Sqlite | null;
 expose({
   init(env: Env): void {
     if (sqlite != null) {
-      sqlite.close();
-      sqlite = null;
+      throw new Error('It should have been null.');
     }
     sqlite = new Sqlite(env);
+  },
+  async close() {
+    sqlite!.close();
   },
   async addSqlite(filePath: string, evaluationMode: boolean): Promise<Result[]> {
     return sqlite!.addSqlite(filePath, evaluationMode);

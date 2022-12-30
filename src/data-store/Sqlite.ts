@@ -49,7 +49,7 @@ export class Sqlite extends Datastore {
     this.db.loadExtension(path.join(prefix, 'deps', 'csv_writer', `csv_writer.${ext}`));
   }
 
-  close() {
+  async close() {
     this.db.close();
   }
 

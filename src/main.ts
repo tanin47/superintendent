@@ -13,11 +13,14 @@ import {
 import {getRandomBird} from "./data-store/Birds";
 import fs from "fs";
 
+type Workspace = {
+  window: BrowserWindow,
+  db: Datastore
+}
+
 export default class Main {
-  static mainWindow: Electron.BrowserWindow;
+  static spaces: Map<number, Workspace> = new Map();
   static application: Electron.App;
-  static BrowserWindow;
-  static db: Datastore;
   static store: Store;
   static initialFile: string | null = null;
 
@@ -31,9 +34,23 @@ export default class Main {
     return process.platform === 'win32';
   }
 
-  private static async downloadCsv(table: string): Promise<string | null> {
+  private static getFocusedSpace(): Workspace {
+    for (const space of Main.spaces.values()) {
+      if (space.window.isFocused())  {
+        return space;
+      }
+    }
+
+    throw new Error("There's no focused space");
+  }
+
+  private static getSpace(event: Electron.IpcMainInvokeEvent): Workspace {
+    return Main.spaces.get(event.sender.id)!;
+  }
+
+  private static async downloadCsv(space: Workspace, table: string): Promise<string | null> {
     const file = dialog.showSaveDialogSync(
-      this.mainWindow,
+      space.window,
       {
         defaultPath: `${table}.csv`,
         filters: [{name: 'All files', extensions: ['*']}]
@@ -44,13 +61,13 @@ export default class Main {
       return null;
     }
 
-    await Main.db.exportCsv(table, file);
+    await space.db.exportCsv(table, file);
     return file;
   }
 
-  private static async exportSchema(): Promise<void> {
+  private static async exportSchema(space: Workspace): Promise<void> {
     const file = dialog.showSaveDialogSync(
-      this.mainWindow,
+      space.window,
       {
         defaultPath: `schema.sql`,
         filters: [{name: 'All files', extensions: ['*']}]
@@ -61,12 +78,12 @@ export default class Main {
       return;
     }
 
-    await Main.db.exportSchema(file);
+    await space.db.exportSchema(file);
   }
 
-  private static async importWorkflow(): Promise<void> {
+  private static async importWorkflow(space: Workspace): Promise<void> {
     const files = dialog.showOpenDialogSync(
-      this.mainWindow,
+      space.window,
       {
         filters: [{name: 'Superintendent', extensions: ['*.super']}]
       }
@@ -80,16 +97,16 @@ export default class Main {
 
     const data = fs.readFileSync(file, {encoding: 'utf8', flag: 'r'});
 
-    Main.mainWindow!.webContents.send(ImportWorkflowChannel, JSON.parse(data));
+    space.window.webContents.send(ImportWorkflowChannel, JSON.parse(data));
   }
 
-  private static async initExportWorkflow(): Promise<void> {
-    Main.mainWindow!.webContents.send(ExportWorkflowChannel, 'abracadabra');
+  private static async initExportWorkflow(space: Workspace): Promise<void> {
+    space.window.webContents.send(ExportWorkflowChannel, 'abracadabra');
   }
 
-  private static async exportWorkflow(workflow: ExportedWorkflow): Promise<string> {
+  private static async exportWorkflow(space: Workspace, workflow: ExportedWorkflow): Promise<string> {
     const file = dialog.showSaveDialogSync(
-      this.mainWindow,
+      space.window,
       {
         defaultPath: `workflow_${getRandomBird()}.super`,
         filters: [{name: 'All files', extensions: ['*']}]
@@ -135,7 +152,10 @@ export default class Main {
 
     const setEditorMode = (mode: EditorMode) => {
       Main.store.set('editorMode', mode);
-      Main.mainWindow!.webContents.send(EditorModeChannel, mode);
+
+      Main.spaces.forEach((space) => {
+        space.window.webContents.send(EditorModeChannel, mode);
+      });
     };
 
     const template = [
@@ -157,17 +177,24 @@ export default class Main {
         label: 'File',
         submenu: [
           {
-            label: 'Save workflow',
+            label: 'New Window',
+            click: () => {
+              Main.makeWorkspace();
+            }
+          },
+          { type: 'separator' },
+          {
+            label: 'Save Workflow',
             accelerator: process.platform === 'darwin' ? 'Cmd+S' : 'Ctrl+S',
             click: () => {
-              Main.initExportWorkflow();
+              Main.initExportWorkflow(Main.getFocusedSpace());
             }
           },
           {
-            label: 'Load workflow' ,
+            label: 'Load Workflow' ,
             accelerator: process.platform === 'darwin' ? 'Cmd+L' : 'Ctrl+L',
             click: () => {
-              Main.importWorkflow();
+              Main.importWorkflow(Main.getFocusedSpace());
             }
           },
         ]
@@ -200,7 +227,7 @@ export default class Main {
           ]),
           { type: 'separator' },
           {
-            label: 'Editor mode',
+            label: 'Editor Mode',
             submenu: [
               {
                 label: 'Default',
@@ -239,9 +266,9 @@ export default class Main {
         label: 'Tools',
         submenu: [
           {
-            label: 'Export schema',
+            label: 'Export Schema',
             click: function () {
-              Main.exportSchema();
+              Main.exportSchema(Main.getFocusedSpace());
             }
           },
         ]
@@ -280,10 +307,61 @@ export default class Main {
     Menu.setApplicationMenu(menu)
   }
 
+  private static async makeWorkspace(): Promise<Workspace> {
+    let window = new BrowserWindow({ width: 1280, height: 800, webPreferences: {nodeIntegration: true, nodeIntegrationInWorker: true, contextIsolation: false, sandbox: false}});
+    let space = {
+      window,
+      db: await Workerize.create(),
+    };
+    Main.spaces.set(space.window.webContents.id, space);
+
+    space.window.on('close',(e) => {
+      const choice = require('electron').dialog.showMessageBoxSync(
+        space.window,
+        {
+          type: 'question',
+          buttons: ['Yes', 'No'],
+          title: 'Confirm',
+          message: 'Are you sure you want to quit without saving the workflow?'
+        }
+      );
+
+      if(choice === 1){
+        e.preventDefault();
+      }
+
+      space.db.close();
+
+      Main.spaces.delete(space.window.id);
+    });
+
+    let initialFile: string | null = null;
+    if (Main.isMac()) {
+      initialFile = Main.initialFile;
+    } else if (Main.isWin()) {
+      initialFile = process.argv[1];
+    } else {
+      initialFile = process.argv[2];
+    }
+    const initialFileMap: {[key: string]: string} = initialFile ? {initialFile} : {};
+
+    await space.window.loadFile(
+      `${__dirname}/index.html`,
+      {
+        query: {editorMode: Main.getEditorMode(), ...initialFileMap}
+      }
+    );
+
+    if (!process.env.SUPERINTENDENT_IS_PROD) {
+      space.window.webContents.openDevTools();
+    }
+
+    return space;
+  }
+
   private static async onReady(): Promise<void> {
     Store.initRenderer();
 
-    Main.db = await Workerize.create();
 
     ipcMain.handle('set-evaluation-mode', async (event, arg) => {
       Main.evaluationMode = !!arg;
@@ -292,12 +370,12 @@ export default class Main {
     });
 
     ipcMain.handle('query', async (event, sql, table) => {
-      return Main.wrapResponse(Main.db.query(sql, table));
+      return Main.wrapResponse(Main.getSpace(event).db.query(sql, table));
     });
 
     ipcMain.handle('copy', async (event, table, selection) => {
       return Main.wrapResponse(
-        Main.db.copy(table, selection)
+        Main.getSpace(event).db.copy(table, selection)
           .then(({text, html}) => {
             clipboard.write({text, html});
             return true;
@@ -306,19 +384,19 @@ export default class Main {
     });
 
     ipcMain.handle('load-more', async (event, table, offset) => {
-      return Main.wrapResponse(Main.db.loadMore(table, offset));
+      return Main.wrapResponse(Main.getSpace(event).db.loadMore(table, offset));
     });
 
     ipcMain.handle('drop', async (event, arg) => {
-      return Main.wrapResponse(Main.db.drop(arg));
+      return Main.wrapResponse(Main.getSpace(event).db.drop(arg));
     });
 
     ipcMain.handle('rename', async (event, previousTableName, newTableName) => {
-      return Main.wrapResponse(Main.db.rename(previousTableName, newTableName));
+      return Main.wrapResponse(Main.getSpace(event).db.rename(previousTableName, newTableName));
     });
 
     ipcMain.handle('export-workflow', async (event, workflow) => {
-      return Main.wrapResponse(Main.exportWorkflow(workflow));
+      return Main.wrapResponse(Main.exportWorkflow(Main.getSpace(event), workflow));
     });
 
     ipcMain.handle('add-csv', async (event, path, withHeader: boolean, format: Format, replace: string) => {
@@ -337,61 +415,34 @@ export default class Main {
       } else if (format === 'tilde') {
         separator = '~';
       } else if (format === 'sqlite') {
-        return Main.wrapResponse(Main.db.addSqlite(path, Main.evaluationMode));
+        return Main.wrapResponse(Main.getSpace(event).db.addSqlite(path, Main.evaluationMode));
       } else {
         throw new Error();
       }
 
-      return Main.wrapResponse(Main.db.addCsv(path, withHeader, separator, replace, Main.evaluationMode));
+      return Main.wrapResponse(Main.getSpace(event).db.addCsv(path, withHeader, separator, replace, Main.evaluationMode));
     });
 
     ipcMain.handle('download-csv', async (event, arg) => {
-      return Main.wrapResponse(Main.downloadCsv(arg));
+      return Main.wrapResponse(Main.downloadCsv(Main.getSpace(event), arg));
     });
 
-    Main.mainWindow = new Main.BrowserWindow({ width: 1280, height: 800, webPreferences: {nodeIntegration: true, nodeIntegrationInWorker: true, contextIsolation: false, sandbox: false}});
-    Main.mainWindow.on('close',(e) => {
-      const choice = require('electron').dialog.showMessageBoxSync(
-        Main.mainWindow,
-      {
-          type: 'question',
-          buttons: ['Yes', 'No'],
-          title: 'Confirm',
-          message: 'Are you sure you want to quit without saving the workflow?'
+    await Main.makeWorkspace();
+
+    if (process.platform === 'darwin') {
+      const dockMenu = Menu.buildFromTemplate([
+        {
+          label: 'New Window',
+          click: () => {
+            Main.makeWorkspace();
+          }
         }
-      );
-
-      if(choice === 1){
-        e.preventDefault();
-      }
-
-    });
-
-    let initialFile: string | null = null;
-    if (Main.isMac()) {
-      initialFile = Main.initialFile;
-    } else if (Main.isWin()) {
-      initialFile = process.argv[1];
-    } else {
-      initialFile = process.argv[2];
+      ]);
+      Main.application.dock.setMenu(dockMenu);
     }
-    const initialFileMap: {[key: string]: string} = initialFile ? {initialFile} : {};
-    await Main.mainWindow!.loadFile(
-      `${__dirname}/index.html`,
-      {
-        query: {editorMode: Main.getEditorMode(), ...initialFileMap}
-      }
-    );
-    await Main.maybeEnableDev();
-  }
-
-  private static async maybeEnableDev(): Promise<void> {
-    if (process.env.SUPERINTENDENT_IS_PROD) { return; }
-    Main.mainWindow!.webContents.openDevTools();
   }
 
   static main(app: Electron.App, browserWindow: typeof BrowserWindow): void {
-    Main.BrowserWindow = browserWindow;
     Main.application = app;
     Main.store = new Store();
     Main.buildMenu();
@@ -399,8 +450,8 @@ export default class Main {
       Main.application.quit();
     });
     Main.application.on('open-file', (event, path) => {
-      if (Main.mainWindow) {
-        Main.mainWindow!.webContents.send('open-file', path);
+      if (Main.spaces.size > 0) {
+        this.getFocusedSpace().window.webContents.send('open-file', path);
       } else {
         Main.initialFile = path;
       }

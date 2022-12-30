@@ -23,6 +23,8 @@ export abstract class Datastore {
 
   protected tables: Array<string> = [];
 
+  abstract close(): Promise<void>;
+
   abstract addSqlite(filePath: string, evaluationMode: boolean): Promise<Result[]>;
   abstract addCsv(filePath: string, withHeader: boolean, separator: string, replace: string, evaluationMode: boolean): Promise<Result[]>;
   abstract exportCsv(table: string, filePath: string): Promise<void>;

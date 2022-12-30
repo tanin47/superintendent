@@ -19,7 +19,8 @@ export class Workerize extends Datastore {
     return Promise.resolve(new Workerize(worker));
   }
 
-  close(): Promise<void> {
+  async close(): Promise<void> {
+    await this.worker.close();
     return Thread.terminate(this.worker);
   }
 
