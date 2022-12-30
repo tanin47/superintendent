@@ -221,6 +221,19 @@
           vertical-align: top;
         }
       }
+
+      .info {
+        color: #fefefe;
+        font-size: 13px;
+        padding-left: 8px;
+        padding-right: 5px;
+        height: 26px;
+        line-height: 26px;
+
+        .table {
+          text-decoration: underline;
+        }
+      }
     }
   }
 
@@ -302,10 +315,11 @@
         position: relative;
         display: inline-block;
         font-size: 14px;
-        line-height: 24px;
-        padding: 0px 8px;
+        line-height: 32px;
+        padding: 0px 12px;
         color: #666;
         background-color: #ddd;
+        border-right: 1px solid #fefefe;
         cursor: pointer;
 
         &.selected {
@@ -315,7 +329,15 @@
           box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px;
         }
 
-        i {
+        .editor-selected {
+          text-decoration: underline;
+        }
+
+        i.fa-file {
+          margin-right: 4px;
+        }
+
+        i.fa-times {
           margin-left: 8px;
           color: #ccc;
 
@@ -331,5 +353,35 @@
 .tooltip {
   .link {
     color: #5CABFF;
+  }
+}
+
+.rename-form {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+
+  .rename-textbox {
+    width: 400px;
+    padding: 8px 12px;
+    margin: 6px 0;
+    box-sizing: border-box;
+
+    margin-right: 5px;
+  }
+
+  button.main {
+    margin-right: 5px;
+  }
+}
+
+.blinking {
+  animation: blinker 0.5s linear infinite;
+}
+
+@keyframes blinker {
+  50% {
+    opacity: 0;
   }
 }

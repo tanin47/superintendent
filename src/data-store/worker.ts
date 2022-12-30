@@ -16,8 +16,8 @@ expose({
   async addSqlite(filePath: string, evaluationMode: boolean): Promise<Result[]> {
     return sqlite!.addSqlite(filePath, evaluationMode);
   },
-  async addCsv(filePath: string, withHeader: boolean, separator: string, evaluationMode: boolean): Promise<Result[]> {
-    return sqlite!.addCsv(filePath, withHeader, separator, evaluationMode);
+  async addCsv(filePath: string, withHeader: boolean, separator: string, replace: string, evaluationMode: boolean): Promise<Result[]> {
+    return sqlite!.addCsv(filePath, withHeader, separator, replace, evaluationMode);
   },
   async exportCsv(table: string, filePath: string): Promise<void> {
     return sqlite!.exportCsv(table, filePath);
@@ -25,8 +25,8 @@ expose({
   async exportSchema(filePath: string): Promise<void> {
     return sqlite!.exportSchema(filePath);
   },
-  async query(sql: string): Promise<Result> {
-    return sqlite!.query(sql);
+  async query(sql: string, table: string | null): Promise<Result> {
+    return sqlite!.query(sql, table);
   },
   async copy(table: string, selection: CopySelection): Promise<{text: string, html: string}> {
     return sqlite!.copy(table, selection);

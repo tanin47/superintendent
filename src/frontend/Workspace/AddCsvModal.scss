@@ -1,3 +1,7 @@
+.modal {
+  width: 600px;
+}
+
 .add-csv {
   display: block;
   position: relative;
@@ -89,6 +93,11 @@
     .right {
       display: inline-block;
 
+      .line {
+        display: block;
+        padding-bottom: 5px;
+      }
+
       i.fa-times {
         cursor: pointer;
         font-size: 12px;
@@ -105,7 +114,8 @@
 
       .selector {
         display: inline-block;
-        margin: 0px 10px;
+        margin: 0px;
+        margin-right: 5px;
         flex-direction: column;
         justify-content: center;
         align-items: center;

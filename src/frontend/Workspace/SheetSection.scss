@@ -1,22 +1,3 @@
-.rename-form {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-
-  .rename-textbox {
-    width: 400px;
-    padding: 8px 12px;
-    margin: 6px 0;
-    box-sizing: border-box;
-
-    margin-right: 5px;
-  }
-
-  button.main {
-    margin-right: 5px;
-  }
-}
 
 .rename-error {
   color: #af0000;

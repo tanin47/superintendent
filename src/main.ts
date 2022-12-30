@@ -2,7 +2,16 @@ import {BrowserWindow, dialog, ipcMain, Menu, clipboard} from 'electron';
 import Store from 'electron-store';
 import {Datastore} from "./data-store/Datastore";
 import {Workerize} from "./data-store/Workerize";
-import {EditorMode, EditorModeChannel, Format} from "./types";
+import {
+  EditorMode,
+  EditorModeChannel,
+  ExportedWorkflow,
+  ExportWorkflowChannel,
+  Format,
+  ImportWorkflowChannel
+} from "./types";
+import {getRandomBird} from "./data-store/Birds";
+import fs from "fs";
 
 export default class Main {
   static mainWindow: Electron.BrowserWindow;
@@ -55,6 +64,50 @@ export default class Main {
     await Main.db.exportSchema(file);
   }
 
+  private static async importWorkflow(): Promise<void> {
+    const files = dialog.showOpenDialogSync(
+      this.mainWindow,
+      {
+        filters: [{name: 'Superintendent', extensions: ['*.super']}]
+      }
+    );
+
+    if (!files || files.length === 0) {
+      return;
+    }
+
+    const file = files[0];
+
+    const data = fs.readFileSync(file, {encoding: 'utf8', flag: 'r'});
+
+    Main.mainWindow!.webContents.send(ImportWorkflowChannel, JSON.parse(data));
+  }
+
+  private static async initExportWorkflow(): Promise<void> {
+    Main.mainWindow!.webContents.send(ExportWorkflowChannel, 'abracadabra');
+  }
+
+  private static async exportWorkflow(workflow: ExportedWorkflow): Promise<string> {
+    const file = dialog.showSaveDialogSync(
+      this.mainWindow,
+      {
+        defaultPath: `workflow_${getRandomBird()}.super`,
+        filters: [{name: 'All files', extensions: ['*']}]
+      }
+    );
+
+    if (!file) {
+      return Promise.resolve("exit");
+    }
+
+    const writer = fs.createWriteStream(file, {flags: 'w'});
+
+    writer.write(JSON.stringify(workflow, null, 2));
+    writer.close();
+
+    return Promise.resolve("i will create as I speak");
+  }
+
   private static wrapResponse(resp: Promise<any>): Promise<any> {
     return resp
       .then((r) => ({
@@ -103,7 +156,20 @@ export default class Main {
       {
         label: 'File',
         submenu: [
-          Main.isMac() ? { role: 'close' } : { role: 'quit' }
+          {
+            label: 'Save workflow',
+            accelerator: process.platform === 'darwin' ? 'Cmd+S' : 'Ctrl+S',
+            click: () => {
+              Main.initExportWorkflow();
+            }
+          },
+          {
+            label: 'Load workflow' ,
+            accelerator: process.platform === 'darwin' ? 'Cmd+L' : 'Ctrl+L',
+            click: () => {
+              Main.importWorkflow();
+            }
+          },
         ]
       },
       {
@@ -140,7 +206,7 @@ export default class Main {
                 label: 'Default',
                 type: 'radio',
                 checked: Main.getEditorMode() === 'default',
-                click: function (item, BrowserWindow) {
+                click: function (item) {
                   item.checked = true;
                   setEditorMode('default');
                 }
@@ -149,7 +215,7 @@ export default class Main {
                 label: 'Vim',
                 type: 'radio',
                 checked: Main.getEditorMode() === 'vim',
-                click: function (item, BrowserWindow) {
+                click: function (item) {
                   item.checked = true;
                   setEditorMode('vim');
                 }
@@ -225,8 +291,8 @@ export default class Main {
       return true;
     });
 
-    ipcMain.handle('query', async (event, arg) => {
-      return Main.wrapResponse(Main.db.query(arg));
+    ipcMain.handle('query', async (event, sql, table) => {
+      return Main.wrapResponse(Main.db.query(sql, table));
     });
 
     ipcMain.handle('copy', async (event, table, selection) => {
@@ -251,7 +317,11 @@ export default class Main {
       return Main.wrapResponse(Main.db.rename(previousTableName, newTableName));
     });
 
-    ipcMain.handle('add-csv', async (event, path, withHeader: boolean, format: Format) => {
+    ipcMain.handle('export-workflow', async (event, workflow) => {
+      return Main.wrapResponse(Main.exportWorkflow(workflow));
+    });
+
+    ipcMain.handle('add-csv', async (event, path, withHeader: boolean, format: Format, replace: string) => {
       let separator: string;
 
       if (format === 'comma') {
@@ -272,7 +342,7 @@ export default class Main {
         throw new Error();
       }
 
-      return Main.wrapResponse(Main.db.addCsv(path, withHeader, separator, Main.evaluationMode));
+      return Main.wrapResponse(Main.db.addCsv(path, withHeader, separator, replace, Main.evaluationMode));
     });
 
     ipcMain.handle('download-csv', async (event, arg) => {
@@ -287,7 +357,7 @@ export default class Main {
           type: 'question',
           buttons: ['Yes', 'No'],
           title: 'Confirm',
-          message: 'Are you sure you want to quit?'
+          message: 'Are you sure you want to quit without saving the workflow?'
         }
       );
 

@@ -1,2 +1,12 @@
 .cell {
 }
+
+.empty-warning {
+  font-family: 'Dosis', sans-serif;
+  font-size: 16px;
+  margin: 0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}

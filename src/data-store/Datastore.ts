@@ -13,6 +13,8 @@ export type Result = {
   columns: Column[],
   rows: Row[],
   count: number,
+  dependsOn: string[],
+  isCsv: boolean
 }
 
 export abstract class Datastore {
@@ -22,12 +24,12 @@ export abstract class Datastore {
   protected tables: Array<string> = [];
 
   abstract addSqlite(filePath: string, evaluationMode: boolean): Promise<Result[]>;
-  abstract addCsv(filePath: string, withHeader: boolean, separator: string, evaluationMode: boolean): Promise<Result[]>;
+  abstract addCsv(filePath: string, withHeader: boolean, separator: string, replace: string, evaluationMode: boolean): Promise<Result[]>;
   abstract exportCsv(table: string, filePath: string): Promise<void>;
 
   abstract exportSchema(filePath: string): Promise<void>;
 
-  abstract query(sql: string): Promise<Result>;
+  abstract query(sql: string, table: string | null): Promise<Result>;
   abstract copy(table: string, selection: CopySelection): Promise<{text: string, html: string}>;
   abstract loadMore(table: string, offset: number): Promise<Row[]>;
   abstract drop(table: string): Promise<void>;

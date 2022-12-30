@@ -1,5 +1,5 @@
 import React, {ForwardedRef} from 'react';
-import {Sheet, Selection, UserSelectTarget} from './types';
+import {Sheet, Selection, UserSelectTarget, PresentationType} from './types';
 import {Chart, ChartType, registerables} from 'chart.js';
 import randomColor from 'randomcolor';
 // @ts-ignore
@@ -10,7 +10,7 @@ import {loadMore, copy} from "../api";
 import './Sheet.scss';
 import {CopySelection} from "../../types";
 import CopyingModal from "./CopyingModal";
-import {makeCopy} from "./helper";
+import {isChartEnabled, makeCopy} from "./helper";
 
 type CopyingData = {
   cellCount: number
@@ -276,15 +276,16 @@ const Grid = React.forwardRef(function Grid({
 
 function Table({
   sheet,
-  onRowsAdded,
+  onSelectedSheetUpdated,
   onCopyingStarted,
   onCopyingFinished
 }: {
   sheet: Sheet,
-  onRowsAdded: (rows: string[][]) => void,
+  onSelectedSheetUpdated: (sheet: Sheet | null) => void,
   onCopyingStarted: (data: CopyingData) => void,
   onCopyingFinished: () => void
 }): JSX.Element {
+  const [forceUpdate, setForceUpdate] = React.useState<number>(0);
   const columnWidths = [sheet.resizedColumns && sheet.resizedColumns[0] ? sheet.resizedColumns[0] : 30];
   sheet.columns.forEach((column, index) => {
     if (sheet.resizedColumns && sheet.resizedColumns[index + 1]) {
@@ -368,7 +369,7 @@ function Table({
   const [mouseDownX, setMouseDownX] = React.useState<number>(0);
   const [mouseDownColWidth, setMouseDownColWidth] = React.useState<number>(0);
   const [resizingColIndex, setResizingColIndex] = React.useState<number | null>(null);
-  const gridRef = React.createRef<any>();
+  const gridRef = React.useRef<any>(null);
 
   const resizeColMouseDownHandler = React.useCallback(
     (colIndex: number) => (event: React.MouseEvent) => {
@@ -697,9 +698,11 @@ function Table({
     (startIndex: number, stopIndex: number): Promise<void> => {
       return loadMore(sheet.name, sheet.rows.length)
         .then((rows) => {
-          const current = gridRef.current; // onRowsAdded clears gridRef, so we need to save it first.
+          const current = gridRef.current; // setForceUpdate clears gridRef, so we need to save it first.
           const loadingRow = sheet.rows.length;
-          onRowsAdded(rows);
+          sheet.rows = sheet.rows.concat(rows);
+          setForceUpdate((n) => n+1);
+          onSelectedSheetUpdated(sheet);
 
           if (current) {
             current.updateRow(loadingRow); // update the height of the load more row.
@@ -754,7 +757,7 @@ function Table({
 }
 
 function Graph({type, sheet}: {type: ChartType, sheet: Sheet}): JSX.Element {
-  const chartRef = React.createRef<any>();
+  const chartRef = React.useRef<any>(null);
 
   React.useEffect(
     () => {
@@ -812,7 +815,24 @@ function Graph({type, sheet}: {type: ChartType, sheet: Sheet}): JSX.Element {
   );
 }
 
-export default function Sheet({sheet, onRowsAdded}: {sheet: Sheet, onRowsAdded: (rows: string[][]) => void}): JSX.Element {
+export default function Sheet({
+  sheet,
+  presentationType,
+  onSelectedSheetUpdated
+}: {
+  sheet: Sheet,
+  presentationType: PresentationType,
+  onSelectedSheetUpdated: (sheet: Sheet | null) => void
+}): JSX.Element {
+
+  if (sheet.columns.length === 0) {
+    let msg = `Please run ${sheet.name} in order to see the result.`;
+
+    if (sheet.isCsv) {
+      msg = `Please load the CSV into ${sheet.name} in order to see the result.`;
+    }
+    return <div className="sheet" tabIndex={-1}><div className="empty-warning">{msg}</div></div>;
+  }
 
   React.useEffect(
     () => {
@@ -825,9 +845,13 @@ export default function Sheet({sheet, onRowsAdded}: {sheet: Sheet, onRowsAdded: 
 
   const [copyingData, setCopyingData] = React.useState<CopyingData | null>(null);
 
-  switch (sheet.presentationType) {
+  let updatedPresentationType = presentationType;
+
+  if (!isChartEnabled(sheet.rows.length)) { updatedPresentationType = 'table'; }
+
+  switch (updatedPresentationType) {
     case 'table':
-      view = <Table sheet={sheet} onRowsAdded={onRowsAdded} onCopyingStarted={(data) => setCopyingData(data)} onCopyingFinished={() => setCopyingData(null)} />;
+      view = <Table sheet={sheet} onSelectedSheetUpdated={onSelectedSheetUpdated} onCopyingStarted={(data) => setCopyingData(data)} onCopyingFinished={() => setCopyingData(null)} />;
       break;
     case 'line':
       view = <Graph type="line" sheet={sheet} />;

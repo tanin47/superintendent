@@ -16,7 +16,7 @@ module.exports = [
     },
     plugins: [
       definePlugin
-    ]
+    ],
   }),
   merge(common.electronConfiguration, {
     mode: 'development',
@@ -26,7 +26,7 @@ module.exports = [
     },
     plugins: [
       definePlugin
-    ]
+    ],
   }),
   merge(common.reactConfiguration, {
     mode: 'development',
@@ -36,6 +36,6 @@ module.exports = [
     },
     plugins: [
       definePlugin
-    ]
+    ],
   }),
 ];

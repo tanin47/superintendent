@@ -72,8 +72,8 @@ export class Sqlite extends Datastore {
     return results;
   }
 
-  async addCsv(filePath: string, withHeader: boolean, separator: string, evaluationMode: boolean): Promise<Result[]> {
-    const table = this.getTableName(path.parse(filePath).name);
+  async addCsv(filePath: string, withHeader: boolean, separator: string, replace: string, evaluationMode: boolean): Promise<Result[]> {
+    let table = this.getTableName(path.parse(filePath).name);
 
     const stream = fs
       .createReadStream(filePath)
@@ -117,7 +117,14 @@ export class Sqlite extends Datastore {
     this.db.exec(`CREATE TABLE "${table}" AS SELECT * FROM "${virtualTable}" ${evaluationMode ? 'LIMIT 100' : ''}`);
     this.db.exec(`DROP TABLE "${virtualTable}"`);
 
+    if (replace && replace !== '' && table !== replace) {
+      await this.drop(replace);
+      await this.rename(table, replace);
+      table = replace;
+    }
+
     const result = await this.queryAllFromTable(table, `SELECT * FROM "${table}"`);
+    result.isCsv = true;
     return [result];
   }
 
@@ -184,11 +191,34 @@ export class Sqlite extends Datastore {
     }
   }
 
-  async query(sql: string): Promise<Result> {
-    const table = this.makeQueryTableName();
-    this.db.exec(`CREATE TABLE "${table}" AS ${sql}`);
+  async query(sql: string, table: string | null): Promise<Result> {
+    const dependsOn: string[] = [];
+    const explain = this.db.prepare(`EXPLAIN QUERY PLAN ${sql}`).all();
+    for (const item of explain) {
+       if (item.detail.startsWith("SCAN TABLE ") || item.detail.startsWith("SEARCH TABLE ")) {
+         const components = item.detail.split(' ', 3);
+         dependsOn.push(components[2]);
+       }
+    }
 
-    return Promise.resolve(this.queryAllFromTable(table, sql));
+    const isDependentOnSelf = dependsOn.findIndex((d) => d === table) > -1;
+
+    const newTable = this.makeQueryTableName();
+
+    this.db.exec(`CREATE TABLE "${newTable}" AS ${sql}`);
+
+    const result = await this.queryAllFromTable(newTable, sql);
+    result.dependsOn = dependsOn;
+    result.isCsv = false;
+
+    const shouldReplaceTable = !isDependentOnSelf && table !== null && newTable !== table;
+    if (shouldReplaceTable) {
+      await this.drop(table);
+      await this.rename(newTable, table)
+      result.name = table;
+    }
+
+    return result;
   }
 
   async copy(table: string, selection: CopySelection): Promise<{text: string, html: string}> {
@@ -262,6 +292,7 @@ export class Sqlite extends Datastore {
   }
 
   private queryAllFromTable(table: string, sql: string): Result {
+
     const numOfRowsResult = this.db.prepare(`SELECT COUNT(*) AS number_of_rows FROM "${table}"`).all();
     const numOfRows = numOfRowsResult.length == 0 ? 0 : numOfRowsResult[0].number_of_rows;
 
@@ -306,6 +337,8 @@ export class Sqlite extends Datastore {
       columns,
       rows: allRows,
       count: numOfRows,
+      dependsOn: [],
+      isCsv: false
     };
   }
 }

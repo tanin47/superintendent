@@ -8,3 +8,7 @@ export function makeCopy<T>(original: T | null): T | null {
   if (original === null) { return null; }
   return {...original};
 }
+
+export function isChartEnabled(rowCount: number | null | undefined): boolean {
+  return !!rowCount && rowCount <= 11000;
+}

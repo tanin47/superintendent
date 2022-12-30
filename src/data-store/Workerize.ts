@@ -27,8 +27,8 @@ export class Workerize extends Datastore {
     return this.worker.addSqlite(filePath, evaluationMode);
   }
 
-  async addCsv(filePath: string, withHeader: boolean, separator: string, evaluationMode: boolean): Promise<Result[]> {
-    return this.worker.addCsv(filePath, withHeader, separator, evaluationMode);
+  async addCsv(filePath: string, withHeader: boolean, separator: string, replace: string, evaluationMode: boolean): Promise<Result[]> {
+    return this.worker.addCsv(filePath, withHeader, separator, replace, evaluationMode);
   }
 
   async exportCsv(table: string, filePath: string): Promise<void> {
@@ -39,8 +39,8 @@ export class Workerize extends Datastore {
     return this.worker.exportSchema(filePath);
   }
 
-  async query(sql: string): Promise<Result> {
-    return this.worker.query(sql);
+  async query(sql: string, table: string | null): Promise<Result> {
+    return this.worker.query(sql, table);
   }
 
   async copy(table: string, selection: CopySelection): Promise<{text: string, html: string}> {

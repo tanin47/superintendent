@@ -7,6 +7,7 @@ import 'codemirror/addon/hint/show-hint';
 import 'codemirror/addon/hint/show-hint.css';
 import 'codemirror/addon/hint/sql-hint';
 import 'codemirror/addon/hint/anyword-hint';
+import 'codemirror/addon/comment/comment';
 import 'codemirror/keymap/vim.js';
 import './Editor.scss';
 import {EditorMode} from '../../types';
@@ -17,12 +18,15 @@ export interface Ref {
   getValue(): string;
   setValue(newValue: string): void;
   format(): void;
+  focus(): void;
 }
 
 type Props = {
   initialValue?: string | null,
   mode: EditorMode,
-  sheets: Array<Sheet>
+  sheets: Array<Sheet>,
+  selectedSheetIndex: number | null,
+  visible: boolean
 };
 
 function getAutocompleteWord(s: string): string {
@@ -37,9 +41,36 @@ export default React.forwardRef<Ref, Props>(function Editor({
   initialValue,
   mode,
   sheets,
+  selectedSheetIndex,
+  visible
 }: Props, ref): JSX.Element {
-  const textareaRef = React.createRef<HTMLTextAreaElement>();
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const codeMirrorInstance = React.useRef<any>(null);
+
+  React.useEffect(
+    () => {
+      if (codeMirrorInstance.current) {
+        const elem = codeMirrorInstance.current!.getWrapperElement();
+        elem.style.display = visible ? 'block' : 'none'
+      }
+    },
+    [visible]
+  );
+
+  React.useEffect(
+    () => {
+      if (selectedSheetIndex === null) { return; }
+
+      const cursor = codeMirrorInstance.current!.getCursor();
+      const selections = codeMirrorInstance.current!.listSelections();
+
+      codeMirrorInstance.current!.setValue(sheets[selectedSheetIndex].sql);
+
+      codeMirrorInstance.current!.setCursor(cursor);
+      codeMirrorInstance.current!.setSelections(selections);
+    },
+    [sheets, selectedSheetIndex]
+  )
 
   React.useImperativeHandle(ref, () => ({
     getValue: () => {
@@ -56,11 +87,14 @@ export default React.forwardRef<Ref, Props>(function Editor({
           {
             language: "sql",
             indent: '  ',
-            uppercase: true,
+            uppercase: false,
             linesBetweenQueries: 2,
           }
         )
       );
+    },
+    focus: () => {
+      codeMirrorInstance.current!.focus();
     }
   }));
 
@@ -70,7 +104,7 @@ export default React.forwardRef<Ref, Props>(function Editor({
       {
         value: initialValue || '',
         mode: 'text/x-sql',
-        indentWithTabs: true,
+        indentWithTabs: false,
         smartIndent: true,
         lineNumbers: true,
         matchBrackets: true,
@@ -78,7 +112,12 @@ export default React.forwardRef<Ref, Props>(function Editor({
         keyMap: mode,
         tabSize: 2,
         autofocus: true,
-        extraKeys: {'Ctrl-Space': 'autocomplete', 'Cmd-Space': 'autocomplete'}
+        extraKeys: {
+          'Ctrl-Space': 'autocomplete',
+          'Cmd-Space': 'autocomplete',
+          'Ctrl-/': 'toggleComment',
+          'Cmd-/': 'toggleComment',
+        }
       }
     );
 
@@ -114,7 +153,7 @@ export default React.forwardRef<Ref, Props>(function Editor({
   React.useEffect(() => {
     if (!codeMirrorInstance.current) { return; }
     codeMirrorInstance.current.setOption('keyMap', mode);
-  }, [codeMirrorInstance, mode]);
+  }, [mode]);
 
   React.useEffect(() => {
     if (!codeMirrorInstance.current) { return; }
@@ -140,12 +179,12 @@ export default React.forwardRef<Ref, Props>(function Editor({
       tables: tables,
       defaultTable: sheets[0] ? getAutocompleteWord(sheets[0].name) : null,
       closeOnUnfocus: true,
-    })
-  }, [codeMirrorInstance, sheets])
+    });
+  }, [sheets])
 
   return (
-    <>
+    <div style={{ height: '100%', width: '100%', top: visible ? '0px' : '-100000px', position: 'absolute' }}>
       <textarea ref={textareaRef} placeholder="Compose a beautiful SQL..." />
-    </>
+    </div>
   );
 });

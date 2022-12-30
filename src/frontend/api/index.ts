@@ -3,7 +3,7 @@ import {ipcRenderer} from 'electron';
 import {Sheet} from "../Workspace/types";
 import Store from "electron-store";
 import crypto from 'crypto';
-import {CopySelection, EditorMode} from "../../types";
+import {CopySelection, EditorMode, ExportedWorkflow} from "../../types";
 
 const urlParams = new URLSearchParams(window.location.search);
 
@@ -139,9 +139,9 @@ export function checkIfLicenseIsValid(licenseKey: string): CheckIfLicenseIsValid
   }
 }
 
-export function query(q: string): Promise<Sheet> {
+export function query(q: string, table: string | null): Promise<Sheet> {
   return ipcRenderer
-    .invoke('query', q)
+    .invoke('query', q, table)
     .then((result) => {
       if (result.success) {
         return {
@@ -178,9 +178,9 @@ export function copy(table: string, selection: CopySelection): Promise<boolean> 
     });
 }
 
-export function addCsv(path: string, withHeader: boolean, format: string): Promise<Sheet[] | null> {
+export function addCsv(path: string, withHeader: boolean, format: string, replace: string): Promise<Sheet[] | null> {
   return ipcRenderer
-    .invoke('add-csv', path, withHeader, format)
+    .invoke('add-csv', path, withHeader, format, replace)
     .then((result) => {
       if (result.success) {
         if (!result.data) {
@@ -193,6 +193,18 @@ export function addCsv(path: string, withHeader: boolean, format: string): Promi
             };
           });
         }
+      } else {
+        throw result;
+      }
+    });
+}
+
+export function exportWorkflow(workflow: ExportedWorkflow): Promise<void> {
+  return ipcRenderer
+    .invoke('export-workflow', workflow)
+    .then((result) => {
+      if (result.success) {
+        // do nothing
       } else {
         throw result;
       }

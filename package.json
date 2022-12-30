@@ -40,16 +40,6 @@
         "ext": "psv",
         "role": "Viewer",
         "name": "Pipe-separated values"
-      },
-      {
-        "ext": "db",
-        "role": "Viewer",
-        "name": "SQLite database file"
-      },
-      {
-        "ext": "sqlite",
-        "role": "Viewer",
-        "name": "SQLite database file"
       }
     ],
     "mac": {
@@ -112,6 +102,7 @@
     "ts-loader": "^8.0.11",
     "ts-node": "^10.0.0",
     "typescript": "^4.3.5",
+    "web-worker": "^1.2.0",
     "webpack": "^5.9.0",
     "webpack-cli": "^4.2.0",
     "webpack-merge": "^5.7.3",
@@ -119,18 +110,21 @@
   },
   "dependencies": {
     "@tippyjs/react": "^4.2.5",
-    "better-sqlite3": "^7.6.2",
+    "better-sqlite3": "tanin47/better-sqlite3#54c74c5be05988766826f27ee124d2c6fe4d7730",
     "chart.js": "^3.3.2",
     "codemirror": "^5.61.1",
     "csv-parse": "4.15.4",
+    "dagre": "^0.8.5",
     "electron-default-menu": "^1.0.2",
     "electron-store": "^8.0.0",
+    "elkjs": "^0.8.2",
     "nan": "^2.14.0",
     "randomcolor": "^0.6.2",
     "react-modal": "^3.14.3",
     "react-virtualized-auto-sizer": "^1.0.5",
     "react-window": "tanin47/react-window#4bed2c46bc9342a527a40c1495d9037e0def4fd7",
     "react-window-infinite-loader": "^1.0.7",
+    "reactflow": "^11.3.0",
     "sql-formatter": "^4.0.2",
     "sweetalert2": "^11.0.18",
     "threads": "^1.6.5",

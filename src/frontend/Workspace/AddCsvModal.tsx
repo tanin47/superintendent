@@ -14,6 +14,7 @@ type File = {
   path: string,
   withHeader: boolean,
   format: Format,
+  replace: string,
   status: Status
 };
 
@@ -32,17 +33,22 @@ function trimFilename(name: string): string {
 function FileItem({
   file,
   disabled,
+  sheets,
   onWithHeaderChanged,
   onFormatChanged,
+  onReplaceChanged,
   onDeleted
 }: {
   file: File,
+  sheets: Sheet[],
   disabled: boolean,
   onWithHeaderChanged: (newWithHeader: boolean) => void,
   onFormatChanged: (newFormat: Format) => void,
+  onReplaceChanged: (newReplace: string) => void,
   onDeleted: () => void
 }): JSX.Element {
   const [format, setFormat] = React.useState(file.format);
+  const [replace, setReplace] = React.useState('');
   const [withHeader, setWithHeader] = React.useState(file.withHeader);
 
   let icon = <i className="fas fa-file draft icon" />;
@@ -63,51 +69,83 @@ function FileItem({
       </div>
 
       <div className="right">
-        <div className="selector">
-          <div className="select">
-            <select
-              value={`${withHeader}`}
-              onChange={(event) => {
-                const newWithHeader = event.target.value == "true";
-                setWithHeader(newWithHeader);
-                onWithHeaderChanged(newWithHeader);
-              }}
-              disabled={disabled}
-            >
-              <option value="true">With header</option>
-              <option value="false">No header</option>
-            </select>
+        <div className="line">
+          <div className="selector">
+            <div className="select" style={{width: '110px'}}>
+              <select
+                value={`${withHeader}`}
+                onChange={(event) => {
+                  const newWithHeader = event.target.value == "true";
+                  setWithHeader(newWithHeader);
+                  onWithHeaderChanged(newWithHeader);
+                }}
+                disabled={disabled}
+              >
+                <option value="true">with header</option>
+                <option value="false">without header</option>
+              </select>
+            </div>
           </div>
-        </div>
-        <div className="selector">
-          <div className="select">
-            <select
-              value={format}
-              onChange={(event) => {
-                const newFormat = event.target.value as Format;
-                setFormat(newFormat);
-                onFormatChanged(newFormat);
-              }}
-              disabled={disabled}
-            >
-              <option value="comma">Comma (,)</option>
-              <option value="tab">Tab</option>
-              <option value="pipe">Pipe (|)</option>
-              <option value="semicolon">Semicolon (;)</option>
-              <option value="colon">Colon (:)</option>
-              <option value="tilde">Tilde (~)</option>
-              <option value="sqlite">Sqlite</option>
-            </select>
+          <div className="selector">
+            <div className="select">
+              <select
+                value={format}
+                onChange={(event) => {
+                  const newFormat = event.target.value as Format;
+                  setFormat(newFormat);
+                  onFormatChanged(newFormat);
+                }}
+                disabled={disabled}
+              >
+                <option value="comma">Comma (,)</option>
+                <option value="tab">Tab</option>
+                <option value="pipe">Pipe (|)</option>
+                <option value="semicolon">Semicolon (;)</option>
+                <option value="colon">Colon (:)</option>
+                <option value="tilde">Tilde (~)</option>
+                <option value="sqlite">Sqlite</option>
+              </select>
+            </div>
           </div>
-        </div>
 
-        <i
-          className={`fas fa-times ${disabled ? 'disabled' : ''}`}
-          onClick={() => {
-            if (disabled) { return; }
-            onDeleted();
-          }}
-        />
+          <i
+            className={`fas fa-times ${disabled ? 'disabled' : ''}`}
+            onClick={() => {
+              if (disabled) { return; }
+              onDeleted();
+            }}
+          />
+        </div>
+        <div className="line">
+          <div className="selector">
+            <div className="select" style={{width: '215px'}}>
+              <select
+                value={replace}
+                onChange={(event) => {
+                  const replace = event.target.value;
+                  setReplace(replace);
+                  onReplaceChanged(replace);
+                }}
+                disabled={disabled}
+              >
+                <option value="" key="">as a new sheet</option>
+                {format !== 'sqlite' && sheets
+                  .filter((s) => s.isCsv)
+                  .map((s) => {
+                    return (
+                      <option
+                        value={s.name}
+                        key={s.name}
+                      >
+                        Replace {s.name}
+                      </option>
+                    );
+                  })
+                }
+              </select>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -119,20 +157,23 @@ export type Ref = {
 
 export default React.forwardRef(function AddCsv({
   isOpen,
+  sheets,
   onClose,
   onAdded
 }: {
   isOpen: boolean,
+  sheets: Sheet[],
   onClose: () => void,
   onAdded: (sheet: Sheet) => void
 }, ref: React.ForwardedRef<Ref>): JSX.Element {
   const [files, setFiles] = React.useState<File[]>([]);
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
-  const fileRef = React.createRef<HTMLInputElement>();
+  const fileRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => Modal.setAppElement('#app'), []);
 
   const uploadFiles = React.useCallback(async () => {
+    if (files.length === 0) { return; }
     setIsLoading(true);
 
     for (let index=0;index<files.length;index++) {
@@ -147,7 +188,7 @@ export default React.forwardRef(function AddCsv({
       });
 
       try {
-        const sheets = await addCsv(file.path, file.withHeader, file.format);
+        const sheets = await addCsv(file.path, file.withHeader, file.format, file.replace);
         if (sheets) {
           sheets.forEach((sheet) => {
             onAdded(sheet);
@@ -206,6 +247,7 @@ export default React.forwardRef(function AddCsv({
         path: file,
         withHeader: true,
         format: format,
+        replace: '',
         status: 'draft',
       });
     }
@@ -326,9 +368,20 @@ export default React.forwardRef(function AddCsv({
                   return [...prevFiles];
                 })
               }}
+              onReplaceChanged={(newReplace) => {
+                setFiles((prevFiles) => {
+                  prevFiles[index] = {
+                    ...prevFiles[index],
+                    replace: newReplace
+                  };
+
+                  return [...prevFiles];
+                })
+              }}
               onDeleted={() => {
                 setFiles((prevFiles) => prevFiles.filter((f, i) => i !== index))
               }}
+              sheets={sheets}
             />;
           })}
         </div>
@@ -336,7 +389,7 @@ export default React.forwardRef(function AddCsv({
           <div className="left">
             <button
               className="main"
-              disabled={isLoading}
+              disabled={isLoading || files.length === 0}
               onClick={() => uploadFiles()}
             >
               Import all files

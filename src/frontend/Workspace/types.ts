@@ -1,4 +1,7 @@
-export type PresentationType = 'table' | 'line' | 'bar' | 'pie';
+import {XYPosition} from "@reactflow/core/dist/esm/types";
+
+export const PresentationTypes = ['table', 'line', 'pie', 'bar'] as const;
+export type PresentationType = typeof PresentationTypes[number];
 
 export type Column = {
   name: string,
@@ -12,6 +15,10 @@ export type UserSelectTarget = {
 
 export type Sheet = {
   name: string,
+  previousName?: string | null,
+  isCsv: boolean,
+  dependsOn: string[],
+  position?: XYPosition | null,
   sql: string,
   count: number,
   columns: Column[],
