@@ -1,34 +1,23 @@
-import React, { ReactElement } from 'react';
+import React, {ReactElement} from 'react';
 import './index.scss';
 import Workspace from './Workspace';
 import CheckLicense from './CheckLicense';
-import {ipcRenderer} from "electron";
-import {getInitialEditorMode, getInitialFile} from './api';
 
 
 type Page = 'check-license' | 'workspace';
 
 type PageState = {
   page: Page,
-  evaluationMode: boolean
 }
 
 type Action = {
   changeTo: Page,
-  setEvaluationMode?: boolean
 }
 
-const initialState: PageState = {page: 'check-license', evaluationMode: true};
+const initialState: PageState = {page: 'check-license'};
 
 function reducer(state: PageState, action: Action): PageState {
-  const optionals: {evaluationMode?: boolean} = {};
-
-  if (action.setEvaluationMode !== undefined) {
-    optionals.evaluationMode = action.setEvaluationMode;
-
-    ipcRenderer.invoke('set-evaluation-mode', action.setEvaluationMode);
-  }
-  return {...state, page: action.changeTo, ...optionals}
+  return {...state, page: action.changeTo}
 }
 
 export default function App(): ReactElement {
@@ -36,9 +25,9 @@ export default function App(): ReactElement {
 
   switch (state.page) {
     case 'check-license':
-      return <CheckLicense onFinished={(evaluationMode) => dispatch({changeTo: 'workspace', setEvaluationMode: evaluationMode})} />
+      return <CheckLicense onFinished={() => dispatch({changeTo: 'workspace'})} />
     case 'workspace':
-      return <Workspace evaluationMode={state.evaluationMode} />
+      return <Workspace />
   }
 
   throw new Error();

@@ -24,8 +24,6 @@ export default class Main {
   static store: Store;
   static initialFile: string | null = null;
 
-  static evaluationMode: boolean = true;
-
   private static isMac(): boolean {
     return process.platform === 'darwin';
   }
@@ -362,13 +360,6 @@ export default class Main {
   private static async onReady(): Promise<void> {
     Store.initRenderer();
 
-
-    ipcMain.handle('set-evaluation-mode', async (event, arg) => {
-      Main.evaluationMode = !!arg;
-
-      return true;
-    });
-
     ipcMain.handle('query', async (event, sql, table) => {
       return Main.wrapResponse(Main.getSpace(event).db.query(sql, table));
     });
@@ -415,12 +406,12 @@ export default class Main {
       } else if (format === 'tilde') {
         separator = '~';
       } else if (format === 'sqlite') {
-        return Main.wrapResponse(Main.getSpace(event).db.addSqlite(path, Main.evaluationMode));
+        return Main.wrapResponse(Main.getSpace(event).db.addSqlite(path));
       } else {
         throw new Error();
       }
 
-      return Main.wrapResponse(Main.getSpace(event).db.addCsv(path, withHeader, separator, replace, Main.evaluationMode));
+      return Main.wrapResponse(Main.getSpace(event).db.addCsv(path, withHeader, separator, replace));
     });
 
     ipcMain.handle('download-csv', async (event, arg) => {

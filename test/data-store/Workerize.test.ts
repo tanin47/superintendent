@@ -19,39 +19,6 @@ describe('Workerize', () => {
     }
   });
 
-  describe('handle the evaluation mode', () => {
-    let evaluationTestCsvFilePath = path.join(os.tmpdir(), `evaluation_test.csv`);
-    beforeAll(() => {
-      let content = 'one_col\r\n';
-      for (let i=0;i<150;i++) {
-        content += `row_${i}\r\n`;
-      }
-      fs.writeFileSync(evaluationTestCsvFilePath, content, {flag: 'w'});
-    });
-
-    afterAll(() =>{
-      fs.unlinkSync(evaluationTestCsvFilePath);
-    });
-
-    it('only loads 100 rows because of the evaluation mode', async () => {
-      await workerize.addCsv(evaluationTestCsvFilePath, true, ',', true);
-
-      const result = await workerize.query("SELECT * FROM evaluation_test");
-
-      expect(result.count).toEqual(100);
-      expect(result.rows.length).toEqual(100);
-    })
-
-    it('loads all rows', async () => {
-      await workerize.addCsv(evaluationTestCsvFilePath, true, ',', false);
-
-      const result = await workerize.query("SELECT * FROM evaluation_test");
-
-      expect(result.count).toEqual(150);
-      expect(result.rows.length).toEqual(150);
-    })
-  });
-
   describe('different formats', () => {
     const formats = [
       {filename: 'csv.csv', separator: ','},

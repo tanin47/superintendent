@@ -3,7 +3,7 @@ import './Form.scss';
 import {shell} from 'electron';
 import {checkIfLicenseIsValid} from "../api";
 
-export default function CheckLicenseForm({onFinished}: {onFinished: (evaluationMode: boolean) => void}): ReactElement {
+export default function CheckLicenseForm({onFinished}: {onFinished: () => void}): ReactElement {
   const [licenseKey, setLicenseKey] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
@@ -48,18 +48,12 @@ export default function CheckLicenseForm({onFinished}: {onFinished: (evaluationM
                 const result = checkIfLicenseIsValid(licenseKey);
 
                 if (result.success) {
-                  onFinished(false);
+                  onFinished();
                 } else {
                   setErrorMessage(result.errorMessage!);
                 }
               }}
             >Submit</button>
-            <button onClick={() => onFinished(true)}>
-              Use the evaluation mode
-            </button>
-          </div>
-          <div className="remark">
-            The evaluation mode is free and allows up to 100 rows per CSV.
           </div>
         </div>
       </div>

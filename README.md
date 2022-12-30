@@ -16,9 +16,8 @@ Testing
 3. Test importing quote.csv
 4. Test importing height_weight.csv + user.csv and do a join.
 5. Test exporting a table especially windows
-6. Test evaluation mode
-7. Test import sqlite
-8. Test exporting schema
+6. Test import sqlite
+7. Test exporting schema
 
 License for testing on prod
 ----------------------------

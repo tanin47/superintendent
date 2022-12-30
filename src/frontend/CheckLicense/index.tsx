@@ -6,7 +6,7 @@ import CheckLicenseForm from "./Form";
 
 type Result = 'loading' | 'failed'
 
-export default function CheckLicense({onFinished}: {onFinished: (evaluationMode: boolean) => void}): ReactElement {
+export default function CheckLicense({onFinished}: {onFinished: () => void}): ReactElement {
   const [result, setResult] = React.useState<Result>('loading');
   const store = React.useMemo(() => new Store(), []);
 
@@ -23,7 +23,7 @@ export default function CheckLicense({onFinished}: {onFinished: (evaluationMode:
         const result = checkIfLicenseIsValid(licenseKey)
 
         if (result.success) {
-          onFinished(false);
+          onFinished();
         } else {
           setResult('failed');
         }

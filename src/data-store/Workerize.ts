@@ -24,12 +24,12 @@ export class Workerize extends Datastore {
     return Thread.terminate(this.worker);
   }
 
-  async addSqlite(filePath: string, evaluationMode: boolean): Promise<Result[]> {
-    return this.worker.addSqlite(filePath, evaluationMode);
+  async addSqlite(filePath: string): Promise<Result[]> {
+    return this.worker.addSqlite(filePath);
   }
 
-  async addCsv(filePath: string, withHeader: boolean, separator: string, replace: string, evaluationMode: boolean): Promise<Result[]> {
-    return this.worker.addCsv(filePath, withHeader, separator, replace, evaluationMode);
+  async addCsv(filePath: string, withHeader: boolean, separator: string, replace: string): Promise<Result[]> {
+    return this.worker.addCsv(filePath, withHeader, separator, replace);
   }
 
   async exportCsv(table: string, filePath: string): Promise<void> {

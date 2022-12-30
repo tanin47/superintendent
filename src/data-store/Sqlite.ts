@@ -53,7 +53,7 @@ export class Sqlite extends Datastore {
     this.db.close();
   }
 
-  async addSqlite(filePath: string, evaluationMode: boolean): Promise<Result[]> {
+  async addSqlite(filePath: string): Promise<Result[]> {
     this.db.exec(`ATTACH DATABASE '${filePath}' AS temp_database;`);
 
     const rows = this.db.prepare(`SELECT tbl_name FROM temp_database.sqlite_master WHERE type = 'table';`).raw(true).all();
@@ -63,7 +63,7 @@ export class Sqlite extends Datastore {
     for (const row of rows) {
       const old_name = row[0];
       const table = this.getTableName(old_name);
-      this.db.exec(`CREATE TABLE "${table}" AS SELECT * FROM "temp_database"."${old_name}" ${evaluationMode ? 'LIMIT 100' : ''}`);
+      this.db.exec(`CREATE TABLE "${table}" AS SELECT * FROM "temp_database"."${old_name}"`);
       results.push(await this.queryAllFromTable(table, `SELECT * FROM "${table}"`));
     }
 
@@ -72,7 +72,7 @@ export class Sqlite extends Datastore {
     return results;
   }
 
-  async addCsv(filePath: string, withHeader: boolean, separator: string, replace: string, evaluationMode: boolean): Promise<Result[]> {
+  async addCsv(filePath: string, withHeader: boolean, separator: string, replace: string): Promise<Result[]> {
     let table = this.getTableName(path.parse(filePath).name);
 
     const stream = fs
@@ -114,7 +114,7 @@ export class Sqlite extends Datastore {
 
     const virtualTable = this.getTableName("virtual_" + table);
     this.db.exec(`CREATE VIRTUAL TABLE "${virtualTable}" USING csv(filename='${filePath}', header=${withHeader}, schema='${createTable!}', separator='${separator}')`);
-    this.db.exec(`CREATE TABLE "${table}" AS SELECT * FROM "${virtualTable}" ${evaluationMode ? 'LIMIT 100' : ''}`);
+    this.db.exec(`CREATE TABLE "${table}" AS SELECT * FROM "${virtualTable}"`);
     this.db.exec(`DROP TABLE "${virtualTable}"`);
 
     if (replace && replace !== '' && table !== replace) {

@@ -34,7 +34,7 @@ type SheetInfo = {
   totalRowCount: number
 };
 
-export default function Workspace({evaluationMode}: {evaluationMode: boolean}): ReactElement {
+export default function Workspace(): ReactElement {
   const [editorMode, setEditorMode] = React.useState<EditorMode>(getInitialEditorMode());
   const [sheets, setSheets] = React.useState<Array<Sheet>>([]);
   const [renamingSheetIndex, setRenamingSheetIndex] = React.useState<number | null>(null);
@@ -569,19 +569,6 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
                       </Tippy>
                     </>
                   }
-                  {evaluationMode && (
-                    <Tippy
-                      theme="material"
-                      interactive
-                      content={
-                        <span className="tooltip">
-                          In the evaluation mode, you can load up to 100 rows per CSV. Please <span className="link" onClick={() => shell.openExternal("https://superintendent.app/buy")}>get a license</span> in order to get full access.
-                        </span>
-                      }
-                    >
-                      <i className="fas fa-info-circle" />
-                    </Tippy>
-                  )}
                 </span>
                 <span className="separator" />
               </>
