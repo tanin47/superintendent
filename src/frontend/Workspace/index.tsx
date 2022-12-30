@@ -112,7 +112,15 @@ export default function Workspace({evaluationMode}: {evaluationMode: boolean}): 
       const foundIndex = sheets.findIndex((s) => s.name === newSheet.name);
 
       if (foundIndex > -1) {
-        sheets.splice(foundIndex, 1, newSheet);
+        // Replace all keys because other components refer to this object by reference.
+        Object.keys(newSheet).forEach((k) => {
+          sheets[foundIndex][k] = newSheet[k];
+        });
+        Object.keys(sheets[foundIndex]).forEach((k) => {
+          if (!(k in newSheet)) {
+            delete sheets[foundIndex][k];
+          }
+        });
         setSheets([...sheets]);
       } else {
         sheets.push(newSheet);
