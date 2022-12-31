@@ -4,7 +4,7 @@ import {Datastore} from "./data-store/Datastore";
 import {Workerize} from "./data-store/Workerize";
 import {
   EditorMode,
-  EditorModeChannel,
+  EditorModeChannel, ExportDelimiter, ExportDelimiters,
   ExportedWorkflow,
   ExportWorkflowChannel,
   Format,
@@ -12,6 +12,24 @@ import {
 } from "./types";
 import {getRandomBird} from "./data-store/Birds";
 import fs from "fs";
+
+const ExportDelimiterLabels = {
+  comma: 'Comma (,)',
+  tab: 'Tab',
+  pipe: 'Pipe (|)',
+  semicolon: 'Semicolon (;)',
+  colon: 'Colon (:)',
+  tilde: 'Tilde (~)'
+};
+
+const ExportDelimiterSymbols = {
+  comma: ',',
+  tab: '\t',
+  pipe: '|',
+  semicolon: ';',
+  colon: ':',
+  tilde: '~'
+};
 
 type Workspace = {
   window: BrowserWindow,
@@ -46,7 +64,7 @@ export default class Main {
     return Main.spaces.get(event.sender.id)!;
   }
 
-  private static async downloadCsv(space: Workspace, table: string): Promise<string | null> {
+  private static async downloadCsv(space: Workspace, table: string, exportDelimiter: ExportDelimiter): Promise<string | null> {
     const file = dialog.showSaveDialogSync(
       space.window,
       {
@@ -59,7 +77,7 @@ export default class Main {
       return null;
     }
 
-    await space.db.exportCsv(table, file);
+    await space.db.exportCsv(table, file, ExportDelimiterSymbols[exportDelimiter] || ExportDelimiterSymbols.comma);
     return file;
   }
 
@@ -140,6 +158,10 @@ export default class Main {
     return (Main.store.get('editorMode') as (EditorMode | null)) || 'default';
   }
 
+  private static getExportDelimiter(): ExportDelimiter {
+    return (Main.store.get('exportDelimiter') as (ExportDelimiter | null)) || 'comma';
+  }
+
   private static buildMenu(): void {
     const devViewSubmenu = [
       { role: 'reload' },
@@ -147,6 +169,10 @@ export default class Main {
       { role: 'toggleDevTools' },
       { type: 'separator' },
     ];
+
+    const setExportDelimiter = (delimiter: ExportDelimiter) => {
+      Main.store.set('exportDelimiter', delimiter);
+    }
 
     const setEditorMode = (mode: EditorMode) => {
       Main.store.set('editorMode', mode);
@@ -246,6 +272,19 @@ export default class Main {
                 }
               }
             ]
+          },
+          { type: 'separator' },
+          {
+            label: 'Export Delimiter',
+            submenu: ExportDelimiters.map((delimiter) => ({
+              label: ExportDelimiterLabels[delimiter],
+              type: 'radio',
+              checked: Main.getExportDelimiter() === delimiter,
+              click: function (item) {
+                item.checked = true;
+                setExportDelimiter(delimiter);
+              }
+            })),
           }
         ]
       },
@@ -415,7 +454,7 @@ export default class Main {
     });
 
     ipcMain.handle('download-csv', async (event, arg) => {
-      return Main.wrapResponse(Main.downloadCsv(Main.getSpace(event), arg));
+      return Main.wrapResponse(Main.downloadCsv(Main.getSpace(event), arg, Main.getExportDelimiter()));
     });
 
     await Main.makeWorkspace();

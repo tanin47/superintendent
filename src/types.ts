@@ -4,6 +4,9 @@ export type EditorMode = 'default' | 'vim';
 
 export type Format = 'comma' | 'tab' | 'pipe' | 'semicolon' | 'colon' | 'tilde' | 'sqlite';
 
+export const ExportDelimiters = ['comma', 'tab', 'pipe', 'semicolon', 'colon', 'tilde'] as const;
+export type ExportDelimiter = typeof ExportDelimiters[number];
+
 export const EditorModeChannel = 'editor-mode-changed';
 export const ExportWorkflowChannel = 'export-workflow';
 export const ImportWorkflowChannel = 'import-workflow';

@@ -128,7 +128,7 @@ export class Sqlite extends Datastore {
     return [result];
   }
 
-  async exportCsv(table: string, filePath: string): Promise<void> {
+  async exportCsv(table: string, filePath: string, delimiter: string): Promise<void> {
     let columns: string[];
     {
       const statement = this.db.prepare(`SELECT * FROM "${table}" LIMIT 1`).raw(true);
@@ -144,7 +144,7 @@ export class Sqlite extends Datastore {
       }
     }
 
-    this.db.exec(`CREATE VIRTUAL TABLE "temp_table_name" USING csv_writer(filename='${filePath}', columns='${columns!.join(',')}')`);
+    this.db.exec(`CREATE VIRTUAL TABLE "temp_table_name" USING csv_writer(filename='${filePath}', columns='${columns!.join(',')}', separator='${delimiter}')`);
     this.db.exec(`INSERT INTO "temp_table_name" SELECT * FROM "${table}"`);
     this.db.exec(`DROP TABLE "temp_table_name"`);
 

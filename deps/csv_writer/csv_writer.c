@@ -9,7 +9,6 @@ SQLITE_EXTENSION_INIT1
 #include <stdio.h>
 
 const char NEW_LINE[] = "\r\n";
-const char COMMA[] = ",";
 
 typedef struct Columns {
   const char ** values;
@@ -21,6 +20,7 @@ typedef struct CsvTable {
   FILE *out;
   char *filename;
   Columns* columns;
+  char separator;
 } CsvTable;
 
 
@@ -115,14 +115,14 @@ static const char needCsvQuote[] = {
   1, 1, 1, 1, 1, 1, 1, 1,   1, 1, 1, 1, 1, 1, 1, 1,
 };
 
-static void output_csv(FILE *out, const char *z){
+static void output_csv(FILE *out, const char *z, char separator){
   if(z == 0) {
     return;
   }
 
   int need_quote = 0;
   for(int i=0; z[i]; i++){
-    if(needCsvQuote[((unsigned char*)z)[i]] || z[i] == ',') {
+    if(needCsvQuote[((unsigned char*)z)[i]] || z[i] == separator) {
       need_quote = 1;
       break;
     }
@@ -152,10 +152,11 @@ static int csvConnect(
   int b;                     /* Value of a boolean parameter */
   int nCol = -99;            /* Value of the columns= parameter */
 
-  static const char *azParam[] = {"filename", "columns"};
-  char *azPValue[2];         /* Parameter values */
-# define CSV_FILENAME (azPValue[0])
-# define CSV_COLUMN   (azPValue[1])
+  static const char *azParam[] = {"filename", "columns", "separator"};
+  char *azPValue[3];         /* Parameter values */
+# define CSV_FILENAME    (azPValue[0])
+# define CSV_COLUMN      (azPValue[1])
+# define CSV_SEPARATOR   (azPValue[2])
 
   assert( sizeof(azPValue)==sizeof(azParam) );
   memset(azPValue, 0, sizeof(azPValue));
@@ -174,17 +175,18 @@ static int csvConnect(
 
   pNew->out = fopen(CSV_FILENAME, "wb");
   pNew->columns = parse_columns(CSV_COLUMN);
+  pNew->separator = CSV_SEPARATOR[0];
 
   sqlite3_str *schema_buffer = sqlite3_str_new(0);
   sqlite3_str_appendf(schema_buffer, "CREATE TABLE x(");
 
   for (int i=0;i<pNew->columns->size;i++) {
     if (i > 0) {
-      sqlite3_str_appendf(schema_buffer, COMMA);
-      fprintf(pNew->out, COMMA);
+      sqlite3_str_appendf(schema_buffer, ",");
+      fprintf(pNew->out, "%c", pNew->separator);
     }
     sqlite3_str_appendf(schema_buffer,"\"%w\" TEXT", pNew->columns->values[i]);
-    output_csv(pNew->out, pNew->columns->values[i]);
+    output_csv(pNew->out, pNew->columns->values[i], pNew->separator);
   }
   fprintf(pNew->out, NEW_LINE);
 
@@ -237,9 +239,9 @@ static int csvUpdate(
 
   for (int i=2;i<argc;i++) {
     if (i > 2) {
-      fprintf(p->out, COMMA);
+      fprintf(p->out, "%c", p->separator);
     }
-    output_csv(p->out, (const char*) sqlite3_value_text(argv[i]));
+    output_csv(p->out, (const char*) sqlite3_value_text(argv[i]), p->separator);
   }
   fprintf(p->out, NEW_LINE);
 
