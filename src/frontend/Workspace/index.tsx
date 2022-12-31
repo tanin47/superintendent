@@ -78,7 +78,7 @@ export default function Workspace(): ReactElement {
     return () => {
       ipcRenderer.removeListener(ImportWorkflowChannel, callback) ;
     };
-  }, [showEditorOrWorkflow]);
+  }, []);
 
   React.useEffect(() => {
     const callback = (event, mode: any) => { setEditorMode(mode as EditorMode); };
@@ -122,10 +122,14 @@ export default function Workspace(): ReactElement {
           }
         });
         setSheets([...sheets]);
+        setTimeout(() => sheetSectionRef.current!.open(newSheet.name), 1);
       } else {
         sheets.push(newSheet);
         setSheets([...sheets]);
-        setEditorSelectedSheetIndex(sheets.length - 1);
+
+        if (!newSheet.isCsv) {
+          setEditorSelectedSheetIndex(sheets.length - 1);
+        }
       }
     },
     [sheets]

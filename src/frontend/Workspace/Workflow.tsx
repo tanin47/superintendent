@@ -44,6 +44,7 @@ type Props = {
 const NON_LAYOUT_MARKER = 20000000;
 const CHAR_WIDTH = 8.4;
 const NODE_HEIGHT = 53;
+const NODE_GAP = 40;
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 2;
 
@@ -55,61 +56,33 @@ function computeWidth(label: string, isCsv: boolean): number {
   return Math.max(15.5, label.length * CHAR_WIDTH + (isCsv ? 11.31 + 4 : 0 )) + 24;
 }
 
-function layout(nodes: Node[], forceRearrange: boolean = false): Promise<void> {
+function rearrange(nodes: Node[]): Promise<void> {
   const map = new Map(nodes.map((n) => [n.id, n]));
-
-  const fixedNodes = nodes
-    .filter((n) => isLayouted(n) && !forceRearrange)
-    .map((node) => {
-      const fixedOptions: {[key: string]: any} = {};
-      fixedOptions.x = node.position.x;
-      fixedOptions.y = node.position.y;
-      fixedOptions.layoutOptions = {'elk.position': `${node.position.x}, ${node.position.y}`};
-
-      return {
-        id: node.id,
-        width: computeWidth(node.data.sheet.name, node.data.sheet.isCsv),
-        height: NODE_HEIGHT,
-        ...fixedOptions
-      };
-    });
-  const nonFixedNodes = nodes
-    .filter((n) => !isLayouted(n) || forceRearrange)
-    .map((node) => {
-      return {
-        id: node.id,
-        width: computeWidth(node.data.sheet.name, node.data.sheet.isCsv),
-        height: NODE_HEIGHT,
-      };
-    });
-  const children = [
-      {
-        id: 'elkfixed',
-        layoutOptions: {
-          'algorithm': 'fixed'
-        },
-        children: fixedNodes
-      },
-      ...nonFixedNodes
-    ];
 
   const graph = {
     id: 'root' ,
     layoutOptions: {
       'algorithm': 'layered',
       'direction': 'RIGHT',
-      'spacing.nodeNode': '25',
-      'spacing.nodeNodeBetweenLayers': '25',
-      'spacing.edgeNode': '25',
-      'spacing.edgeNodeBetweenLayers': '20',
-      'spacing.edgeEdge': '20',
-      'spacing.edgeEdgeBetweenLayers': '15',
+      'spacing.nodeNode': `${NODE_GAP}`,
+      'spacing.nodeNodeBetweenLayers': `${NODE_GAP}`,
+      'spacing.edgeNode': '70',
+      'spacing.edgeNodeBetweenLayers': `${NODE_GAP}`,
+      'spacing.edgeEdge': `${NODE_GAP}`,
+      'spacing.edgeEdgeBetweenLayers': `${NODE_GAP}`,
       'layered.nodePlacement.strategy': 'BRANDES_KOEPF',
       'edgeRouting': 'POLYLINE',
       'layered.nodePlacement.favorStraightEdges': 'true',
       'portAlignment.default': 'CENTER',
     },
-    children: children,
+    children: nodes
+    .map((node) => {
+      return {
+        id: node.id,
+        width: computeWidth(node.data.sheet.name, node.data.sheet.isCsv),
+        height: NODE_HEIGHT,
+      };
+    }),
     edges: nodes
       .map((node) => {
         return node.data.sheet.dependsOn
@@ -162,7 +135,7 @@ function CustomNode({
           {data.sheet.isCsv && (
             <i className="fas fa-file" title="Imported" />
           )}
-          <span className="label" data-action="open-editor" title="Open editor">{data.sheet.name}</span>
+          <span className={`label ${data.sheet.isCsv ? '' : 'non-csv'}`} data-action="open-editor" title="Open editor">{data.sheet.name}</span>
         </div>
         <div className="toolbar-section">
           <i
@@ -186,6 +159,44 @@ function CustomNode({
       </div>
     </>
   );
+}
+
+function layoutNewNodes(nodes: Node[]): Promise<void> {
+  if (nodes.length === 0) {
+    return Promise.resolve();
+  }
+
+  if (nodes.every((n) => !isLayouted(n))) {
+    return rearrange(nodes);
+  }
+
+  let maxX = -1000000;
+  let sumY = 0;
+  let countLayouted = 0;
+
+  nodes.forEach((n) => {
+    if (isLayouted(n)) {
+      maxX = Math.max(n.position.x + computeWidth(n.data.sheet.name, n.data.sheet.isCsv) + NODE_GAP, maxX);
+      countLayouted++;
+      sumY += n.position.y;
+    }
+  });
+
+  const avgY = sumY / countLayouted + NODE_HEIGHT / 2;
+
+  const unlayoutedNodes = nodes.filter((n) => !isLayouted(n));
+
+  const totalHeight = unlayoutedNodes.length * NODE_HEIGHT + (unlayoutedNodes.length - 1) * 20;
+
+  let startY = avgY - totalHeight / 2;
+
+  for (const node of unlayoutedNodes) {
+    node.position.x = maxX;
+    node.position.y = startY;
+    startY += NODE_HEIGHT + NODE_GAP;
+  }
+
+  return Promise.resolve();
 }
 
 function getNodes(nodes: Node[], sheets: Sheet[]): Promise<Node[]> {
@@ -216,6 +227,7 @@ function getNodes(nodes: Node[], sheets: Sheet[]): Promise<Node[]> {
         id: sheet.name,
         type: 'customNode',
         data: {sheet: sheet},
+        height: NODE_HEIGHT,
         position,
         sourcePosition: Position.Right,
         targetPosition: Position.Left,
@@ -225,7 +237,8 @@ function getNodes(nodes: Node[], sheets: Sheet[]): Promise<Node[]> {
 
   const finals = nodes.filter((n) => !toBeRemoved.has(n.id));
 
-  return layout(finals).then(() => finals);
+  return layoutNewNodes(finals)
+    .then(() => finals);
 }
 
 function setSelectedNode(nodes: Node[], sheets: Sheet[], editorSelectedSheetIndex: number | null): boolean {
@@ -276,12 +289,11 @@ export default React.forwardRef<Ref, Props>(function Workflow({
       zoomOut: () => reactFlowInstance.current!.zoomOut(),
       fitView: () => reactFlowInstance.current!.fitView({duration: 250}),
       arrange: () => {
-        layout(nodes, true)
+        rearrange(nodes)
           .then(() => {
             setNodes([...nodes]);
             setShouldFitView(true);
           });
-
       },
     }),
     [nodes]
@@ -293,37 +305,37 @@ export default React.forwardRef<Ref, Props>(function Workflow({
         .then((newNodes) => {
           setNodes(newNodes);
           setShouldFitView(true);
-        });
 
-      setEdges((edges) => {
-        const existings = new Set<string>(edges.map((e) => e.id));
-        const sheetIds = new Set<string>(sheets.map((s) => s.name));
+          setEdges((edges) => {
+            const existings = new Set<string>(edges.map((e) => e.id));
+            const sheetIds = new Set<string>(sheets.map((s) => s.name));
 
-        const toBeRemoved = new Set<string>();
+            const toBeRemoved = new Set<string>();
 
-        edges.forEach((edge) => {
-          if (!sheetIds.has(edge.source) || !sheetIds.has(edge.target)) {
-            toBeRemoved.add(edge.id);
-          }
-        });
+            edges.forEach((edge) => {
+              if (!sheetIds.has(edge.source) || !sheetIds.has(edge.target)) {
+                toBeRemoved.add(edge.id);
+              }
+            });
 
-        sheets.forEach((sheet) => {
-          sheet.dependsOn.forEach((dependsOn) => {
-            const edgeId = `${dependsOn}-->${sheet.name}`;
-            if (!existings.has(edgeId)) {
-              edges.push({
-                id: edgeId,
-                source: dependsOn,
-                target: sheet.name,
-                style: {stroke: '#333', strokeWidth: 2},
-                markerEnd: {type: MarkerType.ArrowClosed, color: '#333', strokeWidth: 2, width: 10, height: 10}
+            sheets.forEach((sheet) => {
+              sheet.dependsOn.forEach((dependsOn) => {
+                const edgeId = `${dependsOn}-->${sheet.name}`;
+                if (!existings.has(edgeId)) {
+                  edges.push({
+                    id: edgeId,
+                    source: dependsOn,
+                    target: sheet.name,
+                    style: {stroke: '#333', strokeWidth: 2},
+                    markerEnd: {type: MarkerType.ArrowClosed, color: '#333', strokeWidth: 2, width: 10, height: 10}
+                  });
+                }
               });
-            }
+            });
+
+            return edges.filter((e) => !toBeRemoved.has(e.id));
           });
         });
-
-        return edges.filter((e) => !toBeRemoved.has(e.id));
-      });
     },
     [sheets]
   );
@@ -340,9 +352,12 @@ export default React.forwardRef<Ref, Props>(function Workflow({
 
   React.useEffect(
     () => {
-      if (shouldFitView && reactFlowInstance.current) {
+      if (shouldFitView ) {
         setShouldFitView(false);
-        reactFlowInstance.current.fitView({duration: 250});
+
+        if (reactFlowInstance.current) {
+          reactFlowInstance.current.fitView({duration: 250});
+        }
       }
     },
     [shouldFitView]
@@ -388,7 +403,7 @@ export default React.forwardRef<Ref, Props>(function Workflow({
           nodesFocusable={false}
           onNodeClick={(event, node) => {
             const action = (event.target as HTMLElement).dataset.action;
-            if (action === "open-editor") {
+            if (action === "open-editor" && !node.data.sheet.isCsv) {
               onSheetClicked(node.id);
             } else if (action === "rename") {
               onSheetRenamed(sheets.findIndex((s) => s.name === node.data.sheet.name));
@@ -404,6 +419,7 @@ export default React.forwardRef<Ref, Props>(function Workflow({
             onZoomOutEnabled(viewport.zoom > MIN_ZOOM);
             onZoomInEnabled(viewport.zoom < MAX_ZOOM);
           }}
+          onlyRenderVisibleElements={false}
         >
           <Background color="#333"/>
         </ReactFlow>

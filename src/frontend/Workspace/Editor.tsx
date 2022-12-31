@@ -49,16 +49,6 @@ export default React.forwardRef<Ref, Props>(function Editor({
 
   React.useEffect(
     () => {
-      if (codeMirrorInstance.current) {
-        const elem = codeMirrorInstance.current!.getWrapperElement();
-        elem.style.display = visible ? 'block' : 'none'
-      }
-    },
-    [visible]
-  );
-
-  React.useEffect(
-    () => {
       if (selectedSheetIndex === null) { return; }
 
       const cursor = codeMirrorInstance.current!.getCursor();
@@ -70,6 +60,15 @@ export default React.forwardRef<Ref, Props>(function Editor({
       codeMirrorInstance.current!.setSelections(selections);
     },
     [sheets, selectedSheetIndex]
+  );
+
+  React.useEffect(
+    () => {
+      if (visible && codeMirrorInstance.current) {
+        codeMirrorInstance.current.focus();
+      }
+    },
+    [visible]
   )
 
   React.useImperativeHandle(ref, () => ({

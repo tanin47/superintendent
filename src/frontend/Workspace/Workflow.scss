@@ -38,10 +38,13 @@
 
     .label {
       display: inline-block;
-      cursor: pointer;
 
-      &:hover {
-        text-decoration: underline;
+      &.non-csv {
+        cursor: pointer;
+
+        &:hover {
+          text-decoration: underline;
+        }
       }
     }
   }
@@ -51,6 +54,7 @@
     margin-top: 5px;
     font-size: 12px;
     text-align: center;
+    height: 16px; // Needed. Otherwise, Reactflow's edge wouldn't point to the handle accurately.
 
     i {
       cursor: pointer;

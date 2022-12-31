@@ -30,10 +30,10 @@ describe('Workerize', () => {
 
     for (const format of formats) {
       it(`Import ${format.filename}`, async () => {
-        await workerize.addCsv(`./test/data-store/csv-samples/${format.filename}`, true, format.separator, false);
+        await workerize.addCsv(`./test/data-store/csv-samples/${format.filename}`, true, format.separator, '');
 
         const sql = `SELECT * FROM ${format.filename.split('.')[0]}`;
-        const result = await workerize.query(sql);
+        const result = await workerize.query(sql, null);
 
         expect(result).toEqual(
           {
@@ -52,10 +52,10 @@ describe('Workerize', () => {
   });
 
   it("imports CSV with no header and incomplete line", async () => {
-    await workerize.addCsv(`./test/data-store/csv-samples/tilde_incomplete_line_no_header.csv`, false, '~', false);
+    await workerize.addCsv(`./test/data-store/csv-samples/tilde_incomplete_line_no_header.csv`, false, '~', '');
 
     const sql = "SELECT * FROM tilde_incomplete_line_no_header";
-    const result = await workerize.query(sql);
+    const result = await workerize.query(sql, null);
 
     expect(result.count).toEqual(7);
     expect(result.columns.length).toEqual(6);
@@ -73,8 +73,8 @@ describe('Workerize', () => {
 
   describe('import/export', () => {
     it('import bom', async () => {
-      await workerize.addCsv('./test/data-store/csv-samples/bom.csv', true, ',', false);
-      const result = await workerize.query("SELECT * FROM bom");
+      await workerize.addCsv('./test/data-store/csv-samples/bom.csv', true, ',', '');
+      const result = await workerize.query("SELECT * FROM bom", null);
 
       expect(result).toEqual(
         {
@@ -93,8 +93,8 @@ describe('Workerize', () => {
     });
 
     it('import dup column names', async () => {
-      await workerize.addCsv('./test/data-store/csv-samples/dup_column.csv', true, ',', false);
-      const result = await workerize.query("SELECT * FROM dup_column");
+      await workerize.addCsv('./test/data-store/csv-samples/dup_column.csv', true, ',', '');
+      const result = await workerize.query("SELECT * FROM dup_column", null);
 
       expect(result).toEqual(
         {
@@ -112,8 +112,8 @@ describe('Workerize', () => {
     });
 
     it('import unicode', async () => {
-      await workerize.addCsv('./test/data-store/csv-samples/unicode.csv', true, ',', false);
-      const result = await workerize.query("SELECT * FROM unicode");
+      await workerize.addCsv('./test/data-store/csv-samples/unicode.csv', true, ',', '');
+      const result = await workerize.query("SELECT * FROM unicode", null);
 
       expect(result).toEqual(
         {
@@ -131,8 +131,8 @@ describe('Workerize', () => {
     });
 
     it('import quote', async () => {
-      await workerize.addCsv('./test/data-store/csv-samples/quote.csv', true, ',', false);
-      const result = await workerize.query("SELECT * FROM quote");
+      await workerize.addCsv('./test/data-store/csv-samples/quote.csv', true, ',', '');
+      const result = await workerize.query("SELECT * FROM quote", null);
 
       expect(result).toEqual(
         {
@@ -156,7 +156,7 @@ describe('Workerize', () => {
 
   describe('regex_replace', () => {
     it('handle null', async () => {
-      const result = await workerize.query("SELECT regex_replace('[0-9]+', NULL, '0', false) AS month");
+      const result = await workerize.query("SELECT regex_replace('[0-9]+', NULL, '0', false) AS month", null);
 
       expect(result).toEqual(
         {
@@ -170,7 +170,7 @@ describe('Workerize', () => {
     });
 
     it('replace only once', async () => {
-      const result = await workerize.query("SELECT regex_replace('[0-9]+', '123.456.789', '00', true) AS month");
+      const result = await workerize.query("SELECT regex_replace('[0-9]+', '123.456.789', '00', true) AS month", null);
 
       expect(result).toEqual(
         {
@@ -184,7 +184,7 @@ describe('Workerize', () => {
     });
 
     it('replace all', async () => {
-      const result = await workerize.query("SELECT regex_replace('[0-9]+', '123.456.789', '00', false) AS month");
+      const result = await workerize.query("SELECT regex_replace('[0-9]+', '123.456.789', '00', false) AS month", null);
 
       expect(result).toEqual(
         {
@@ -198,7 +198,7 @@ describe('Workerize', () => {
     });
 
     it('invalid regex', async () => {
-      const result = await workerize.query("SELECT regex_replace('([0-9+)/([0-9]+/([0-9]+', 'abcd', '00', false) AS month");
+      const result = await workerize.query("SELECT regex_replace('([0-9+)/([0-9]+/([0-9]+', 'abcd', '00', false) AS month", null);
 
       expect(result).toEqual(
         {
@@ -214,7 +214,7 @@ describe('Workerize', () => {
 
   describe('regex_extract', () => {
     it('handle null', async () => {
-      const result = await workerize.query("SELECT regex_extract('[0-9]+', NULL) AS month");
+      const result = await workerize.query("SELECT regex_extract('[0-9]+', NULL) AS month", null);
 
       expect(result).toEqual(
         {
@@ -228,7 +228,7 @@ describe('Workerize', () => {
     });
 
     it('extract date', async () => {
-      const result = await workerize.query("SELECT regex_extract('[0-9]+/([0-9]+)/[0-9]+', '3/7/2019') AS month");
+      const result = await workerize.query("SELECT regex_extract('[0-9]+/([0-9]+)/[0-9]+', '3/7/2019') AS month", null);
 
       expect(result).toEqual(
         {
@@ -242,7 +242,7 @@ describe('Workerize', () => {
     });
 
     it('multiple extracts', async () => {
-      const result = await workerize.query("SELECT regex_extract('([0-9]+)/([0-9]+)/([0-9]+)', '3/7/2019') AS month");
+      const result = await workerize.query("SELECT regex_extract('([0-9]+)/([0-9]+)/([0-9]+)', '3/7/2019') AS month", null);
 
       expect(result).toEqual(
         {
@@ -256,7 +256,7 @@ describe('Workerize', () => {
     });
 
     it('does not match', async () => {
-      const result = await workerize.query("SELECT regex_extract('([0-9]+)/([0-9]+)/([0-9]+)', 'abcd') AS month");
+      const result = await workerize.query("SELECT regex_extract('([0-9]+)/([0-9]+)/([0-9]+)', 'abcd') AS month", null);
 
       expect(result).toEqual(
         {
@@ -270,7 +270,7 @@ describe('Workerize', () => {
     });
 
     it('invalid regex', async () => {
-      const result = await workerize.query("SELECT regex_extract('([0-9+)/([0-9]+/([0-9]+', 'abcd') AS month");
+      const result = await workerize.query("SELECT regex_extract('([0-9+)/([0-9]+/([0-9]+', 'abcd') AS month", null);
 
       expect(result).toEqual(
         {
@@ -286,7 +286,7 @@ describe('Workerize', () => {
 
   describe('date_parse', () => {
     it('handles null', async () => {
-      const result = await workerize.query("SELECT date_parse('%m/%d/%Y', NULL) AS date");
+      const result = await workerize.query("SELECT date_parse('%m/%d/%Y', NULL) AS date", null);
 
       expect(result).toEqual(
         {
@@ -299,7 +299,7 @@ describe('Workerize', () => {
       );
     });
     it('parse date', async () => {
-      const result = await workerize.query("SELECT date_parse('%m/%d/%Y', '3/7/2019') AS date");
+      const result = await workerize.query("SELECT date_parse('%m/%d/%Y', '3/7/2019') AS date", null);
 
       expect(result).toEqual(
         {
@@ -313,7 +313,7 @@ describe('Workerize', () => {
     });
 
     it('parse date time', async () => {
-      const result = await workerize.query("SELECT date_parse('%m/%d/%Y %I:%M %p', '3/7/2019 7:12 pm') AS date");
+      const result = await workerize.query("SELECT date_parse('%m/%d/%Y %I:%M %p', '3/7/2019 7:12 pm') AS date", null);
 
       expect(result).toEqual(
         {
@@ -327,7 +327,7 @@ describe('Workerize', () => {
     });
 
     it('invalid value', async () => {
-      const result = await workerize.query("SELECT date_parse('%m/%d/%Y %I:%M %p', 'abcd') AS date");
+      const result = await workerize.query("SELECT date_parse('%m/%d/%Y %I:%M %p', 'abcd') AS date", null);
 
       expect(result).toEqual(
         {
@@ -341,7 +341,7 @@ describe('Workerize', () => {
     });
 
     it('invalid format', async () => {
-      const result = await workerize.query("SELECT date_parse('%uslkajf%n', '3/7/2019 7:12 pm') AS date");
+      const result = await workerize.query("SELECT date_parse('%uslkajf%n', '3/7/2019 7:12 pm') AS date", null);
 
       expect(result).toEqual(
         {
