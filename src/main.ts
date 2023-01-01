@@ -201,7 +201,8 @@ export default class Main {
         label: 'File',
         submenu: [
           {
-            label: 'New Window',
+            label: 'New Workspace',
+            accelerator: process.platform === 'darwin' ? 'Cmd+Shift+W' : 'Ctrl+Shift+W',
             click: () => {
               Main.makeWorkspace();
             }
@@ -318,8 +319,6 @@ export default class Main {
           ...(Main.isMac() ? [
             { type: 'separator' },
             { role: 'front' },
-            { type: 'separator' },
-            { role: 'window' }
           ] : [
             { role: 'close' }
           ])
@@ -462,7 +461,7 @@ export default class Main {
     if (process.platform === 'darwin') {
       const dockMenu = Menu.buildFromTemplate([
         {
-          label: 'New Window',
+          label: 'New Workspace',
           click: () => {
             Main.makeWorkspace();
           }

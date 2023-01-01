@@ -233,14 +233,21 @@ export default function Workspace(): ReactElement {
 
   React.useEffect(() => {
     const handler = (event) => {
-      if (event.code === 'Enter' && (event.metaKey || event.ctrlKey)) {
-        runSql();
-        return false;
-      }
+      if (showEditorOrWorkflow === 'editor') {
+        if (event.code === 'Enter' && (event.metaKey || event.ctrlKey)) {
+          runSql();
+          return false;
+        }
 
-      if (event.code === 'Enter' && event.altKey) {
-        formatSql();
-        return false;
+        if (event.code === 'Enter' && event.altKey) {
+          formatSql();
+          return false;
+        }
+
+        if (event.code === 'KeyN' && (event.metaKey || event.ctrlKey)) {
+          makeNewQuery();
+          return false;
+        }
       }
 
       if (event.code === 'KeyP' && (event.metaKey || event.ctrlKey)) {
@@ -258,11 +265,6 @@ export default function Workspace(): ReactElement {
         return false;
       }
 
-      if (event.code === 'KeyN' && (event.metaKey || event.ctrlKey)) {
-        makeNewQuery();
-        return false;
-      }
-
       return true;
     };
     document.addEventListener('keydown', handler);
@@ -270,7 +272,7 @@ export default function Workspace(): ReactElement {
     return () => {
       document.removeEventListener('keydown', handler) ;
     };
-  }, [runSql, formatSql, openAddCsvDialog, exportCsv, toggleEditorWorkflow, makeNewQuery]);
+  }, [runSql, formatSql, openAddCsvDialog, exportCsv, toggleEditorWorkflow, makeNewQuery, showEditorOrWorkflow]);
 
   React.useEffect(() => {
     const handler = (event) => {
@@ -424,13 +426,13 @@ export default function Workspace(): ReactElement {
           >
             Fit view
           </Button>
-          <span className="separator" />
-          <Button
-            onClick={() => workflowRef.current!.arrange()}
-            icon={<i className="fas fa-random"/>}
-          >
-            Arrange
-          </Button>
+          {/*<span className="separator" />*/}
+          {/*<Button*/}
+          {/*  onClick={() => workflowRef.current!.arrange()}*/}
+          {/*  icon={<i className="fas fa-random"/>}*/}
+          {/*>*/}
+          {/*  Arrange*/}
+          {/*</Button>*/}
         </>
       );
       break;

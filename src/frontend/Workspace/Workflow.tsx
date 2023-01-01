@@ -13,7 +13,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import './Workflow.scss';
 import {XYPosition} from "@reactflow/core/dist/esm/types";
-import {ExportedWorkflow, ExportWorkflowChannel} from "../../types";
+import {ExportDelimiters, ExportedWorkflow, ExportWorkflowChannel} from "../../types";
 import {ipcRenderer} from "electron";
 import {exportWorkflow} from "../api";
 import Elk from 'elkjs';
@@ -161,6 +161,9 @@ function CustomNode({
   );
 }
 
+const SIDES = ['top', 'right', 'bottom', 'left'] as const;
+export type Side = typeof SIDES[number];
+
 function layoutNewNodes(nodes: Node[]): Promise<void> {
   if (nodes.length === 0) {
     return Promise.resolve();
@@ -170,31 +173,54 @@ function layoutNewNodes(nodes: Node[]): Promise<void> {
     return rearrange(nodes);
   }
 
-  let maxX = -1000000;
-  let sumY = 0;
-  let countLayouted = 0;
+  const first = nodes.find((n) => isLayouted(n))!;
+
+  let minX = first.position.x;
+  let maxX = first.position.x + computeWidth(first.data.sheet.name, first.data.sheet.isCsv);
+  let minY = first.position.y;
+  let maxY = first.position.y + NODE_HEIGHT;
 
   nodes.forEach((n) => {
     if (isLayouted(n)) {
-      maxX = Math.max(n.position.x + computeWidth(n.data.sheet.name, n.data.sheet.isCsv) + NODE_GAP, maxX);
-      countLayouted++;
-      sumY += n.position.y;
+      minX = Math.min(n.position.x, minX);
+      maxX = Math.max(n.position.x + computeWidth(n.data.sheet.name, n.data.sheet.isCsv), maxX);
+      minY = Math.min(n.position.y, minY);
+      maxY = Math.max(n.position.y + NODE_HEIGHT, maxY);
     }
   });
 
-  const avgY = sumY / countLayouted + NODE_HEIGHT / 2;
-
   const unlayoutedNodes = nodes.filter((n) => !isLayouted(n));
 
-  const totalHeight = unlayoutedNodes.length * NODE_HEIGHT + (unlayoutedNodes.length - 1) * 20;
+  unlayoutedNodes.forEach((n) => {
+    const side: Side = SIDES[Math.floor(Math.random() * SIDES.length)];
 
-  let startY = avgY - totalHeight / 2;
+    let x: number;
+    let y: number;
 
-  for (const node of unlayoutedNodes) {
-    node.position.x = maxX;
-    node.position.y = startY;
-    startY += NODE_HEIGHT + NODE_GAP;
-  }
+    switch (side) {
+      case 'top':
+        x = minX + Math.random() * (maxX - minX);
+        y = minY - NODE_HEIGHT - NODE_GAP;
+        break;
+      case 'right':
+        x = maxX + NODE_GAP;
+        y = minY + Math.random() * (maxY - minY);
+        break;
+      case 'bottom':
+        x = minX + Math.random() * (maxX - minX);
+        y = maxY + NODE_GAP;
+        break;
+      case 'left':
+        x = maxX - computeWidth(n.data.sheet.name, n.data.sheet.isCsv) - NODE_GAP;
+        y = minY + Math.random() * (maxY - minY);
+        break;
+      default:
+        throw new Error();
+    }
+
+    n.position.x = x;
+    n.position.y = y;
+  });
 
   return Promise.resolve();
 }
