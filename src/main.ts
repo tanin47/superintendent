@@ -81,22 +81,6 @@ export default class Main {
     return file;
   }
 
-  private static async exportSchema(space: Workspace): Promise<void> {
-    const file = dialog.showSaveDialogSync(
-      space.window,
-      {
-        defaultPath: `schema.sql`,
-        filters: [{name: 'All files', extensions: ['*']}]
-      }
-    );
-
-    if (!file) {
-      return;
-    }
-
-    await space.db.exportSchema(file);
-  }
-
   private static async importWorkflow(space: Workspace): Promise<void> {
     const files = dialog.showOpenDialogSync(
       space.window,
@@ -298,17 +282,6 @@ export default class Main {
           { role: 'zoomOut' },
           { type: 'separator' },
           { role: 'togglefullscreen' }
-        ]
-      },
-      {
-        label: 'Tools',
-        submenu: [
-          {
-            label: 'Export Schema',
-            click: function () {
-              Main.exportSchema(Main.getFocusedSpace());
-            }
-          },
         ]
       },
       {

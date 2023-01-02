@@ -24,9 +24,6 @@ expose({
   async exportCsv(table: string, filePath: string, delimiter: string): Promise<void> {
     return sqlite!.exportCsv(table, filePath, delimiter);
   },
-  async exportSchema(filePath: string): Promise<void> {
-    return sqlite!.exportSchema(filePath);
-  },
   async query(sql: string, table: string | null): Promise<Result> {
     return sqlite!.query(sql, table);
   },

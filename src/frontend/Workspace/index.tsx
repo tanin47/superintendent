@@ -39,7 +39,7 @@ export default function Workspace(): ReactElement {
   const [sheets, setSheets] = React.useState<Array<Sheet>>([]);
   const [renamingSheetIndex, setRenamingSheetIndex] = React.useState<number | null>(null);
   const [showEditorOrWorkflow, setShowEditorOrWorkflow] = React.useState<EditorOrWorkflow>('editor');
-  const [editorSelectedSheetIndex, setEditorSelectedSheetIndex] = React.useState<number | null>(null);
+  const [editorSelectedSheetName, setEditorSelectedSheetName] = React.useState<string | null>(null);
   const [isZoomInEnabled, setIsZoomInEnabled] = React.useState<boolean>(true);
   const [isZoomOutEnabled, setIsZoomOutEnabled] = React.useState<boolean>(true);
 
@@ -54,7 +54,7 @@ export default function Workspace(): ReactElement {
   React.useEffect(() => {
     const callback = (event, workflow: ExportedWorkflow) => {
       workflowRef.current!.reset();
-      setEditorSelectedSheetIndex(null);
+      setEditorSelectedSheetName(null);
       setShowEditorOrWorkflow('workflow');
       setSheets(workflow.nodes.map((node) => ({
         name: node.name,
@@ -128,7 +128,7 @@ export default function Workspace(): ReactElement {
         setSheets([...sheets]);
 
         if (!newSheet.isCsv) {
-          setEditorSelectedSheetIndex(sheets.length - 1);
+          setEditorSelectedSheetName(sheets[sheets.length - 1].name);
         }
       }
     },
@@ -156,15 +156,11 @@ export default function Workspace(): ReactElement {
 
       setSheets(updatedSheets);
 
-      if (editorSelectedSheetIndex !== null) {
-        if (deletedSheetIndex < editorSelectedSheetIndex) {
-          setEditorSelectedSheetIndex(editorSelectedSheetIndex - 1);
-        } else if (deletedSheetIndex === editorSelectedSheetIndex) {
-          setEditorSelectedSheetIndex(null);
-        }
+      if (name === editorSelectedSheetName) {
+        setEditorSelectedSheetName(null);
       }
     },
-    [sheets, setSheets, editorSelectedSheetIndex, setEditorSelectedSheetIndex]
+    [sheets, editorSelectedSheetName]
   )
 
   const runSql = React.useCallback(
@@ -176,7 +172,7 @@ export default function Workspace(): ReactElement {
       setIsQueryLoading(true);
       query(
         value,
-        editorSelectedSheetIndex !== null ? sheets[editorSelectedSheetIndex].name : null
+        editorSelectedSheetName ?? null
       )
         .then((sheet) => addNewSheetCallback(sheet))
         .catch((err) => {
@@ -186,7 +182,7 @@ export default function Workspace(): ReactElement {
           setIsQueryLoading(false);
         });
     },
-    [sheets, isQueryLoading, addNewSheetCallback, editorSelectedSheetIndex]
+    [sheets, isQueryLoading, addNewSheetCallback, editorSelectedSheetName]
   );
 
   const formatSql = React.useCallback(() => {editorRef.current!.format();}, []);
@@ -226,7 +222,7 @@ export default function Workspace(): ReactElement {
   );
   const makeNewQuery = React.useCallback(
     () => {
-      setEditorSelectedSheetIndex(null);
+      setEditorSelectedSheetName(null);
     },
     []
   );
@@ -365,13 +361,13 @@ export default function Workspace(): ReactElement {
             onClick={() => {runSql();}}
             isLoading={isQueryLoading}
             icon={<i className="fas fa-play"/>}>
-            {editorSelectedSheetIndex !== null ? 'Update SQL' : 'Create SQL'}
+            {editorSelectedSheetName !== null ? 'Update SQL' : 'Create SQL'}
             <span className="short-key">
                 {ctrlCmdChar} ⏎
               </span>
           </Button>
           <span className="separator" />
-          {editorSelectedSheetIndex !== null && (
+          {editorSelectedSheetName !== null && (
             <>
               <Button
                 onClick={() => makeNewQuery()}
@@ -393,10 +389,10 @@ export default function Workspace(): ReactElement {
               </span>
           </Button>
           <span className="separator" />
-          {editorSelectedSheetIndex === null ? (
+          {editorSelectedSheetName === null ? (
             <div className="info">You are making a new query</div>
           ) : (
-            <div className="info">You are editing <span className="table">{sheets[editorSelectedSheetIndex].name}</span></div>
+            <div className="info">You are editing <span className="table">{editorSelectedSheetName}</span></div>
           )}
         </>
       );
@@ -426,13 +422,6 @@ export default function Workspace(): ReactElement {
           >
             Fit view
           </Button>
-          {/*<span className="separator" />*/}
-          {/*<Button*/}
-          {/*  onClick={() => workflowRef.current!.arrange()}*/}
-          {/*  icon={<i className="fas fa-random"/>}*/}
-          {/*>*/}
-          {/*  Arrange*/}
-          {/*</Button>*/}
         </>
       );
       break;
@@ -463,6 +452,9 @@ export default function Workspace(): ReactElement {
             setSheets((prevSheets) => {
               return prevSheets.map((sheet, index) => {
                 if (index === renamingSheetIndex) {
+                  if (editorSelectedSheetName === sheet.name) {
+                    setEditorSelectedSheetName(newName);
+                  }
                   return {
                     ...sheet,
                     name: newName,
@@ -473,6 +465,7 @@ export default function Workspace(): ReactElement {
                 }
               });
             });
+
           }
           setRenamingSheetIndex(null);
         }}
@@ -523,9 +516,9 @@ export default function Workspace(): ReactElement {
             const sheet = sheets[index];
             if (sheet.isCsv) {
               editorRef.current!.setValue(sheet.sql);
-              setEditorSelectedSheetIndex(null);
+              setEditorSelectedSheetName(null);
             } else {
-              setEditorSelectedSheetIndex(index);
+              setEditorSelectedSheetName(sheet.name);
             }
             setShowEditorOrWorkflow('editor');
             sheetSectionRef.current!.open(sheetId);
@@ -535,13 +528,13 @@ export default function Workspace(): ReactElement {
           onSheetDeleted={(deletedIndex) => deleteSheetCallback(deletedIndex)}
           onZoomInEnabled={(enabled) => setIsZoomInEnabled(enabled)}
           onZoomOutEnabled={(enabled) => setIsZoomOutEnabled(enabled)}
-          editorSelectedSheetIndex={editorSelectedSheetIndex}
+          editorSelectedSheetName={editorSelectedSheetName}
         />
         <Editor
           ref={editorRef}
           mode={editorMode}
           sheets={sheets}
-          selectedSheetIndex={editorSelectedSheetIndex}
+          selectedSheetName={editorSelectedSheetName}
           visible={showEditorOrWorkflow === 'editor'}
         />
       </div>
@@ -629,7 +622,7 @@ export default function Workspace(): ReactElement {
         <SheetSection
           ref={sheetSectionRef}
           sheets={sheets}
-          editorSelectedSheetIndex={editorSelectedSheetIndex}
+          editorSelectedSheetName={editorSelectedSheetName}
           onSheetRenamed={(renamingSheetIndex) => setRenamingSheetIndex(renamingSheetIndex)}
           presentationType={presentationType}
           onSelectedSheetUpdated={(newSheet) => {

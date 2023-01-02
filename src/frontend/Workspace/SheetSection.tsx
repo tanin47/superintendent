@@ -6,7 +6,6 @@ import './SheetSection.scss';
 let timer: NodeJS.Timeout;
 
 type Tab = {
-  sheetIndex: number,
   sheet: SheetType
 };
 
@@ -17,7 +16,7 @@ export interface Ref {
 
 type Props = {
   sheets: SheetType[],
-  editorSelectedSheetIndex: number | null,
+  editorSelectedSheetName: string | null,
   onSheetRenamed: (renamingSheetIndex: number) => void,
   onSelectedSheetUpdated: (sheet: SheetType | null) => void,
   presentationType: PresentationType
@@ -25,7 +24,7 @@ type Props = {
 
 export default React.forwardRef<Ref, Props>(function SheetSection({
   sheets,
-  editorSelectedSheetIndex,
+  editorSelectedSheetName,
   onSheetRenamed,
   onSelectedSheetUpdated,
   presentationType,
@@ -53,7 +52,6 @@ export default React.forwardRef<Ref, Props>(function SheetSection({
           for (let index=0;index<shadowSheets.length;index++) {
             if (shadowSheets[index].name === sheetId) {
               tabs.push({
-                sheetIndex: index,
                 sheet: shadowSheets[index]
               })
               setTabs([...tabs])
@@ -91,7 +89,6 @@ export default React.forwardRef<Ref, Props>(function SheetSection({
         if (!existings.has(sheet.name)) {
           shadowSheets.push(sheet);
           tabs.push({
-            sheetIndex: index,
             sheet
           });
           newSelectedTabIndex = tabs.length - 1;
@@ -251,8 +248,8 @@ export default React.forwardRef<Ref, Props>(function SheetSection({
                   className="fas fa-file" title="Imported"
                 />
               )}
-              <span className={`${selectedTabIndex === index && blinkingSelectedTab ? 'blinking' : ''} ${editorSelectedSheetIndex === tab.sheetIndex ? 'editor-selected' : ''}`}>{tab.sheet.name}</span>
-              {editorSelectedSheetIndex !== tab.sheetIndex && (
+              <span className={`${selectedTabIndex === index && blinkingSelectedTab ? 'blinking' : ''} ${editorSelectedSheetName === tab.sheet.name ? 'editor-selected' : ''}`}>{tab.sheet.name}</span>
+              {editorSelectedSheetName !== tab.sheet.name && (
                 <i
                   className="fas fa-times"
                   onClick={(event) => {

@@ -1,37 +1,33 @@
 import React from "react";
 import ReactFlow, {
-  Background,
-  Controls,
-  Node,
-  Edge,
-  Position,
-  MarkerType,
   applyEdgeChanges,
   applyNodeChanges,
-  ReactFlowInstance, Handle
+  Background,
+  Edge,
+  Handle,
+  MarkerType,
+  Node,
+  Position,
+  ReactFlowInstance
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import './Workflow.scss';
 import {XYPosition} from "@reactflow/core/dist/esm/types";
-import {ExportDelimiters, ExportedWorkflow, ExportWorkflowChannel} from "../../types";
+import {ExportedWorkflow, ExportWorkflowChannel} from "../../types";
 import {ipcRenderer} from "electron";
 import {exportWorkflow} from "../api";
-import Elk from 'elkjs';
 import {Sheet} from "./types";
-
-const elk = new Elk();
 
 export interface Ref {
   reset: () => void,
   zoomIn: () => void,
   zoomOut: () => void,
   fitView: () => void,
-  arrange: () => void,
 }
 
 type Props = {
   sheets: Array<Sheet>,
-  editorSelectedSheetIndex: number | null,
+  editorSelectedSheetName: string | null,
   onSheetClicked: (sheetId: string) => void,
   onSheetTabOpened: (sheetId: string) => void,
   onSheetRenamed: (renamingSheetIndex: number) => void,
@@ -54,71 +50,6 @@ function isLayouted(node: Node): boolean {
 
 function computeWidth(label: string, isCsv: boolean): number {
   return Math.max(15.5, label.length * CHAR_WIDTH + (isCsv ? 11.31 + 4 : 0 )) + 24;
-}
-
-function rearrange(nodes: Node[]): Promise<void> {
-  const map = new Map(nodes.map((n) => [n.id, n]));
-
-  const graph = {
-    id: 'root' ,
-    layoutOptions: {
-      'algorithm': 'layered',
-      'direction': 'RIGHT',
-      'spacing.nodeNode': `${NODE_GAP}`,
-      'spacing.nodeNodeBetweenLayers': `${NODE_GAP}`,
-      'spacing.edgeNode': '70',
-      'spacing.edgeNodeBetweenLayers': `${NODE_GAP}`,
-      'spacing.edgeEdge': `${NODE_GAP}`,
-      'spacing.edgeEdgeBetweenLayers': `${NODE_GAP}`,
-      'layered.nodePlacement.strategy': 'BRANDES_KOEPF',
-      'edgeRouting': 'POLYLINE',
-      'layered.nodePlacement.favorStraightEdges': 'true',
-      'portAlignment.default': 'CENTER',
-    },
-    children: nodes
-    .map((node) => {
-      return {
-        id: node.id,
-        width: computeWidth(node.data.sheet.name, node.data.sheet.isCsv),
-        height: NODE_HEIGHT,
-      };
-    }),
-    edges: nodes
-      .map((node) => {
-        return node.data.sheet.dependsOn
-          .map((d) => {
-            if (map.has(d)) {
-              return {
-                id: `${d}-->${node.id}`,
-                sources: [d],
-                targets: [node.id]
-              };
-            } else {
-              return null;
-            }
-          })
-          .filter((e) => e !== null);
-      })
-      .flat(),
-  };
-
-  return elk
-    .layout(graph)
-    .then((graph) => {
-      graph.children!.map((c) => {
-        if (c.id === 'elkfixed') {
-          c.children!.map((cc) => {
-            const n = map.get(cc.id)!;
-
-            n.position = {x: c.x! + cc.x!, y: c.y! + cc.y!};
-          });
-          return;
-        }
-        const n = map.get(c.id)!;
-
-        n.position = {x: c.x!, y: c.y!};
-      })
-    });
 }
 
 function CustomNode({
@@ -170,7 +101,8 @@ function layoutNewNodes(nodes: Node[]): Promise<void> {
   }
 
   if (nodes.every((n) => !isLayouted(n))) {
-    return rearrange(nodes);
+    nodes[0].position.x = 0;
+    nodes[0].position.y = 0;
   }
 
   const first = nodes.find((n) => isLayouted(n))!;
@@ -253,6 +185,7 @@ function getNodes(nodes: Node[], sheets: Sheet[]): Promise<Node[]> {
         id: sheet.name,
         type: 'customNode',
         data: {sheet: sheet},
+        width: computeWidth(sheet.name, sheet.isCsv),
         height: NODE_HEIGHT,
         position,
         sourcePosition: Position.Right,
@@ -267,11 +200,11 @@ function getNodes(nodes: Node[], sheets: Sheet[]): Promise<Node[]> {
     .then(() => finals);
 }
 
-function setSelectedNode(nodes: Node[], sheets: Sheet[], editorSelectedSheetIndex: number | null): boolean {
+function setSelectedNode(nodes: Node[], sheets: Sheet[], editorSelectedSheetName: string | null): boolean {
   let changed = false;
   nodes.forEach((node) => {
     const previousClassName= node.className;
-    node.className = editorSelectedSheetIndex !== null && node.id === sheets[editorSelectedSheetIndex].name ? 'editor-selected' : '';
+    node.className = node.id === editorSelectedSheetName ? 'editor-selected' : '';
 
     changed ||= previousClassName != node.className;
   });
@@ -280,7 +213,7 @@ function setSelectedNode(nodes: Node[], sheets: Sheet[], editorSelectedSheetInde
 
 export default React.forwardRef<Ref, Props>(function Workflow({
   sheets,
-  editorSelectedSheetIndex,
+  editorSelectedSheetName,
   onSheetClicked,
   onSheetTabOpened,
   onSheetRenamed,
@@ -296,12 +229,12 @@ export default React.forwardRef<Ref, Props>(function Workflow({
   const [shouldFitView, setShouldFitView] = React.useState<boolean>(false);
 
   const onNodesChange = React.useCallback(
-    (changes) => setNodes(applyNodeChanges(changes, nodes)),
-    [nodes]
+    (changes) => setNodes((nodes) => applyNodeChanges(changes, nodes)),
+    []
   );
   const onEdgesChange = React.useCallback(
-    (changes) => setEdges(applyEdgeChanges(changes, edges)),
-    [edges]
+    (changes) => setEdges((edges) => applyEdgeChanges(changes, edges)),
+    []
   );
 
   React.useImperativeHandle(
@@ -314,13 +247,6 @@ export default React.forwardRef<Ref, Props>(function Workflow({
       zoomIn: () => reactFlowInstance.current!.zoomIn(),
       zoomOut: () => reactFlowInstance.current!.zoomOut(),
       fitView: () => reactFlowInstance.current!.fitView({duration: 250}),
-      arrange: () => {
-        rearrange(nodes)
-          .then(() => {
-            setNodes([...nodes]);
-            setShouldFitView(true);
-          });
-      },
     }),
     [nodes]
   );
@@ -330,59 +256,64 @@ export default React.forwardRef<Ref, Props>(function Workflow({
       getNodes(nodes, sheets)
         .then((newNodes) => {
           setNodes(newNodes);
+
           setShouldFitView(true);
+        });
 
-          setEdges((edges) => {
-            const existings = new Set<string>(edges.map((e) => e.id));
-            const sheetIds = new Set<string>(sheets.map((s) => s.name));
+      setEdges((edges) => {
+        const existings = new Set<string>(edges.map((e) => e.id));
+        const sheetIds = new Set<string>(sheets.map((s) => s.name));
 
-            const toBeRemoved = new Set<string>();
+        const toBeRemoved = new Set<string>();
 
-            edges.forEach((edge) => {
-              if (!sheetIds.has(edge.source) || !sheetIds.has(edge.target)) {
-                toBeRemoved.add(edge.id);
-              }
-            });
+        edges.forEach((edge) => {
+          if (!sheetIds.has(edge.source) || !sheetIds.has(edge.target)) {
+            toBeRemoved.add(edge.id);
+          }
+        });
 
-            sheets.forEach((sheet) => {
-              sheet.dependsOn.forEach((dependsOn) => {
-                const edgeId = `${dependsOn}-->${sheet.name}`;
-                if (!existings.has(edgeId)) {
-                  edges.push({
-                    id: edgeId,
-                    source: dependsOn,
-                    target: sheet.name,
-                    style: {stroke: '#333', strokeWidth: 2},
-                    markerEnd: {type: MarkerType.ArrowClosed, color: '#333', strokeWidth: 2, width: 10, height: 10}
-                  });
-                }
+        sheets.forEach((sheet) => {
+          sheet.dependsOn.forEach((dependsOn) => {
+            const edgeId = `${dependsOn}-->${sheet.name}`;
+            if (!existings.has(edgeId)) {
+              edges.push({
+                id: edgeId,
+                source: dependsOn,
+                target: sheet.name,
+                style: {stroke: '#333', strokeWidth: 2},
+                markerEnd: {type: MarkerType.ArrowClosed, color: '#333', strokeWidth: 2, width: 10, height: 10}
               });
-            });
-
-            return edges.filter((e) => !toBeRemoved.has(e.id));
+            }
           });
         });
+
+        return edges.filter((e) => !toBeRemoved.has(e.id));
+      });
     },
     [sheets]
   );
 
   React.useEffect(
     () => {
-      const changed = setSelectedNode(nodes, sheets, editorSelectedSheetIndex)
-      if (changed) {
-        setNodes([...nodes]);
-      }
+      setNodes((nodes) => {
+        const changed = setSelectedNode(nodes, sheets, editorSelectedSheetName)
+        if (changed) {
+          return [...nodes];
+        } else {
+          return nodes;
+        }
+      });
     },
-    [editorSelectedSheetIndex, nodes]
+    [editorSelectedSheetName]
   );
 
   React.useEffect(
     () => {
-      if (shouldFitView ) {
+      if (shouldFitView) {
         setShouldFitView(false);
 
         if (reactFlowInstance.current) {
-          reactFlowInstance.current.fitView({duration: 250});
+          setTimeout(() => reactFlowInstance.current!.fitView({duration: 250}), 1);
         }
       }
     },
@@ -416,7 +347,15 @@ export default React.forwardRef<Ref, Props>(function Workflow({
 
   return (
     <>
-      <div style={{ height: '100%', width: '100%', top: visible ? '0px' : '-100000px', position: 'absolute' }}>
+      <div
+        style={{
+          height: '100%',
+          width: '100%',
+          visibility: visible ? 'visible' : 'hidden',
+          backgroundColor: '#F2DF74',
+          position: 'absolute'
+        }}
+      >
         <ReactFlow
           onInit={(i) => {reactFlowInstance.current = i;}}
           nodeTypes={nodeTypes}
@@ -445,7 +384,6 @@ export default React.forwardRef<Ref, Props>(function Workflow({
             onZoomOutEnabled(viewport.zoom > MIN_ZOOM);
             onZoomInEnabled(viewport.zoom < MAX_ZOOM);
           }}
-          onlyRenderVisibleElements={false}
         >
           <Background color="#333"/>
         </ReactFlow>

@@ -36,10 +36,6 @@ export class Workerize extends Datastore {
     return this.worker.exportCsv(table, filePath, delimiter);
   }
 
-  async exportSchema(filePath: string): Promise<void> {
-    return this.worker.exportSchema(filePath);
-  }
-
   async query(sql: string, table: string | null): Promise<Result> {
     return this.worker.query(sql, table);
   }

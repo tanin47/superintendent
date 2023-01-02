@@ -151,18 +151,6 @@ export class Sqlite extends Datastore {
     return Promise.resolve();
   }
 
-  async exportSchema(filePath: string): Promise<void> {
-    const rows = this.db.prepare(`SELECT sql FROM sqlite_master WHERE type = 'table';`).raw(true).all();
-
-    const writer = fs.createWriteStream(filePath, {flags: 'w'});
-
-    for (const row of rows) {
-      writer.write(row[0]);
-      writer.write('\n\n');
-    }
-    writer.close();
-  }
-
   async drop(table: string): Promise<void> {
     try {
       this.db.exec(`DROP TABLE IF EXISTS "${table}"`);

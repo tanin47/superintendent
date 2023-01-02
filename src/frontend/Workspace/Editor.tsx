@@ -25,7 +25,7 @@ type Props = {
   initialValue?: string | null,
   mode: EditorMode,
   sheets: Array<Sheet>,
-  selectedSheetIndex: number | null,
+  selectedSheetName: string | null,
   visible: boolean
 };
 
@@ -41,25 +41,30 @@ export default React.forwardRef<Ref, Props>(function Editor({
   initialValue,
   mode,
   sheets,
-  selectedSheetIndex,
+  selectedSheetName,
   visible
 }: Props, ref): JSX.Element {
+  // return (<div style={{ height: '100%', width: '100%', zIndex: visible ? 0 : -100, position: 'absolute', backgroundColor: '#fff'}} />);
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const codeMirrorInstance = React.useRef<any>(null);
 
   React.useEffect(
     () => {
-      if (selectedSheetIndex === null) { return; }
+      if (selectedSheetName === null) { return; }
+
+      const sheet = sheets.find((s) => s.name === selectedSheetName);
+
+      if (!sheet) { return; }
 
       const cursor = codeMirrorInstance.current!.getCursor();
       const selections = codeMirrorInstance.current!.listSelections();
 
-      codeMirrorInstance.current!.setValue(sheets[selectedSheetIndex].sql);
+      codeMirrorInstance.current!.setValue(sheet.sql);
 
       codeMirrorInstance.current!.setCursor(cursor);
       codeMirrorInstance.current!.setSelections(selections);
     },
-    [sheets, selectedSheetIndex]
+    [sheets, selectedSheetName]
   );
 
   React.useEffect(
@@ -182,7 +187,18 @@ export default React.forwardRef<Ref, Props>(function Editor({
   }, [sheets])
 
   return (
-    <div style={{ height: '100%', width: '100%', top: visible ? '0px' : '-100000px', position: 'absolute' }}>
+    <div
+      style={{
+        height: '100%',
+        width: '100%',
+        // We have to use visibility and cannot use zIndex. This would cause an odd issue when dragging a node in Reactflow.
+        // It'd start dragging multiple nodes.
+        // There's something about hiding CodeMirror with zIndex. It continues to consume certain events.
+        visibility: visible ? 'visible' : 'hidden',
+        position: 'absolute',
+        backgroundColor: '#fff'
+      }}
+    >
       <textarea ref={textareaRef} placeholder="Compose a beautiful SQL..." />
     </div>
   );
