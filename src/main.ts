@@ -293,7 +293,6 @@ export default class Main {
             { type: 'separator' },
             { role: 'front' },
           ] : [
-            { role: 'close' }
           ])
         ]
       },
