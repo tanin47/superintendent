@@ -81,11 +81,13 @@ export default class Main {
     return file;
   }
 
-  private static async importWorkflow(space: Workspace): Promise<void> {
+  private static async importWorkflow(): Promise<void> {
+    let space = Main.getFocusedSpace();
+
     const files = dialog.showOpenDialogSync(
       space.window,
       {
-        filters: [{name: 'Superintendent', extensions: ['*.super']}]
+        filters: [{name: 'All files', extensions: ['*']}]
       }
     );
 
@@ -97,7 +99,23 @@ export default class Main {
 
     const data = fs.readFileSync(file, {encoding: 'utf8', flag: 'r'});
 
-    space.window.webContents.send(ImportWorkflowChannel, JSON.parse(data));
+    // May switch windows
+    const tables = await space.db.getAllTables();
+    if (tables.length > 0) {
+      space = await Main.makeWorkspace();
+    }
+
+    // Wait for the new workspace to initialize.
+    const loadWorkflowFunc = async () => {
+      const isLoaded = await space.window.webContents.executeJavaScript('window.importWorkflowHookIsLoaded');
+
+      if (isLoaded) {
+        space.window.webContents.send(ImportWorkflowChannel, JSON.parse(data));
+      } else {
+        setTimeout(() => loadWorkflowFunc(), 100);
+      }
+    };
+    loadWorkflowFunc();
   }
 
   private static async initExportWorkflow(space: Workspace): Promise<void> {
@@ -109,7 +127,7 @@ export default class Main {
       space.window,
       {
         defaultPath: `workflow_${getRandomBird()}.super`,
-        filters: [{name: 'All files', extensions: ['*']}]
+        filters: [{name: '.super', extensions: ['super']}]
       }
     );
 
@@ -203,7 +221,7 @@ export default class Main {
             label: 'Load Workflow' ,
             accelerator: process.platform === 'darwin' ? 'Cmd+L' : 'Ctrl+L',
             click: () => {
-              Main.importWorkflow(Main.getFocusedSpace());
+              Main.importWorkflow();
             }
           },
         ]
@@ -340,7 +358,7 @@ export default class Main {
 
       space.db.close();
 
-      Main.spaces.delete(space.window.id);
+      Main.spaces.delete(space.window.webContents.id);
     });
 
     let initialFile: string | null = null;

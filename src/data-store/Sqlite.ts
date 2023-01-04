@@ -272,6 +272,13 @@ export class Sqlite extends Datastore {
     return Promise.resolve({text, html});
   }
 
+  async getAllTables(): Promise<string[]> {
+    const statement = this.db.prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite_%';");
+    const allRows = statement.all();
+
+    return Promise.resolve(allRows.map((r) => r.name));
+  }
+
   async loadMore(table: string, offset: number): Promise<Row[]> {
     const statement = this.db.prepare(`SELECT * FROM "${table}" LIMIT ${Datastore.MAX_ROW_LOAD_MORE} OFFSET ${offset}`).raw(true)
     const allRows = statement.all();

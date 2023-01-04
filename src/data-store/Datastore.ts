@@ -34,6 +34,7 @@ export abstract class Datastore {
   abstract loadMore(table: string, offset: number): Promise<Row[]>;
   abstract drop(table: string): Promise<void>;
   abstract rename(previousTableName: string, newTableName: string): Promise<void>;
+  abstract getAllTables(): Promise<string[]>;
 
   protected sanitizeName(name: string): string {
     return name.replace(/[^a-zA-Z0-9_]/g, '_');

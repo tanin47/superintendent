@@ -74,6 +74,7 @@ export default function Workspace(): ReactElement {
       })));
     };
     ipcRenderer.on(ImportWorkflowChannel, callback);
+    (window as any).importWorkflowHookIsLoaded = true;
 
     return () => {
       ipcRenderer.removeListener(ImportWorkflowChannel, callback) ;
