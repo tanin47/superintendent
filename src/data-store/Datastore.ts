@@ -35,6 +35,18 @@ export abstract class Datastore {
   abstract drop(table: string): Promise<void>;
   abstract rename(previousTableName: string, newTableName: string): Promise<void>;
   abstract getAllTables(): Promise<string[]>;
+  abstract reserveTableName(name: string): Promise<void>;
+
+  // The Sqlite is running on a different thread.
+  // Even though this method doesn't require the async approach, we still need to call it through a worker.
+  protected async _getAllTables(): Promise<string[]>{
+    return Promise.resolve(this.tables);
+  }
+
+  protected _reserveTableName(name: string): Promise<void> {
+    this.tables.push(name);
+    return Promise.resolve();
+  }
 
   protected sanitizeName(name: string): string {
     return name.replace(/[^a-zA-Z0-9_]/g, '_');

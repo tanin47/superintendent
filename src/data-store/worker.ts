@@ -36,10 +36,13 @@ expose({
   async drop(table: string): Promise<void> {
     return sqlite!.drop(table);
   },
+  async rename(previousTableName: string, newTableName: string): Promise<void> {
+    return sqlite!.rename(previousTableName, newTableName);
+  },
   async getAllTables(): Promise<string[]> {
     return sqlite!.getAllTables();
   },
-  async rename(previousTableName: string, newTableName: string): Promise<void> {
-    return sqlite!.rename(previousTableName, newTableName);
-  }
+  async reserveTableName(name: string): Promise<void> {
+    return sqlite!.reserveTableName(name);
+  },
 })

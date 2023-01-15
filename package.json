@@ -1,6 +1,6 @@
 {
   "name": "superintendent",
-  "version": "4.0.0-rc2",
+  "version": "4.0.0-rc3",
   "description": "Write SQLs on CSVs",
   "license": "UNLICENSED",
   "main": "dist/prod/main.js",
@@ -40,6 +40,11 @@
         "ext": "psv",
         "role": "Viewer",
         "name": "Pipe-separated values"
+      },
+      {
+        "ext": "super",
+        "role": "Viewer",
+        "name": "Superintendent workflow"
       }
     ],
     "mac": {

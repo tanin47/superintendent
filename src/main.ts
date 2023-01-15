@@ -12,6 +12,7 @@ import {
 } from "./types";
 import {getRandomBird} from "./data-store/Birds";
 import fs from "fs";
+import path from "path";
 
 const ExportDelimiterLabels = {
   comma: 'Comma (,)',
@@ -81,7 +82,7 @@ export default class Main {
     return file;
   }
 
-  private static async importWorkflow(): Promise<void> {
+  private static async initImportWorkflow(): Promise<void> {
     let space = Main.getFocusedSpace();
 
     const files = dialog.showOpenDialogSync(
@@ -95,27 +96,40 @@ export default class Main {
       return;
     }
 
-    const file = files[0];
+    return Main.importWorkflow(files[0]);
+  }
 
+  private static async importWorkflow(file: string, space:  Workspace | null = null): Promise<void> {
+    let selectedSpace = space || Main.getFocusedSpace();
     const data = fs.readFileSync(file, {encoding: 'utf8', flag: 'r'});
 
     // May switch windows
-    const tables = await space.db.getAllTables();
+    const tables = await selectedSpace.db.getAllTables();
     if (tables.length > 0) {
-      space = await Main.makeWorkspace();
+      selectedSpace = await Main.makeWorkspace();
     }
 
-    // Wait for the new workspace to initialize.
-    const loadWorkflowFunc = async () => {
-      const isLoaded = await space.window.webContents.executeJavaScript('window.importWorkflowHookIsLoaded');
+    const workflow: ExportedWorkflow = JSON.parse(data);
 
-      if (isLoaded) {
-        space.window.webContents.send(ImportWorkflowChannel, JSON.parse(data));
-      } else {
-        setTimeout(() => loadWorkflowFunc(), 100);
-      }
-    };
-    loadWorkflowFunc();
+    for await (const node of workflow.nodes) {
+      await selectedSpace.db.reserveTableName(node.name)
+    }
+
+    const promise = new Promise<void>((resolve) => {
+      // Wait for the new workspace to initialize.
+      const loadWorkflowFunc = async () => {
+        const isLoaded = await selectedSpace.window.webContents.executeJavaScript('window.importWorkflowHookIsLoaded');
+
+        if (isLoaded) {
+          selectedSpace.window.webContents.send(ImportWorkflowChannel, workflow);
+          resolve();
+        } else {
+          setTimeout(() => loadWorkflowFunc(), 100);
+        }
+      };
+      loadWorkflowFunc();
+    });
+    return promise;
   }
 
   private static async initExportWorkflow(space: Workspace): Promise<void> {
@@ -221,7 +235,7 @@ export default class Main {
             label: 'Load Workflow' ,
             accelerator: process.platform === 'darwin' ? 'Cmd+L' : 'Ctrl+L',
             click: () => {
-              Main.importWorkflow();
+              Main.initImportWorkflow();
             }
           },
         ]
@@ -369,7 +383,7 @@ export default class Main {
     } else {
       initialFile = process.argv[2];
     }
-    const initialFileMap: {[key: string]: string} = initialFile ? {initialFile} : {};
+    let initialFileMap: {[key: string]: string} = initialFile ? {initialFile} : {};
 
     await space.window.loadFile(
       `${__dirname}/index.html`,
@@ -433,8 +447,8 @@ export default class Main {
         separator = ':';
       } else if (format === 'tilde') {
         separator = '~';
-      } else if (format === 'sqlite') {
-        return Main.wrapResponse(Main.getSpace(event).db.addSqlite(path));
+      } else if (format === 'super') {
+        return Main.wrapResponse(Main.importWorkflow(path, Main.getSpace(event)));
       } else {
         throw new Error();
       }
@@ -468,11 +482,11 @@ export default class Main {
     Main.application.on('window-all-closed', () => {
       Main.application.quit();
     });
-    Main.application.on('open-file', (event, path) => {
+    Main.application.on('open-file', (event, file) => {
       if (Main.spaces.size > 0) {
-        this.getFocusedSpace().window.webContents.send('open-file', path);
+        this.getFocusedSpace().window.webContents.send('open-file', file);
       } else {
-        Main.initialFile = path;
+        Main.initialFile = file;
       }
     })
     Main.application.on('ready', Main.onReady);

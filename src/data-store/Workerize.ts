@@ -3,6 +3,7 @@ import path from "path";
 import {spawn, Thread, Worker} from 'threads';
 import {CopySelection} from "../types";
 
+// Every method must be called through the worker because this runs on a different thread.
 export class Workerize extends Datastore {
   private worker: any;
 
@@ -26,10 +27,6 @@ export class Workerize extends Datastore {
 
   async addSqlite(filePath: string): Promise<Result[]> {
     return this.worker.addSqlite(filePath);
-  }
-
-  async getAllTables(): Promise<string[]> {
-    return this.worker.getAllTables();
   }
 
   async addCsv(filePath: string, withHeader: boolean, separator: string, replace: string): Promise<Result[]> {
@@ -58,5 +55,13 @@ export class Workerize extends Datastore {
 
   async rename(previousTableName: string, newTableName: string): Promise<void> {
     return this.worker.rename(previousTableName, newTableName);
+  }
+
+  async getAllTables(): Promise<string[]> {
+    return this.worker.getAllTables();
+  }
+
+  async reserveTableName(name: string): Promise<void> {
+    return this.worker.reserveTableName(name);
   }
 }

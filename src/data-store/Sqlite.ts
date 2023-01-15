@@ -115,7 +115,7 @@ export class Sqlite extends Datastore {
     const virtualTable = this.getTableName("virtual_" + table);
     this.db.exec(`CREATE VIRTUAL TABLE "${virtualTable}" USING csv(filename='${filePath}', header=${withHeader}, schema='${createTable!}', separator='${separator}')`);
     this.db.exec(`CREATE TABLE "${table}" AS SELECT * FROM "${virtualTable}"`);
-    this.db.exec(`DROP TABLE "${virtualTable}"`);
+    await this.drop(virtualTable);
 
     if (replace && replace !== '' && table !== replace) {
       await this.drop(replace);
@@ -272,13 +272,6 @@ export class Sqlite extends Datastore {
     return Promise.resolve({text, html});
   }
 
-  async getAllTables(): Promise<string[]> {
-    const statement = this.db.prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite_%';");
-    const allRows = statement.all();
-
-    return Promise.resolve(allRows.map((r) => r.name));
-  }
-
   async loadMore(table: string, offset: number): Promise<Row[]> {
     const statement = this.db.prepare(`SELECT * FROM "${table}" LIMIT ${Datastore.MAX_ROW_LOAD_MORE} OFFSET ${offset}`).raw(true)
     const allRows = statement.all();
@@ -335,5 +328,12 @@ export class Sqlite extends Datastore {
       dependsOn: [],
       isCsv: false
     };
+  }
+
+  async getAllTables(): Promise<string[]> {
+    return this._getAllTables();
+  }
+  async reserveTableName(name: string): Promise<void> {
+    return this._reserveTableName(name);
   }
 }

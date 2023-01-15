@@ -2,7 +2,7 @@ import {XYPosition} from "@reactflow/core/dist/esm/types";
 
 export type EditorMode = 'default' | 'vim';
 
-export type Format = 'comma' | 'tab' | 'pipe' | 'semicolon' | 'colon' | 'tilde' | 'sqlite';
+export type Format = 'comma' | 'tab' | 'pipe' | 'semicolon' | 'colon' | 'tilde' | 'super';
 
 export const ExportDelimiters = ['comma', 'tab', 'pipe', 'semicolon', 'colon', 'tilde'] as const;
 export type ExportDelimiter = typeof ExportDelimiters[number];

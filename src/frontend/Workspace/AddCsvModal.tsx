@@ -79,7 +79,7 @@ function FileItem({
                   setWithHeader(newWithHeader);
                   onWithHeaderChanged(newWithHeader);
                 }}
-                disabled={disabled}
+                disabled={disabled || format === "super"}
               >
                 <option value="true">with header</option>
                 <option value="false">without header</option>
@@ -103,7 +103,7 @@ function FileItem({
                 <option value="semicolon">Semicolon (;)</option>
                 <option value="colon">Colon (:)</option>
                 <option value="tilde">Tilde (~)</option>
-                <option value="sqlite">Sqlite</option>
+                <option value="super">Workflow</option>
               </select>
             </div>
           </div>
@@ -126,10 +126,10 @@ function FileItem({
                   setReplace(replace);
                   onReplaceChanged(replace);
                 }}
-                disabled={disabled}
+                disabled={disabled || format === "super"}
               >
                 <option value="" key="">as a new sheet</option>
-                {format !== 'sqlite' && sheets
+                {sheets
                   .filter((s) => s.isCsv)
                   .map((s) => {
                     return (
@@ -238,8 +238,8 @@ export default React.forwardRef(function AddCsv({
         format = 'tab';
       } else if (basename.endsWith('.psv')) {
         format = 'pipe';
-      } else if (basename.endsWith('.db') || basename.endsWith('.sqlite')) {
-        format = 'sqlite';
+      } else if (basename.endsWith('.super')) {
+        format = 'super';
       }
 
       newFiles.push({

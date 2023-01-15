@@ -53,25 +53,29 @@ export default function Workspace(): ReactElement {
 
   React.useEffect(() => {
     const callback = (event, workflow: ExportedWorkflow) => {
-      workflowRef.current!.reset();
       setEditorSelectedSheetName(null);
       setShowEditorOrWorkflow('workflow');
-      setSheets(workflow.nodes.map((node) => ({
-        name: node.name,
-        isCsv: node.isCsv,
-        dependsOn: node.dependsOn,
-        position: node.position,
-        sql: node.sql,
-        count: 0,
-        columns: [],
-        rows: [],
-        presentationType: 'table',
-        scrollLeft: null,
-        scrollTop: null,
-        resizedColumns: {},
-        selection: null,
-        userSelect: null
-      })));
+      setSheets((prevSheets) => {
+        return [
+          ...prevSheets,
+          ...workflow.nodes.map((node) => ({
+            name: node.name,
+            isCsv: node.isCsv,
+            dependsOn: node.dependsOn,
+            position: node.position,
+            sql: node.sql,
+            count: 0,
+            columns: [],
+            rows: [],
+            presentationType: 'table',
+            scrollLeft: null,
+            scrollTop: null,
+            resizedColumns: {},
+            selection: null,
+            userSelect: null
+          } as Sheet))
+        ];
+      });
     };
     ipcRenderer.on(ImportWorkflowChannel, callback);
     (window as any).importWorkflowHookIsLoaded = true;
@@ -110,30 +114,33 @@ export default function Workspace(): ReactElement {
   const addNewSheetCallback = React.useCallback(
     (newSheet: Sheet | null): void => {
       if (!newSheet) { return; }
-      const foundIndex = sheets.findIndex((s) => s.name === newSheet.name);
 
-      if (foundIndex > -1) {
-        // Replace all keys because other components refer to this object by reference.
-        Object.keys(newSheet).forEach((k) => {
-          sheets[foundIndex][k] = newSheet[k];
-        });
-        Object.keys(sheets[foundIndex]).forEach((k) => {
-          if (!(k in newSheet)) {
-            delete sheets[foundIndex][k];
+      setSheets((sheets) => {
+        const foundIndex = sheets.findIndex((s) => s.name === newSheet.name);
+
+        if (foundIndex > -1) {
+          // Replace all keys because other components refer to this object by reference.
+          Object.keys(newSheet).forEach((k) => {
+            sheets[foundIndex][k] = newSheet[k];
+          });
+          Object.keys(sheets[foundIndex]).forEach((k) => {
+            if (!(k in newSheet)) {
+              delete sheets[foundIndex][k];
+            }
+          });
+          setTimeout(() => sheetSectionRef.current!.open(newSheet.name), 1);
+        } else {
+          sheets.push(newSheet);
+
+          if (!newSheet.isCsv) {
+            setEditorSelectedSheetName(sheets[sheets.length - 1].name);
           }
-        });
-        setSheets([...sheets]);
-        setTimeout(() => sheetSectionRef.current!.open(newSheet.name), 1);
-      } else {
-        sheets.push(newSheet);
-        setSheets([...sheets]);
-
-        if (!newSheet.isCsv) {
-          setEditorSelectedSheetName(sheets[sheets.length - 1].name);
         }
-      }
+
+        return [...sheets];
+      });
     },
-    [sheets]
+    []
   );
 
   const deleteSheetCallback = React.useCallback(
