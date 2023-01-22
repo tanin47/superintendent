@@ -37,7 +37,7 @@ type SheetInfo = {
 export default function Workspace(): ReactElement {
   const [editorMode, setEditorMode] = React.useState<EditorMode>(getInitialEditorMode());
   const [sheets, setSheets] = React.useState<Array<Sheet>>([]);
-  const [renamingSheetIndex, setRenamingSheetIndex] = React.useState<number | null>(null);
+  const [renamingSheetName, setRenamingSheetName] = React.useState<string | null>(null);
   const [showEditorOrWorkflow, setShowEditorOrWorkflow] = React.useState<EditorOrWorkflow>('editor');
   const [editorSelectedSheetName, setEditorSelectedSheetName] = React.useState<string | null>(null);
   const [isZoomInEnabled, setIsZoomInEnabled] = React.useState<boolean>(true);
@@ -144,10 +144,9 @@ export default function Workspace(): ReactElement {
   );
 
   const deleteSheetCallback = React.useCallback(
-    (deletedSheetIndex: number): void => {
-      const name = sheets[deletedSheetIndex].name;
+    (name: string): void => {
       const downstreams = sheets.filter((s) => s.dependsOn.includes(name));
-      let confirmMsg = `Are you sure you want to remove: ${sheets[deletedSheetIndex].name}?`;
+      let confirmMsg = `Are you sure you want to remove: ${name}?`;
       if (downstreams.length > 0) {
         const dependClause = downstreams.length === 1 ? `${downstreams.length} other table depends on it.` : `${downstreams.length} other tables depend on it.`;
         confirmMsg += `\n\n ${dependClause}`;
@@ -156,11 +155,11 @@ export default function Workspace(): ReactElement {
         return;
       }
 
-      drop(sheets[deletedSheetIndex].name)
+      drop(name)
         .then(() => {
           // don't care.
         });
-      const updatedSheets = sheets.filter((sheet, index) => index !== deletedSheetIndex);
+      const updatedSheets = sheets.filter((sheet) => sheet.name !== name);
 
       setSheets(updatedSheets);
 
@@ -454,30 +453,26 @@ export default function Workspace(): ReactElement {
         onAdded={(sheet) => addNewSheetCallback(sheet)}
       />
       <RenameDialog
-        renamingSheet={renamingSheetIndex !== null ? sheets[renamingSheetIndex] : null}
+        renamingSheet={sheets.find((s) => s.name === renamingSheetName) ?? null}
         onUpdated={(newName) => {
-          if (renamingSheetIndex !== null) {
+          if (renamingSheetName !== null) {
             setSheets((prevSheets) => {
-              return prevSheets.map((sheet, index) => {
-                if (index === renamingSheetIndex) {
+              return prevSheets.map((sheet) => {
+                if (sheet.name === renamingSheetName) {
                   if (editorSelectedSheetName === sheet.name) {
                     setEditorSelectedSheetName(newName);
                   }
-                  return {
-                    ...sheet,
-                    name: newName,
-                    previousName: sheet.name
-                  }
-                } else {
-                  return sheet;
+                  sheet.previousName = sheet.name;
+                  sheet.name = newName;
                 }
+                return sheet;
               });
             });
 
           }
-          setRenamingSheetIndex(null);
+          setRenamingSheetName(null);
         }}
-        onClosed={() => setRenamingSheetIndex(null)}
+        onClosed={() => setRenamingSheetName(null)}
       />
       <div className="toolbarSection top">
         <div className="inner">
@@ -532,8 +527,8 @@ export default function Workspace(): ReactElement {
             sheetSectionRef.current!.open(sheetId);
           }}
           onSheetTabOpened={(sheetId) => sheetSectionRef.current!.open(sheetId)}
-          onSheetRenamed={(renamingSheetIndex) => setRenamingSheetIndex(renamingSheetIndex)}
-          onSheetDeleted={(deletedIndex) => deleteSheetCallback(deletedIndex)}
+          onSheetRenamed={(name) => setRenamingSheetName(name)}
+          onSheetDeleted={(name) => deleteSheetCallback(name)}
           onZoomInEnabled={(enabled) => setIsZoomInEnabled(enabled)}
           onZoomOutEnabled={(enabled) => setIsZoomOutEnabled(enabled)}
           editorSelectedSheetName={editorSelectedSheetName}
@@ -631,7 +626,7 @@ export default function Workspace(): ReactElement {
           ref={sheetSectionRef}
           sheets={sheets}
           editorSelectedSheetName={editorSelectedSheetName}
-          onSheetRenamed={(renamingSheetIndex) => setRenamingSheetIndex(renamingSheetIndex)}
+          onSheetRenamed={(name) => setRenamingSheetName(name)}
           presentationType={presentationType}
           onSelectedSheetUpdated={(newSheet) => {
             let info: SheetInfo | null = null

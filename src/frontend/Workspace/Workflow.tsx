@@ -30,8 +30,8 @@ type Props = {
   editorSelectedSheetName: string | null,
   onSheetClicked: (sheetId: string) => void,
   onSheetTabOpened: (sheetId: string) => void,
-  onSheetRenamed: (renamingSheetIndex: number) => void,
-  onSheetDeleted: (deletedSheetIndex: number) => void,
+  onSheetRenamed: (name: string) => void,
+  onSheetDeleted: (name: string) => void,
   onZoomInEnabled: (enabled: boolean) => void,
   onZoomOutEnabled: (enabled: boolean) => void,
   visible: boolean
@@ -371,9 +371,9 @@ export default React.forwardRef<Ref, Props>(function Workflow({
             if (action === "open-editor" && !node.data.sheet.isCsv) {
               onSheetClicked(node.id);
             } else if (action === "rename") {
-              onSheetRenamed(sheets.findIndex((s) => s.name === node.data.sheet.name));
+              onSheetRenamed(node.data.sheet.name);
             } else if (action === "delete") {
-              onSheetDeleted(sheets.findIndex((s) => s.name === node.data.sheet.name));
+              onSheetDeleted(node.data.sheet.name);
             } else if (action === "open-tab") {
               onSheetTabOpened(node.id);
             }

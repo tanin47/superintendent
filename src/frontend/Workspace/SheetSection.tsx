@@ -17,7 +17,7 @@ export interface Ref {
 type Props = {
   sheets: SheetType[],
   editorSelectedSheetName: string | null,
-  onSheetRenamed: (renamingSheetIndex: number) => void,
+  onSheetRenamed: (renamingSheetName: string) => void,
   onSelectedSheetUpdated: (sheet: SheetType | null) => void,
   presentationType: PresentationType
 };
@@ -86,7 +86,7 @@ export default React.forwardRef<Ref, Props>(function SheetSection({
 
       for (let index=0;index<sheets.length;index++) {
         const sheet = sheets[index];
-        if (!existings.has(sheet.name)) {
+        if (!existings.has(sheet.name) && !existings.has(sheet.previousName || '')) {
           shadowSheets.push(sheet);
           tabs.push({
             sheet
@@ -129,9 +129,9 @@ export default React.forwardRef<Ref, Props>(function SheetSection({
 
   const onDoubleClick = React.useCallback(
     (index: number) => {
-      onSheetRenamed(index);
+      onSheetRenamed(tabs[index].sheet.name);
     },
-    []
+    [tabs]
   );
 
   const handleClick = React.useCallback(
