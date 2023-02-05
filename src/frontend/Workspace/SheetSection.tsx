@@ -35,6 +35,7 @@ export default React.forwardRef<Ref, Props>(function SheetSection({
   const [shadowSheets, setShadowSheets] = React.useState<SheetType[]>([]);
   const [selectedTabIndex, setSelectedTabIndex] = React.useState<number>(0);
   const [blinkingSelectedTab, setBlinkingSelectedTab] = React.useState<boolean>(false);
+  const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
   const blinkingTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   React.useImperativeHandle(
@@ -203,87 +204,121 @@ export default React.forwardRef<Ref, Props>(function SheetSection({
     [tabs, selectedTabIndex]
   )
 
-  return (
-    <div id="sheetSection" className={tabs.length === 0 ? 'empty' : ''}>
-      {tabs.length > 0 && (
+  let content: JSX.Element | null = null;
+
+  if (tabs.length > 0) {
+    content = (
+      <>
         <Sheet
           sheet={tabs[selectedTabIndex].sheet}
           onSelectedSheetUpdated={onSelectedSheetUpdated}
           presentationType={presentationType}
         />
-      )}
-      <div
-        className="selector"
-        onDragOver={(event) => {
-          if (draggedIndex === null) {
-            return;
-          }
-          event.preventDefault();
-          event.stopPropagation();
-        }}
-        onDrop={(event) => {
-          if (draggedIndex === null) {
-            return;
-          }
-          event.preventDefault();
-          event.stopPropagation();
-          rearrangedCallback(draggedIndex, tabs.length);
-        }}
-      >
-        {tabs.map((tab, index) => {
-          return (
-            <div
-              key={`sheet${index}`}
-              className={selectedTabIndex === index ? 'selected' : ''}
-              onClick={(event) => handleClick(event, index)}
-              draggable={true}
-              onDrag={(event) => {
-                setDraggedIndex(index);
-                event.dataTransfer.effectAllowed = 'move';
-              }}
-              onDragOver={(event) => {
-                if (draggedIndex === null) {
-                  return;
-                }
-                event.preventDefault();
-                event.stopPropagation();
-              }}
-              onDrop={(event) => {
-                if (draggedIndex === null) {
-                  return;
-                }
-                event.preventDefault();
-                event.stopPropagation();
+        <div
+          className="selector"
+          onDragOver={(event) => {
+            if (draggedIndex === null) {
+              return;
+            }
+            event.preventDefault();
+            event.stopPropagation();
+          }}
+          onDrop={(event) => {
+            if (draggedIndex === null) {
+              return;
+            }
+            event.preventDefault();
+            event.stopPropagation();
+            rearrangedCallback(draggedIndex, tabs.length);
+          }}
+        >
+          <div className="sort-button">
+            <i
+              className={`fas ${sortDirection === 'asc' ? 'fa-sort-alpha-down' : 'fa-sort-alpha-up'}`}
+              title="Sort alphabetically"
+              onClick={() => {
+                const selectedSheetName = tabs[selectedTabIndex].sheet.name;
 
-                if (draggedIndex === index) { return; }
-                rearrangedCallback(draggedIndex, index);
-              }}
-            >
-              {tab.sheet.isCsv && (
-                <i
-                  className="fas fa-file" title="Imported"
-                />
-              )}
-              <span className={`${selectedTabIndex === index && blinkingSelectedTab ? 'blinking' : ''} ${editorSelectedSheetName === tab.sheet.name ? 'editor-selected' : ''}`}>{tab.sheet.name}</span>
-              {editorSelectedSheetName !== tab.sheet.name && (
-                <i
-                  className="fas fa-times"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation(); // don't trigger selecting sheet.
+                tabs.sort((a, b) => {
+                  return a.sheet.name.localeCompare(b.sheet.name);
+                });
 
-                    const newTabs = tabs.filter((t, i) => index !== i);
-                    if (selectedTabIndex >= newTabs.length) {
-                      setSelectedTabIndex(Math.max(0, newTabs.length - 1));
-                    }
-                    setTabs(newTabs);
-                  }}
-                />
-              )}
-            </div>
-          );
-        })}
-      </div>
+                if (sortDirection === 'desc') {
+                  tabs.reverse()
+                }
+
+                for (let i=0;i<tabs.length;i++) {
+                  if (tabs[i].sheet.name === selectedSheetName) {
+                    setSelectedTabIndex(i);
+                  }
+                }
+
+                setTabs([...tabs]);
+                setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+              }}
+            />
+          </div>
+          {tabs.map((tab, index) => {
+            return (
+              <div
+                key={`sheet${index}`}
+                className={`tab ${selectedTabIndex === index ? 'selected' : ''}`}
+                onClick={(event) => handleClick(event, index)}
+                draggable={true}
+                onDrag={(event) => {
+                  setDraggedIndex(index);
+                  event.dataTransfer.effectAllowed = 'move';
+                }}
+                onDragOver={(event) => {
+                  if (draggedIndex === null) {
+                    return;
+                  }
+                  event.preventDefault();
+                  event.stopPropagation();
+                }}
+                onDrop={(event) => {
+                  if (draggedIndex === null) {
+                    return;
+                  }
+                  event.preventDefault();
+                  event.stopPropagation();
+
+                  if (draggedIndex === index) { return; }
+                  rearrangedCallback(draggedIndex, index);
+                }}
+              >
+                {tab.sheet.isCsv && (
+                  <i
+                    className="fas fa-file" title="Imported"
+                  />
+                )}
+                <span className={`${selectedTabIndex === index && blinkingSelectedTab ? 'blinking' : ''} ${editorSelectedSheetName === tab.sheet.name ? 'editor-selected' : ''}`}>{tab.sheet.name}</span>
+                {editorSelectedSheetName !== tab.sheet.name && (
+                  <i
+                    className="fas fa-times"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation(); // don't trigger selecting sheet.
+
+                      const newTabs = tabs.filter((t, i) => index !== i);
+                      if (selectedTabIndex >= newTabs.length) {
+                        setSelectedTabIndex(Math.max(0, newTabs.length - 1));
+                      }
+                      setTabs(newTabs);
+                    }}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <div id="sheetSection" className={tabs.length === 0 ? 'empty' : ''}>
+      {content}
     </div>
   );
 });

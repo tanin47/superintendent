@@ -311,7 +311,23 @@
       -ms-user-select: none; /* IE10+/Edge */
       user-select: none; /* Standard */
 
-      div {
+      div.sort-button {
+        position: relative;
+        display: inline-block;
+        font-size: 14px;
+        padding: 0px 5px;
+
+        i {
+          cursor: pointer;
+          color: #666;
+
+          &:hover {
+            color: #333;
+          }
+        }
+      }
+
+      div.tab {
         position: relative;
         display: inline-block;
         font-size: 14px;
