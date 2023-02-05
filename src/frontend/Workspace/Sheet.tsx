@@ -371,6 +371,15 @@ function Table({
   const [resizingColIndex, setResizingColIndex] = React.useState<number | null>(null);
   const gridRef = React.useRef<any>(null);
 
+  React.useEffect(
+    () => {
+      if (gridRef.current) {
+        gridRef.current.updateColumn(0);
+      }
+    },
+    [sheet]
+  );
+
   const resizeColMouseDownHandler = React.useCallback(
     (colIndex: number) => (event: React.MouseEvent) => {
       if (!sheet.resizedColumns) {

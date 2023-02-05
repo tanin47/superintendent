@@ -81,12 +81,28 @@ export default React.forwardRef<Ref, Props>(function SheetSection({
 
   React.useEffect(
     () => {
-      const existings = new Set(shadowSheets.map((s) => s.name));
+      const existings = new Map(shadowSheets.map((s, index) => [s.name, index]));
       let newSelectedTabIndex = selectedTabIndex;
 
+      // Add a new sheet and replace a sheet
       for (let index=0;index<sheets.length;index++) {
         const sheet = sheets[index];
-        if (!existings.has(sheet.name) && !existings.has(sheet.previousName || '')) {
+        const currentShadowSheetIndex = existings.get(sheet.name) ?? existings.get(sheet.previousName || '');
+
+        if (currentShadowSheetIndex !== undefined) {
+          const currentSheet = shadowSheets[currentShadowSheetIndex]
+          if (currentSheet !== sheet) {
+            // The sheet has been replaced upstream. Therefore, we replace the shadow sheet and the corresponding tab.
+            shadowSheets.splice(currentShadowSheetIndex, 1, sheet);
+
+            for (let tabIndex=0;tabIndex<tabs.length;tabIndex++) {
+              if (sheet.name === tabs[tabIndex].sheet.name) {
+                tabs[tabIndex].sheet = sheet;
+                break;
+              }
+            }
+          }
+        } else {
           shadowSheets.push(sheet);
           tabs.push({
             sheet
