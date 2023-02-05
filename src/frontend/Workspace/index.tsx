@@ -120,6 +120,7 @@ export default function Workspace(): ReactElement {
 
         if (foundIndex > -1) {
           sheets.splice(foundIndex, 1, newSheet);
+          setTimeout(() => sheetSectionRef.current!.open(newSheet.name), 1);
         } else {
           sheets.push(newSheet);
 
