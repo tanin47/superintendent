@@ -170,7 +170,13 @@ function getNodes(nodes: Node[], sheets: Sheet[]): Promise<Node[]> {
   });
 
   sheets.forEach((sheet) => {
-    if (!existings.has(sheet.name)) {
+    const node = existings.get(sheet.name);
+    if (node) {
+      if (node.data.sheet !== sheet) {
+        // Replace the sheet.
+        node.data.sheet = sheet;
+      }
+    } else {
       const previousNode = sheet.previousName ? existings.get(sheet.previousName) : null;
 
       let position: XYPosition;

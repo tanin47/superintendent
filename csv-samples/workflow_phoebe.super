@@ -1,0 +1,50 @@
+{
+  "nodes": [
+    {
+      "name": "user",
+      "sql": "SELECT * FROM \"user\"",
+      "dependsOn": [],
+      "isCsv": true,
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "name": "height_weight",
+      "sql": "SELECT * FROM \"height_weight\"",
+      "dependsOn": [],
+      "isCsv": true,
+      "position": {
+        "x": 112.91,
+        "y": 41.38620227192288
+      }
+    },
+    {
+      "name": "bobolink",
+      "sql": "select\n  country,\n  avg(height)\nfrom\n  user u\n  join height_weight h on u.id = h.id\ngroup by\n  country\norder by\n  2 desc",
+      "dependsOn": [
+        "user",
+        "height_weight"
+      ],
+      "isCsv": false,
+      "position": {
+        "x": 14.582186720879273,
+        "y": 134.38620227192288
+      }
+    },
+    {
+      "name": "heron",
+      "sql": "select\n  country,\n  avg(weight)\nfrom\n  user u\n  join height_weight h on u.id = h.id\ngroup by\n  country\norder by\n  2 desc",
+      "dependsOn": [
+        "user",
+        "height_weight"
+      ],
+      "isCsv": false,
+      "position": {
+        "x": 155.41999999999996,
+        "y": 31.080422266980477
+      }
+    }
+  ]
+}
