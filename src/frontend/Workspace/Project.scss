@@ -1,0 +1,60 @@
+.project-panel {
+  display: block;
+  height: 100%;
+  width: 100%;
+  overflow: auto;
+  background-color: #555;
+  color: #fefefe;
+  box-sizing: border-box;
+
+  .body {
+    display: block;
+    box-sizing: border-box;
+
+    &:after {
+      content: "";
+      display: block;
+      min-height: 10px;
+      width: 100%;
+    }
+
+    .item {
+      display: flex;
+      padding: 4px 0 4px 10px;
+      font-size: 12px;
+      align-items: center;
+      cursor: pointer;
+      box-sizing: border-box;
+      font-family: 'JetBrains Mono', monospace;
+      user-select: none;
+
+      > * {
+        padding-right: 6px;
+      }
+
+      &.selected {
+        background-color: #1865BB;
+      }
+
+      &:after {
+        content: "\a0";
+        display: inline-block;
+        height: 100%;
+        min-width: 10px;
+      }
+
+      .hover-icon {
+        opacity: 0;
+      }
+
+      &:hover {
+        .hover-icon {
+          opacity: 0.5;
+          &:hover {
+            opacity: 1;
+          }
+        }
+      }
+    }
+  }
+}

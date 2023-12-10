@@ -98,9 +98,6 @@ export default function RenameDialog({
         </button>
       </div>
       {errorMsg !== null && (<div className="rename-error">Error: {errorMsg}</div>)}
-      <div className="rename-tip">
-        Tip: you can use the shortcut <span className="short-key">{ctrlCmdChar} J</span> to rename a sheet.
-      </div>
     </Modal>
   );
 }

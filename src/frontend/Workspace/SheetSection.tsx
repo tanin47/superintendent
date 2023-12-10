@@ -16,17 +16,15 @@ export interface Ref {
 
 type Props = {
   sheets: SheetType[],
-  editorSelectedSheetName: string | null,
-  onSheetRenamed: (renamingSheetName: string) => void,
   onSelectedSheetUpdated: (sheet: SheetType | null) => void,
+  onRenamingSheet: (sheetName: string) => void,
   presentationType: PresentationType
 };
 
 export default React.forwardRef<Ref, Props>(function SheetSection({
   sheets,
-  editorSelectedSheetName,
-  onSheetRenamed,
   onSelectedSheetUpdated,
+  onRenamingSheet,
   presentationType,
 }: Props, ref): ReactElement {
 
@@ -137,30 +135,10 @@ export default React.forwardRef<Ref, Props>(function SheetSection({
     [sheets]
   );
 
-  const onSingleClick = React.useCallback(
+  const handleClick = React.useCallback(
     (index: number) => {
-      setSelectedTabIndex(index)
     },
     []
-  );
-
-  const onDoubleClick = React.useCallback(
-    (index: number) => {
-      onSheetRenamed(tabs[index].sheet.name);
-    },
-    [tabs]
-  );
-
-  const handleClick = React.useCallback(
-    (event: React.MouseEvent<HTMLElement>, index: number) => {
-      clearTimeout(timer);
-      if (event.detail === 1) {
-        timer = setTimeout(() => onSingleClick(index), 100);
-      } else if (event.detail >= 2) {
-        onDoubleClick(index);
-      }
-    },
-    [onDoubleClick]
   );
 
   const rearrangedCallback = React.useCallback(
@@ -179,23 +157,6 @@ export default React.forwardRef<Ref, Props>(function SheetSection({
     },
     [tabs, selectedTabIndex]
   );
-
-  React.useEffect(() => {
-    const handler = (event) => {
-      if (sheets.length === 0) { return; }
-      if (event.code === 'KeyJ' && (event.metaKey || event.ctrlKey)) {
-        onDoubleClick(selectedTabIndex);
-        return false;
-      }
-
-      return true;
-    };
-    document.addEventListener('keydown', handler);
-
-    return () => {
-      document.removeEventListener('keydown', handler) ;
-    };
-  }, [onDoubleClick, selectedTabIndex, sheets]);
 
   React.useEffect(
     () => {
@@ -259,11 +220,21 @@ export default React.forwardRef<Ref, Props>(function SheetSection({
             />
           </div>
           {tabs.map((tab, index) => {
+            const icon = tab.sheet.isCsv ? (
+              <i className="fas fa-file-csv icon"></i>
+            ) : (
+              <i className="fas fa-caret-square-right icon"></i>
+            );
             return (
               <div
-                key={`sheet${index}`}
+                key={tab.sheet.name}
                 className={`tab ${selectedTabIndex === index ? 'selected' : ''}`}
-                onClick={(event) => handleClick(event, index)}
+                onClick={(event) => {
+                  setSelectedTabIndex(index);
+                }}
+                onDoubleClick={(event) => {
+                  onRenamingSheet(tab.sheet.name);
+                }}
                 draggable={true}
                 onDrag={(event) => {
                   setDraggedIndex(index);
@@ -287,27 +258,20 @@ export default React.forwardRef<Ref, Props>(function SheetSection({
                   rearrangedCallback(draggedIndex, index);
                 }}
               >
-                {tab.sheet.isCsv && (
-                  <i
-                    className="fas fa-file" title="Imported"
-                  />
-                )}
-                <span className={`${selectedTabIndex === index && blinkingSelectedTab ? 'blinking' : ''} ${editorSelectedSheetName === tab.sheet.name ? 'editor-selected' : ''}`}>{tab.sheet.name}</span>
-                {editorSelectedSheetName !== tab.sheet.name && (
-                  <i
-                    className="fas fa-times"
-                    onClick={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation(); // don't trigger selecting sheet.
+                {icon}
+                <span className={`${selectedTabIndex === index && blinkingSelectedTab ? 'blinking' : ''}`}>{tab.sheet.name}</span>
+                <i
+                  className="fas fa-times"
+                  onClick={(event) => {
+                    event.stopPropagation(); // don't trigger selecting sheet.
 
-                      const newTabs = tabs.filter((t, i) => index !== i);
-                      if (selectedTabIndex >= newTabs.length) {
-                        setSelectedTabIndex(Math.max(0, newTabs.length - 1));
-                      }
-                      setTabs(newTabs);
-                    }}
-                  />
-                )}
+                    const newTabs = tabs.filter((t, i) => index !== i);
+                    if (selectedTabIndex >= newTabs.length) {
+                      setSelectedTabIndex(Math.max(0, newTabs.length - 1));
+                    }
+                    setTabs(newTabs);
+                  }}
+                />
               </div>
             );
           })}

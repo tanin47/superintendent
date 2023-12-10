@@ -149,8 +149,6 @@ export const BIRDS = [
   "wren",
 ];
 
-shuffle(BIRDS)
-
 let birdRunner = 0;
 export function getRandomBird(): string {
   return BIRDS[birdRunner++ % BIRDS.length];

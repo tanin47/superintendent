@@ -16,10 +16,9 @@ import AddCsv, {Ref as AddCsvRef} from "./AddCsvModal";
 import {IpcRendererEvent} from 'electron/renderer';
 import {altOptionChar, ctrlCmdChar} from "./constants";
 import MaybeTippy from "./MaybeTippy";
-import Workflow, {Ref as WorkflowRef} from "./Workflow";
+import Project from "./Project";
+import ResizeBar from "./ResizeBar";
 import RenameDialog from "./RenameDialog";
-
-export type EditorOrWorkflow = 'editor' | 'workflow';
 
 const PresentationTypeLabel = {
   table: 'Table',
@@ -37,33 +36,26 @@ type SheetInfo = {
 export default function Workspace(): ReactElement {
   const [editorMode, setEditorMode] = React.useState<EditorMode>(getInitialEditorMode());
   const [sheets, setSheets] = React.useState<Array<Sheet>>([]);
-  const [renamingSheetName, setRenamingSheetName] = React.useState<string | null>(null);
-  const [showEditorOrWorkflow, setShowEditorOrWorkflow] = React.useState<EditorOrWorkflow>('editor');
   const [editorSelectedSheetName, setEditorSelectedSheetName] = React.useState<string | null>(null);
-  const [isZoomInEnabled, setIsZoomInEnabled] = React.useState<boolean>(true);
-  const [isZoomOutEnabled, setIsZoomOutEnabled] = React.useState<boolean>(true);
+  const [renamingSheetName, setRenamingSheetName] = React.useState<string | null>(null);
 
   const [shownSheetInfo, setShownSheetInfo] = React.useState<SheetInfo | null>(null);
   const [blinkingShownSheetCount, setBlinkingShownSheetCount] = React.useState<boolean>(false);
   const blinkingShownSheetCountTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   const [presentationType, setPresentationType] = React.useState<PresentationType>('table');
-
-  const workflowRef = React.useRef<WorkflowRef>(null);
   const sheetSectionRef = React.useRef<SheetSectionRef>(null);
 
   React.useEffect(() => {
     const callback = (event, workflow: ExportedWorkflow) => {
       setEditorSelectedSheetName(null);
-      setShowEditorOrWorkflow('workflow');
       setSheets((prevSheets) => {
         return [
           ...prevSheets,
           ...workflow.nodes.map((node) => ({
             name: node.name,
             isCsv: node.isCsv,
-            dependsOn: node.dependsOn,
-            position: node.position,
             sql: node.sql,
+            dependsOn: [],
             count: 0,
             columns: [],
             rows: [],
@@ -72,7 +64,8 @@ export default function Workspace(): ReactElement {
             scrollTop: null,
             resizedColumns: {},
             selection: null,
-            userSelect: null
+            userSelect: null,
+            editorState: null
           } as Sheet))
         ];
       });
@@ -94,22 +87,12 @@ export default function Workspace(): ReactElement {
     };
   }, [setEditorMode]);
 
-  const [shouldOpenAddCsv, setShouldOpenAddCsv] = React.useState<boolean>(false);
   const editorRef = React.useRef<EditorRef>(null);
 
-  const [isQueryLoading, setIsQueryLoading] = React.useState<boolean>(false);
   const [isDownloadCsvLoading, setIsDownloadCsvLoading] = React.useState<boolean>(false);
 
-  const [isResizing, setIsResizing] = React.useState<boolean>(false);
   const [editorHeight, setEditorHeight] = React.useState<number>(250);
-  const [mouseDownY, setMouseDownY] = React.useState<number>(0);
-  const [mouseDownEditorHeight, setMouseDownEditorHeight] = React.useState<number>(editorHeight);
-
-  const mouseDownHandler = (event: React.MouseEvent) => {
-    setMouseDownY(event.clientY);
-    setMouseDownEditorHeight(editorHeight);
-    setIsResizing(true);
-  };
+  const [projectWidth, setProjectWidth] = React.useState<number>(250);
 
   const addNewSheetCallback = React.useCallback(
     (newSheet: Sheet | null): void => {
@@ -162,30 +145,6 @@ export default function Workspace(): ReactElement {
     [sheets, editorSelectedSheetName]
   )
 
-  const runSql = React.useCallback(
-    () => {
-      if (isQueryLoading) { return; }
-      if (!editorRef.current) { return; }
-      const value = editorRef.current.getValue();
-
-      setIsQueryLoading(true);
-      query(
-        value,
-        editorSelectedSheetName ?? null
-      )
-        .then((sheet) => addNewSheetCallback(sheet))
-        .catch((err) => {
-          dialog.showError('Found an error!', err.message);
-        })
-        .finally(() => {
-          setIsQueryLoading(false);
-        });
-    },
-    [sheets, isQueryLoading, addNewSheetCallback, editorSelectedSheetName]
-  );
-
-  const formatSql = React.useCallback(() => {editorRef.current!.format();}, []);
-  const openAddCsvDialog = React.useCallback(() => {setShouldOpenAddCsv(true);}, [setShouldOpenAddCsv]);
   const exportCsv = React.useCallback(
     () => {
       setIsDownloadCsvLoading(true);
@@ -213,12 +172,6 @@ export default function Workspace(): ReactElement {
     },
     []
   );
-  const toggleEditorWorkflow = React.useCallback(
-    () => {
-      setShowEditorOrWorkflow(showEditorOrWorkflow === 'editor' ? 'workflow' : 'editor')
-    },
-    [showEditorOrWorkflow]
-  );
   const makeNewQuery = React.useCallback(
     () => {
       setEditorSelectedSheetName(null);
@@ -228,35 +181,14 @@ export default function Workspace(): ReactElement {
 
   React.useEffect(() => {
     const handler = (event) => {
-      if (showEditorOrWorkflow === 'editor') {
-        if (event.code === 'Enter' && (event.metaKey || event.ctrlKey)) {
-          runSql();
-          return false;
-        }
 
-        if (event.code === 'Enter' && event.altKey) {
-          formatSql();
-          return false;
-        }
-
-        if (event.code === 'KeyN' && (event.metaKey || event.ctrlKey)) {
-          makeNewQuery();
-          return false;
-        }
-      }
-
-      if (event.code === 'KeyP' && (event.metaKey || event.ctrlKey)) {
-        openAddCsvDialog();
+      if (event.code === 'KeyN' && (event.metaKey || event.ctrlKey)) {
+        makeNewQuery();
         return false;
       }
 
       if (event.code === 'KeyE' && (event.metaKey || event.ctrlKey)) {
         exportCsv();
-        return false;
-      }
-
-      if (event.code === 'KeyW' && (event.metaKey || event.ctrlKey)) {
-        toggleEditorWorkflow();
         return false;
       }
 
@@ -267,166 +199,38 @@ export default function Workspace(): ReactElement {
     return () => {
       document.removeEventListener('keydown', handler) ;
     };
-  }, [runSql, formatSql, openAddCsvDialog, exportCsv, toggleEditorWorkflow, makeNewQuery, showEditorOrWorkflow]);
+  }, [exportCsv, makeNewQuery]);
 
-  React.useEffect(() => {
-    const handler = (event) => {
-      if (!isResizing) { return; }
-
-      setEditorHeight(Math.min(window.innerHeight - 200, Math.max(event.clientY - mouseDownY + mouseDownEditorHeight, 50)));
-    };
-    document.addEventListener('mousemove', handler);
-
-    return () => {
-      document.removeEventListener('mousemove', handler) ;
-    };
-  }, [isResizing, mouseDownEditorHeight, mouseDownY]);
-
-  React.useEffect(() => {
-    const handler = (event) => {
-      if (!isResizing) {
-        return;
+  const ensureValidSize = React.useCallback(
+    () => {
+      if ((projectWidth + 300) > window.innerWidth) {
+        setProjectWidth(window.innerWidth - 300);
       }
-      setIsResizing(false);
-    };
-    document.addEventListener('mouseup', handler);
 
-    return () => {
-      document.removeEventListener('mouseup', handler);
-    }
-  }, [isResizing, setIsResizing]);
-
-  const addCsvRef = React.useRef<AddCsvRef>(null);
-  const addFiles = React.useCallback((files: string[]) => {
-    addCsvRef.current!.addFiles(files);
-    setShouldOpenAddCsv(true);
-  }, [addCsvRef]);
-  const fileDroppedCallback = React.useCallback((event) => {
-    if (!event.dataTransfer?.files) {
-      return;
-    }
-
-    if (event.dataTransfer.files.length === 0) {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-
-    addFiles(convertFileList(event.dataTransfer?.files));
-  }, [addFiles]);
-
-  const alreadyInitialized = React.useRef<boolean>(false);
-  React.useEffect(() => {
-    if (alreadyInitialized.current) { return; }
-    if (!addCsvRef.current) { return; }
-
-    const file = getInitialFile();
-
-    if (!file) { return; }
-
-    addFiles([file]);
-    alreadyInitialized.current = true;
-  }, [addFiles])
-
-  React.useEffect(() => {
-    const listener = (event: IpcRendererEvent, path: string) => {
-      addFiles([path]);
-    };
-    ipcRenderer.on('open-file', listener);
-    return () => {
-      ipcRenderer.removeListener('open-file', listener);
-    }
-  }, [addFiles])
+      if ((editorHeight + 200) > window.innerHeight) {
+        setEditorHeight(window.innerHeight - 200)
+      }
+    },
+    [editorHeight, projectWidth]
+  )
 
   React.useEffect(
     () => {
-      if (showEditorOrWorkflow === 'editor') {
-        if (editorRef.current) {
-          editorRef.current.focus();
-        }
-      }
+      window.addEventListener('resize', ensureValidSize);
+
+      return () => {
+        window.removeEventListener('resize', ensureValidSize);
+      };
     },
-    [showEditorOrWorkflow]
+    [ensureValidSize]
   )
 
-  let editorOrWorkflowToolbar: JSX.Element;
-
-  switch (showEditorOrWorkflow) {
-    case 'editor':
-      editorOrWorkflowToolbar = (
-        <>
-          <Button
-            onClick={() => {runSql();}}
-            isLoading={isQueryLoading}
-            icon={<i className="fas fa-play"/>}>
-            {editorSelectedSheetName !== null ? 'Update SQL' : 'Create SQL'}
-            <span className="short-key">
-                {ctrlCmdChar} ⏎
-              </span>
-          </Button>
-          <span className="separator" />
-          {editorSelectedSheetName !== null && (
-            <>
-              <Button
-                onClick={() => makeNewQuery()}
-                icon={<i className="fas fa-plus-square"/>}>
-                New SQL
-                <span className="short-key">
-                    {ctrlCmdChar} N
-                  </span>
-              </Button>
-              <span className="separator" />
-            </>
-          )}
-          <Button
-            onClick={() => {formatSql()}} icon={<i className="fas fa-align-justify" />}
-          >
-            Format
-            <span className="short-key">
-                {altOptionChar} ⏎
-              </span>
-          </Button>
-          <span className="separator" />
-          {editorSelectedSheetName === null ? (
-            <div className="info">You are making a new query</div>
-          ) : (
-            <div className="info">You are editing <span className="table">{editorSelectedSheetName}</span></div>
-          )}
-        </>
-      );
-      break;
-    case 'workflow':
-      editorOrWorkflowToolbar = (
-        <>
-          <Button
-            onClick={() => workflowRef.current!.zoomIn()}
-            icon={<i className="fas fa-search-plus"/>}
-            disabled={!isZoomInEnabled}
-          >
-            Zoom in
-          </Button>
-          <span className="separator" />
-          <Button
-            onClick={() => workflowRef.current!.zoomOut()}
-            icon={<i className="fas fa-search-minus"/>}
-            disabled={!isZoomOutEnabled}
-          >
-            Zoom out
-          </Button>
-          <span className="separator" />
-          <Button
-            onClick={() => workflowRef.current!.fitView()}
-            icon={<i className="fas fa-compress"/>}
-          >
-            Fit view
-          </Button>
-        </>
-      );
-      break;
-    default:
-      throw new Error()
-  }
+  const onEditorSheetResizing = React.useCallback(
+    (initial, dx, dy) => {
+      setEditorHeight(Math.min(window.innerHeight - 200, Math.max(dy + initial, 100)));
+    },
+    []
+  );
 
   return (
     <div
@@ -435,15 +239,7 @@ export default function Workspace(): ReactElement {
          e.stopPropagation();
          e.preventDefault();
        }}
-       onDrop={fileDroppedCallback}
     >
-      <AddCsv
-        ref={addCsvRef}
-        isOpen={shouldOpenAddCsv}
-        sheets={sheets}
-        onClose={() => setShouldOpenAddCsv(false)}
-        onAdded={(sheet) => addNewSheetCallback(sheet)}
-      />
       <RenameDialog
         renamingSheet={sheets.find((s) => s.name === renamingSheetName) ?? null}
         onUpdated={(newName) => {
@@ -460,113 +256,67 @@ export default function Workspace(): ReactElement {
                 return sheet;
               });
             });
-
           }
           setRenamingSheetName(null);
         }}
         onClosed={() => setRenamingSheetName(null)}
       />
-      <div className="toolbarSection top">
-        <div className="inner">
-          <div className="left">
-            <Button
-              onClick={() => {
-                openAddCsvDialog();
-              }}
-              icon={<i className="fas fa-file-upload"/>}>
-              Add files
-              <span className="short-key">
-                {ctrlCmdChar} P
-              </span>
-            </Button>
-            <span className="separator" />
-            <Button
-              onClick={() => toggleEditorWorkflow()}
-              icon={<i className={`fas ${showEditorOrWorkflow === 'editor' ? 'fa-th-large' : 'fa-edit'}`} />}>
-              {showEditorOrWorkflow === 'editor' ? 'Workflow' : 'Editor'}
-              <span className="short-key">
-                {ctrlCmdChar} W
-              </span>
-            </Button>
-          </div>
-          <div className="right">
-            <Button
-              onClick={() => {
-                shell.openExternal("https://docs.superintendent.app")
-              }}
-              icon={<i className="fas fa-question-circle"/>}
-            >
-              Docs
-            </Button>
-          </div>
+      <div id="editorSection" style={{height: editorHeight}}>
+        <div style={{position: 'absolute', left: 0, top: 0, bottom: 0, width: projectWidth}}>
+          <Project
+            sheets={sheets}
+            selectedSheetName={editorSelectedSheetName}
+            onSheetAdded={(sheet) => addNewSheetCallback(sheet)}
+            onAddingName={(sheet) => {
+              editorRef.current!.addText(sheet.name);
+              editorRef.current!.focus();
+            }}
+            onOpeningEditor={(sheet) => {
+              setEditorSelectedSheetName(sheet.name);
+            }}
+            onOpeningResult={(sheet) => {
+              sheetSectionRef.current!.open(sheet.name)
+            }}
+            onRenamingSheet={(name) => setRenamingSheetName(name)}
+            onDeletingSheet={(name) => deleteSheetCallback(name)}
+          />
+        </div>
+        <ResizeBar
+          currentSize={projectWidth}
+          onResizing={(initial, dx, dy) => {
+            setProjectWidth(Math.min(window.innerWidth - 300, Math.max(dx + initial, 150)));
+          }}
+        >
+          <div className="resize-bar" style={{left: projectWidth - 4}} />
+        </ResizeBar>
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          right: 0,
+          top: 0,
+          left: projectWidth,
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
+          <Editor
+            ref={editorRef}
+            mode={editorMode}
+            sheets={sheets}
+            selectedSheetName={editorSelectedSheetName}
+            onMakingNewQuery={() => makeNewQuery()}
+            onSheetAdded={(sheet) => addNewSheetCallback(sheet)}
+          />
         </div>
       </div>
-      <div id="editorSection" style={{height: editorHeight}}>
-        <Workflow
-          ref={workflowRef}
-          visible={showEditorOrWorkflow === 'workflow'}
-          sheets={sheets}
-          onSheetClicked={(sheetId) => {
-            const index = sheets.findIndex((s) => s.name === sheetId);
-            const sheet = sheets[index];
-            if (sheet.isCsv) {
-              editorRef.current!.setValue(sheet.sql);
-              setEditorSelectedSheetName(null);
-            } else {
-              setEditorSelectedSheetName(sheet.name);
-            }
-            setShowEditorOrWorkflow('editor');
-            sheetSectionRef.current!.open(sheetId);
-          }}
-          onSheetTabOpened={(sheetId) => sheetSectionRef.current!.open(sheetId)}
-          onSheetRenamed={(name) => setRenamingSheetName(name)}
-          onSheetDeleted={(name) => deleteSheetCallback(name)}
-          onZoomInEnabled={(enabled) => setIsZoomInEnabled(enabled)}
-          onZoomOutEnabled={(enabled) => setIsZoomOutEnabled(enabled)}
-          editorSelectedSheetName={editorSelectedSheetName}
-        />
-        <Editor
-          ref={editorRef}
-          mode={editorMode}
-          sheets={sheets}
-          selectedSheetName={editorSelectedSheetName}
-          visible={showEditorOrWorkflow === 'editor'}
-        />
-      </div>
       <div className="toolbarSection">
-        <div
-          className="resize-bar"
-          onMouseDown={mouseDownHandler}
-        />
+        <ResizeBar
+          currentSize={editorHeight}
+          onResizing={onEditorSheetResizing}
+        >
+          <div className="resize-bar" />
+        </ResizeBar>
         <div className="inner" unselectable="on">
           <div className="left">
-            {editorOrWorkflowToolbar}
-          </div>
-          <div className="right">
-            {shownSheetInfo && (
-              <>
-                <span className={`total ${blinkingShownSheetCount ? 'blinking' : ''}`}>
-                  {formatTotal(shownSheetInfo.totalRowCount)}
-                  {shownSheetInfo.showCount < shownSheetInfo.totalRowCount &&
-                    <>
-                      <span className="preview">(Only {shownSheetInfo.showCount.toLocaleString('en-US')} are shown)</span>
-                      <Tippy
-                        theme="material"
-                        interactive
-                        content={
-                          <span className="tooltip">
-                          Please export the sheet to see all the rows.
-                        </span>
-                        }
-                      >
-                        <i className="fas fa-info-circle" />
-                      </Tippy>
-                    </>
-                  }
-                </span>
-                <span className="separator" />
-              </>
-            )}
             <div className="selector">
               <MaybeTippy
                 theme="material"
@@ -595,7 +345,32 @@ export default function Workspace(): ReactElement {
                 </div>
               </MaybeTippy>
             </div>
-            <span className="separator" />
+            {shownSheetInfo && (
+              <>
+                <span className="separator" />
+                <span className={`total ${blinkingShownSheetCount ? 'blinking' : ''}`}>
+                  {formatTotal(shownSheetInfo.totalRowCount)}
+                  {shownSheetInfo.showCount < shownSheetInfo.totalRowCount &&
+                    <>
+                      <span className="preview">(Only {shownSheetInfo.showCount.toLocaleString('en-US')} are shown)</span>
+                      <Tippy
+                        theme="material"
+                        interactive
+                        content={
+                          <span className="tooltip">
+                          Please export the sheet to see all the rows.
+                        </span>
+                        }
+                      >
+                        <i className="fas fa-info-circle" />
+                      </Tippy>
+                    </>
+                  }
+                </span>
+              </>
+            )}
+          </div>
+          <div className="right">
             <Button
               onClick={() => exportCsv()}
               isLoading={isDownloadCsvLoading}
@@ -609,51 +384,52 @@ export default function Workspace(): ReactElement {
             </Button>
           </div>
         </div>
-        <div
-          className="resize-bar"
-          onMouseDown={mouseDownHandler}
-        />
+        <ResizeBar
+          currentSize={editorHeight}
+          onResizing={onEditorSheetResizing}
+        >
+          <div className="resize-bar" />
+        </ResizeBar>
       </div>
-        <SheetSection
-          ref={sheetSectionRef}
-          sheets={sheets}
-          editorSelectedSheetName={editorSelectedSheetName}
-          onSheetRenamed={(name) => setRenamingSheetName(name)}
-          presentationType={presentationType}
-          onSelectedSheetUpdated={(newSheet) => {
-            let info: SheetInfo | null = null
+      <SheetSection
+        ref={sheetSectionRef}
+        sheets={sheets}
+        presentationType={presentationType}
+        onSelectedSheetUpdated={(newSheet) => {
+          let info: SheetInfo | null = null
 
-            if (newSheet) {
-              info = {
-                name: newSheet.name,
-                showCount: newSheet.rows.length,
-                totalRowCount: newSheet.count
-              };
-            }
+          if (newSheet) {
+            info = {
+              name: newSheet.name,
+              showCount: newSheet.rows.length,
+              totalRowCount: newSheet.count
+            };
+          }
 
-            if (!isChartEnabled(info?.showCount)) {
-              setPresentationType('table');
-            }
+          if (!isChartEnabled(info?.showCount)) {
+            setPresentationType('table');
+          }
 
-            setShownSheetInfo((prev) => {
-              if (!!prev && !!info && prev.name === info.name && prev.showCount < info.showCount) {
-                if (blinkingShownSheetCountTimeoutRef.current) {
-                  clearInterval(blinkingShownSheetCountTimeoutRef.current);
-                }
-
-                setBlinkingShownSheetCount(true);
-                blinkingShownSheetCountTimeoutRef.current = setTimeout(
-                  () => {
-                    setBlinkingShownSheetCount(false)
-                  },
-                  1500
-                );
+          setShownSheetInfo((prev) => {
+            if (!!prev && !!info && prev.name === info.name && prev.showCount < info.showCount) {
+              if (blinkingShownSheetCountTimeoutRef.current) {
+                clearInterval(blinkingShownSheetCountTimeoutRef.current);
               }
 
-              return info;
-            });
-          }}
-        />
+              setBlinkingShownSheetCount(true);
+              blinkingShownSheetCountTimeoutRef.current = setTimeout(
+                () => {
+                  setBlinkingShownSheetCount(false)
+                },
+                1500
+              );
+            }
+
+            return info;
+          });
+        }}
+        onRenamingSheet={(name) => setRenamingSheetName(name)}
+      />
     </div>
   );
 }

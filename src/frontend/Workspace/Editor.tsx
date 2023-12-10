@@ -13,11 +13,16 @@ import './Editor.scss';
 import {EditorMode} from '../../types';
 import {Sheet} from './types';
 import {format} from "sql-formatter";
+import Button from "./Button";
+import {altOptionChar, ctrlCmdChar} from "./constants";
+import {shell} from "electron";
+import {query} from "../api";
+import * as dialog from "./dialog";
 
 export interface Ref {
   getValue(): string;
   setValue(newValue: string): void;
-  format(): void;
+  addText(text: string): void;
   focus(): void;
 }
 
@@ -26,7 +31,8 @@ type Props = {
   mode: EditorMode,
   sheets: Array<Sheet>,
   selectedSheetName: string | null,
-  visible: boolean
+  onSheetAdded: (sheet: Sheet) => void,
+  onMakingNewQuery: () => void
 };
 
 function getAutocompleteWord(s: string): string {
@@ -42,11 +48,14 @@ export default React.forwardRef<Ref, Props>(function Editor({
   mode,
   sheets,
   selectedSheetName,
-  visible
+  onSheetAdded,
+  onMakingNewQuery,
 }: Props, ref): JSX.Element {
-  // return (<div style={{ height: '100%', width: '100%', zIndex: visible ? 0 : -100, position: 'absolute', backgroundColor: '#fff'}} />);
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const codeMirrorInstance = React.useRef<any>(null);
+  const [isQueryLoading, setIsQueryLoading] = React.useState<boolean>(false);
+  const [shownSheet, setShownSheet] = React.useState<Sheet | null>(null);
+  const [shouldShowDraftNotice, setShouldShowDraftNotice] = React.useState<boolean>(false);
 
   React.useEffect(
     () => {
@@ -54,27 +63,42 @@ export default React.forwardRef<Ref, Props>(function Editor({
 
       const sheet = sheets.find((s) => s.name === selectedSheetName);
 
-      if (!sheet) { return; }
+      if (!sheet || shownSheet?.name === sheet.name) { return; }
+
+      codeMirrorInstance.current!.save();
 
       const cursor = codeMirrorInstance.current!.getCursor();
       const selections = codeMirrorInstance.current!.listSelections();
 
-      codeMirrorInstance.current!.setValue(sheet.sql);
+      if (shownSheet) {
+        shownSheet.editorState = {
+          cursor,
+          selections,
+          draft: textareaRef.current!.value.trim(),
+        };
+      }
 
-      codeMirrorInstance.current!.setCursor(cursor);
-      codeMirrorInstance.current!.setSelections(selections);
+      if (sheet?.editorState?.draft && sheet?.editorState?.draft !== sheet.sql) {
+        codeMirrorInstance.current!.setValue(sheet?.editorState?.draft);
+        setShouldShowDraftNotice(true);
+      } else {
+        codeMirrorInstance.current!.setValue(sheet.sql);
+        setShouldShowDraftNotice(false);
+      }
+
+      if (sheet.editorState?.cursor && sheet.editorState?.selections) {
+        codeMirrorInstance.current!.setCursor(sheet.editorState.cursor);
+        codeMirrorInstance.current!.setSelections(sheet.editorState.selections);
+      } else {
+        codeMirrorInstance.current!.setCursor(cursor);
+        codeMirrorInstance.current!.setSelections(selections);
+      }
+
+      codeMirrorInstance.current!.focus();
+      setShownSheet(sheet);
     },
     [sheets, selectedSheetName]
   );
-
-  React.useEffect(
-    () => {
-      if (visible && codeMirrorInstance.current) {
-        codeMirrorInstance.current.focus();
-      }
-    },
-    [visible]
-  )
 
   React.useImperativeHandle(ref, () => ({
     getValue: () => {
@@ -84,7 +108,16 @@ export default React.forwardRef<Ref, Props>(function Editor({
     setValue: (newValue: string) => {
       codeMirrorInstance.current!.setValue(newValue);
     },
-    format: () => {
+    addText: (text: string) => {
+      codeMirrorInstance.current!.replaceSelection(text);
+    },
+    focus: () => {
+      codeMirrorInstance.current!.focus();
+    }
+  }));
+
+  const formatSql = React.useCallback(
+    () => {
       codeMirrorInstance.current!.setValue(
         format(
           codeMirrorInstance.current!.getValue(),
@@ -97,10 +130,44 @@ export default React.forwardRef<Ref, Props>(function Editor({
         )
       );
     },
-    focus: () => {
+    [codeMirrorInstance]
+  );
+
+  const revertSql = React.useCallback(
+    () => {
+      if (!shownSheet) { return; }
+      codeMirrorInstance.current!.setValue(shownSheet.sql);
+      shownSheet.editorState = {};
+      setShouldShowDraftNotice(false);
       codeMirrorInstance.current!.focus();
-    }
-  }));
+    },
+    [shownSheet]
+  );
+
+  const runSql = React.useCallback(
+    () => {
+      if (isQueryLoading) { return; }
+      codeMirrorInstance.current!.save();
+      const value = textareaRef.current!.value;
+
+      setIsQueryLoading(true);
+      query(
+        value,
+        selectedSheetName ?? null
+      )
+        .then((sheet) => {
+          onSheetAdded(sheet);
+          setShouldShowDraftNotice(false);
+        })
+        .catch((err) => {
+          dialog.showError('Found an error!', err.message);
+        })
+        .finally(() => {
+          setIsQueryLoading(false);
+        });
+    },
+    [sheets, isQueryLoading, onSheetAdded, selectedSheetName]
+  );
 
   React.useEffect(() => {
     codeMirrorInstance.current = CodeMirror.fromTextArea(
@@ -186,20 +253,103 @@ export default React.forwardRef<Ref, Props>(function Editor({
     });
   }, [sheets])
 
+  React.useEffect(
+    () => {
+      const handler = (event) => {
+        if (event.code === 'Enter' && (event.metaKey || event.ctrlKey)) {
+          runSql();
+          return false;
+        }
+
+        if (event.code === 'Enter' && event.altKey) {
+          formatSql();
+          return false;
+        }
+
+        return true;
+      };
+      document.addEventListener('keydown', handler);
+
+      return () => {
+        document.removeEventListener('keydown', handler) ;
+      };
+    },
+    [runSql, formatSql]
+  );
+
   return (
-    <div
-      style={{
-        height: '100%',
-        width: '100%',
-        // We have to use visibility and cannot use zIndex. This would cause an odd issue when dragging a node in Reactflow.
-        // It'd start dragging multiple nodes.
-        // There's something about hiding CodeMirror with zIndex. It continues to consume certain events.
-        visibility: visible ? 'visible' : 'hidden',
-        position: 'absolute',
-        backgroundColor: '#fff'
-      }}
-    >
-      <textarea ref={textareaRef} placeholder="Compose a beautiful SQL..." />
-    </div>
+    <>
+      <div className="toolbarSection top" style={{borderLeft: '1px solid #666'}}>
+        <div className="inner">
+          <div className="left">
+            <Button
+              onClick={() => {runSql();}}
+              isLoading={isQueryLoading}
+              icon={<i className="fas fa-play"/>}
+            >
+              {selectedSheetName !== null ? 'Update SQL' : 'Create SQL'}
+              <span className="short-key">
+                {ctrlCmdChar} ⏎
+              </span>
+            </Button>
+            <span className="separator" />
+            {selectedSheetName !== null && (
+              <>
+                <Button
+                  onClick={() => onMakingNewQuery()}
+                  icon={<i className="fas fa-plus-square"/>}>
+                  New SQL
+                  <span className="short-key">
+                    {ctrlCmdChar} N
+                  </span>
+                </Button>
+                <span className="separator" />
+              </>
+            )}
+            <Button
+              onClick={() => {formatSql()}}
+              icon={<i className="fas fa-align-justify" />}
+            >
+              Format
+              <span className="short-key">
+                {altOptionChar} ⏎
+              </span>
+            </Button>
+          </div>
+          <div className="right">
+            <Button
+              onClick={() => {
+                shell.openExternal("https://docs.superintendent.app")
+              }}
+              icon={<i className="fas fa-question-circle"/>}
+            >
+              Docs
+            </Button>
+          </div>
+        </div>
+      </div>
+      {shouldShowDraftNotice && (
+        <div className="draft-notice">
+          This is a draft. Click <a href="#" onClick={() => revertSql()}>here</a> to revert to the original SQL.
+        </div>
+      )}
+      <div
+        style={{
+          position: 'relative',
+          flexGrow: 1000,
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            width: '100%',
+            height: '100%',
+            backgroundColor: '#fff'
+          }}
+        >
+          <textarea ref={textareaRef} placeholder="Compose a beautiful SQL..." />
+        </div>
+      </div>
+    </>
   );
 });

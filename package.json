@@ -1,6 +1,6 @@
 {
   "name": "superintendent",
-  "version": "4.0.0-rc5",
+  "version": "4.0.0-rc6",
   "description": "Write SQLs on CSVs",
   "license": "UNLICENSED",
   "main": "dist/prod/main.js",
@@ -127,7 +127,6 @@
     "react-virtualized-auto-sizer": "^1.0.5",
     "react-window": "tanin47/react-window#4bed2c46bc9342a527a40c1495d9037e0def4fd7",
     "react-window-infinite-loader": "^1.0.7",
-    "reactflow": "11.4.0",
     "sql-formatter": "^4.0.2",
     "sweetalert2": "^11.0.18",
     "threads": "^1.6.5",

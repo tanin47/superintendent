@@ -3,16 +3,13 @@ import Store from 'electron-store';
 import {Datastore} from "./data-store/Datastore";
 import {Workerize} from "./data-store/Workerize";
 import {
-  EditorMode,
-  EditorModeChannel, ExportDelimiter, ExportDelimiters,
-  ExportedWorkflow,
-  ExportWorkflowChannel,
-  Format,
-  ImportWorkflowChannel
+  EditorMode, EditorModeChannel,
+  ExportDelimiter,
+  ExportDelimiters, ExportedWorkflow, ExportWorkflowChannel,
+  Format, ImportWorkflowChannel,
 } from "./types";
-import {getRandomBird} from "./data-store/Birds";
 import fs from "fs";
-import path from "path";
+import {getRandomBird} from "./data-store/Birds";
 
 const ExportDelimiterLabels = {
   comma: 'Comma (,)',
@@ -348,7 +345,18 @@ export default class Main {
   }
 
   private static async makeWorkspace(): Promise<Workspace> {
-    let window = new BrowserWindow({ width: 1280, height: 800, webPreferences: {nodeIntegration: true, nodeIntegrationInWorker: true, contextIsolation: false, sandbox: false}});
+    let window = new BrowserWindow({
+      width: 1280,
+      minWidth: 800,
+      height: 800,
+      minHeight: 600,
+      webPreferences: {
+        nodeIntegration: true,
+        nodeIntegrationInWorker: true,
+        contextIsolation: false,
+        sandbox: false
+      }
+    });
     let space = {
       window,
       db: await Workerize.create(),
@@ -416,6 +424,10 @@ export default class Main {
       );
     });
 
+    ipcMain.handle('export-workflow', async (event, workflow) => {
+      return Main.wrapResponse(Main.exportWorkflow(Main.getSpace(event), workflow));
+    });
+
     ipcMain.handle('load-more', async (event, table, offset) => {
       return Main.wrapResponse(Main.getSpace(event).db.loadMore(table, offset));
     });
@@ -426,10 +438,6 @@ export default class Main {
 
     ipcMain.handle('rename', async (event, previousTableName, newTableName) => {
       return Main.wrapResponse(Main.getSpace(event).db.rename(previousTableName, newTableName));
-    });
-
-    ipcMain.handle('export-workflow', async (event, workflow) => {
-      return Main.wrapResponse(Main.exportWorkflow(Main.getSpace(event), workflow));
     });
 
     ipcMain.handle('add-csv', async (event, path, withHeader: boolean, format: Format, replace: string) => {

@@ -13,12 +13,17 @@ export type UserSelectTarget = {
   colIndex: number,
 };
 
+export type SheetEditorState = {
+  draft?: string | null,
+  cursor?: any | null,
+  selections?: any | null,
+};
+
 export type Sheet = {
   name: string,
   previousName?: string | null,
   isCsv: boolean,
   dependsOn: string[],
-  position?: XYPosition | null,
   sql: string,
   count: number,
   columns: Column[],
@@ -29,6 +34,7 @@ export type Sheet = {
   resizedColumns: {[col:number]: number},
   selection: Selection | null,
   userSelect: UserSelectTarget | null,
+  editorState: SheetEditorState | null,
 };
 
 export type Selection = {
