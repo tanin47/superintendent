@@ -14,5 +14,6 @@ out
 *.obj
 *.so
 yarn.lock
+yarn-error.log
 
 out/
