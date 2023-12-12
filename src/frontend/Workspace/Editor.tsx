@@ -15,7 +15,6 @@ import {Sheet} from './types';
 import {format} from "sql-formatter";
 import Button from "./Button";
 import {altOptionChar, ctrlCmdChar} from "./constants";
-import {shell} from "electron";
 import {query} from "../api";
 import * as dialog from "./dialog";
 
@@ -289,7 +288,7 @@ export default React.forwardRef<Ref, Props>(function Editor({
             >
               {selectedSheetName !== null ? 'Update SQL' : 'Create SQL'}
               <span className="short-key">
-                {ctrlCmdChar} ⏎
+                {ctrlCmdChar()} ⏎
               </span>
             </Button>
             <span className="separator" />
@@ -300,7 +299,7 @@ export default React.forwardRef<Ref, Props>(function Editor({
                   icon={<i className="fas fa-plus-square"/>}>
                   New SQL
                   <span className="short-key">
-                    {ctrlCmdChar} N
+                    {ctrlCmdChar()} N
                   </span>
                 </Button>
                 <span className="separator" />
@@ -312,14 +311,14 @@ export default React.forwardRef<Ref, Props>(function Editor({
             >
               Format
               <span className="short-key">
-                {altOptionChar} ⏎
+                {altOptionChar()} ⏎
               </span>
             </Button>
           </div>
           <div className="right">
             <Button
               onClick={() => {
-                shell.openExternal("https://docs.superintendent.app")
+                window.shell.openExternal("https://docs.superintendent.app")
               }}
               icon={<i className="fas fa-question-circle"/>}
             >

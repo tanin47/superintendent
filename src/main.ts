@@ -1,4 +1,4 @@
-import {BrowserWindow, dialog, ipcMain, Menu, clipboard} from 'electron';
+import {BrowserWindow, dialog, ipcMain, Menu, clipboard, shell, app} from 'electron';
 import Store from 'electron-store';
 import {Datastore} from "./data-store/Datastore";
 import {Workerize} from "./data-store/Workerize";
@@ -10,6 +10,7 @@ import {
 } from "./types";
 import fs from "fs";
 import {getRandomBird} from "./data-store/Birds";
+import path from "path";
 
 const ExportDelimiterLabels = {
   comma: 'Comma (,)',
@@ -306,6 +307,7 @@ export default class Main {
         label: 'View',
         submenu: [
           ...(process.env.SUPERINTENDENT_IS_PROD ? [] : devViewSubmenu),
+          ...devViewSubmenu,
           { role: 'resetZoom' },
           { role: 'zoomIn' },
           { role: 'zoomOut' },
@@ -331,7 +333,6 @@ export default class Main {
           {
             label: 'Learn More',
             click: async () => {
-              const { shell } = require('electron')
               await shell.openExternal('https://docs.superintendent.app/')
             }
           }
@@ -351,12 +352,11 @@ export default class Main {
       height: 800,
       minHeight: 600,
       webPreferences: {
-        nodeIntegration: true,
-        nodeIntegrationInWorker: true,
-        contextIsolation: false,
-        sandbox: false
+        sandbox: false,
+        preload: path.resolve(process.env.SUPERINTENDENT_IS_PROD ? path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'prod') : path.join('dist', 'dev'), 'preload.js'),
       }
     });
+
     let space = {
       window,
       db: await Workerize.create(),
@@ -364,7 +364,7 @@ export default class Main {
     Main.spaces.set(space.window.webContents.id, space);
 
     space.window.on('close',(e) => {
-      const choice = require('electron').dialog.showMessageBoxSync(
+      const choice = dialog.showMessageBoxSync(
         space.window,
         {
           type: 'question',

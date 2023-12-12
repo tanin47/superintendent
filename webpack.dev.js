@@ -3,39 +3,23 @@ const {merge} = require('webpack-merge');
 const {DefinePlugin} = require('webpack');
 
 const definePlugin = new DefinePlugin({
-  'process.env.SUPERINTENDENT_SERVER_BASE_URL': JSON.stringify('http://localhost:9000'),
   'process.env.SUPERINTENDENT_IS_PROD': JSON.stringify(false)
 })
 
+const conf = {
+  mode: 'development',
+  devtool: 'inline-source-map',
+  output: {
+    path: __dirname + '/dist/dev',
+  },
+  plugins: [
+    definePlugin
+  ],
+};
+
 module.exports = [
-  merge(common.electronWorkerConfiguration, {
-    mode: 'development',
-    devtool: 'inline-source-map',
-    output: {
-      path: __dirname + '/dist/dev',
-    },
-    plugins: [
-      definePlugin
-    ],
-  }),
-  merge(common.electronConfiguration, {
-    mode: 'development',
-    devtool: 'inline-source-map',
-    output: {
-      path: __dirname + '/dist/dev',
-    },
-    plugins: [
-      definePlugin
-    ],
-  }),
-  merge(common.reactConfiguration, {
-    mode: 'development',
-    devtool: 'inline-source-map',
-    output: {
-      path: __dirname + '/dist/dev',
-    },
-    plugins: [
-      definePlugin
-    ],
-  }),
-];
+  common.electronPreload,
+  common.electronWorkerConfiguration,
+  common.electronConfiguration,
+  common.reactConfiguration,
+].map((mod) => merge(mod, conf));

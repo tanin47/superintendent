@@ -1,6 +1,6 @@
 import React, {ReactElement} from 'react';
 import './index.scss';
-import {convertFileList, downloadCsv, drop, getInitialEditorMode, getInitialFile, query} from '../api';
+import {downloadCsv, drop, getInitialEditorMode} from '../api';
 import {EditorMode, EditorModeChannel, ExportedWorkflow, ImportWorkflowChannel} from '../../types';
 import {PresentationType, PresentationTypes, Sheet} from './types';
 import SheetSection, {Ref as SheetSectionRef} from './SheetSection';
@@ -11,10 +11,7 @@ import {formatTotal, isChartEnabled} from "./helper";
 import Tippy from '@tippyjs/react';
 import 'tippy.js/dist/tippy.css';
 import 'tippy.js/themes/material.css';
-import {ipcRenderer, shell} from "electron";
-import AddCsv, {Ref as AddCsvRef} from "./AddCsvModal";
-import {IpcRendererEvent} from 'electron/renderer';
-import {altOptionChar, ctrlCmdChar} from "./constants";
+import {ctrlCmdChar} from "./constants";
 import MaybeTippy from "./MaybeTippy";
 import Project from "./Project";
 import ResizeBar from "./ResizeBar";
@@ -70,20 +67,20 @@ export default function Workspace(): ReactElement {
         ];
       });
     };
-    ipcRenderer.on(ImportWorkflowChannel, callback);
+    window.ipcRenderer.on(ImportWorkflowChannel, callback);
     (window as any).importWorkflowHookIsLoaded = true;
 
     return () => {
-      ipcRenderer.removeListener(ImportWorkflowChannel, callback) ;
+      window.ipcRenderer.removeListener(ImportWorkflowChannel, callback) ;
     };
   }, []);
 
   React.useEffect(() => {
     const callback = (event, mode: any) => { setEditorMode(mode as EditorMode); };
-    ipcRenderer.on(EditorModeChannel, callback);
+    window.ipcRenderer.on(EditorModeChannel, callback);
 
     return () => {
-      ipcRenderer.removeListener(EditorModeChannel, callback) ;
+      window.ipcRenderer.removeListener(EditorModeChannel, callback) ;
     };
   }, [setEditorMode]);
 
@@ -379,7 +376,7 @@ export default function Workspace(): ReactElement {
             >
               Export sheet
               <span className="short-key">
-                {ctrlCmdChar} E
+                {ctrlCmdChar()} E
               </span>
             </Button>
           </div>

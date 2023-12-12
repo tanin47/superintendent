@@ -4,8 +4,6 @@ import Button from "./Button";
 import {ctrlCmdChar} from "./constants";
 import AddCsv, {Ref as AddCsvRef} from "./AddCsvModal";
 import {convertFileList, exportWorkflow, getInitialFile} from "../api";
-import {IpcRendererEvent} from "electron/renderer";
-import {ipcRenderer} from "electron";
 import {Sheet} from "./types";
 import RenameDialog from "./RenameDialog";
 import {ExportedWorkflow, ExportWorkflowChannel} from "../../types";
@@ -58,10 +56,10 @@ export default function Project({
 
       await exportWorkflow(workflow);
     };
-    ipcRenderer.on(ExportWorkflowChannel, callback);
+    window.ipcRenderer.on(ExportWorkflowChannel, callback);
 
     return () => {
-      ipcRenderer.removeListener(ExportWorkflowChannel, callback) ;
+      window.ipcRenderer.removeListener(ExportWorkflowChannel, callback) ;
     };
   }, [sheets]);
 
@@ -128,12 +126,12 @@ export default function Project({
 
   React.useEffect(
     () => {
-      const listener = (event: IpcRendererEvent, path: string) => {
+      const listener = (event: any, path: string) => {
         addFiles([path]);
       };
-      ipcRenderer.on('open-file', listener);
+      window.ipcRenderer.on('open-file', listener);
       return () => {
-        ipcRenderer.removeListener('open-file', listener);
+        window.ipcRenderer.removeListener('open-file', listener);
       }
     },
     [addFiles]
@@ -158,7 +156,7 @@ export default function Project({
             icon={<i className="fas fa-file-upload"/>}>
             Add files
             <span className="short-key">
-              {ctrlCmdChar} P
+              {ctrlCmdChar()} P
             </span>
           </Button>
         </div>

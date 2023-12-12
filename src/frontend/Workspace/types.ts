@@ -1,4 +1,3 @@
-import {XYPosition} from "@reactflow/core/dist/esm/types";
 
 export const PresentationTypes = ['table', 'line', 'pie', 'bar'] as const;
 export type PresentationType = typeof PresentationTypes[number];

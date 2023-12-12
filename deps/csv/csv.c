@@ -39,7 +39,7 @@
 ** Some extra debugging features (used for testing virtual tables) are available
 ** if this module is compiled with -DSQLITE_TEST.
 */
-#include <sqlite3ext.h>
+#include "sqlite3ext.h"
 #define SQLITE_VTAB_DIRECTONLY         3
 SQLITE_EXTENSION_INIT1
 #include <string.h>
@@ -126,7 +126,7 @@ static int csv_reader_open(
   const char *zData           /*  ... or use this data */
 ){
   if( zFilename ){
-    p->zIn = sqlite3_malloc( CSV_INBUFSZ );
+    p->zIn = (char *) sqlite3_malloc( CSV_INBUFSZ );
     if( p->zIn==0 ){
       csv_errmsg(p, "out of memory");
       return 1;
@@ -176,7 +176,7 @@ static int csv_getc(CsvReader *p){
 static CSV_NOINLINE int csv_resize_and_append(CsvReader *p, char c){
   char *zNew;
   int nNew = p->nAlloc*2 + 100;
-  zNew = sqlite3_realloc64(p->z, nNew);
+  zNew = (char *) sqlite3_realloc64(p->z, nNew);
   if( zNew ){
     p->z = zNew;
     p->nAlloc = nNew;
@@ -558,7 +558,7 @@ static int csvtabConnect(
   ){
     goto csvtab_connect_error;
   }
-  pNew = sqlite3_malloc( sizeof(*pNew) );
+  pNew = (CsvTable *) sqlite3_malloc( sizeof(*pNew) );
   *ppVtab = (sqlite3_vtab*)pNew;
   if( pNew==0 ) goto csvtab_connect_oom;
 
@@ -669,7 +669,7 @@ static int csvtabOpen(sqlite3_vtab *p, sqlite3_vtab_cursor **ppCursor){
   CsvCursor *pCur;
   size_t nByte;
   nByte = sizeof(*pCur) + (sizeof(char*)+sizeof(int))*pTab->nCol;
-  pCur = sqlite3_malloc64( nByte );
+  pCur = (CsvCursor *) sqlite3_malloc64( nByte );
   if( pCur==0 ) return SQLITE_NOMEM;
   memset(pCur, 0, nByte);
   pCur->azVal = (char**)&pCur[1];
@@ -699,7 +699,7 @@ static int csvtabNext(sqlite3_vtab_cursor *cur){
     }
     if( i<pTab->nCol ){
       if( pCur->aLen[i] < pCur->rdr.n+1 ){
-        char *zNew = sqlite3_realloc64(pCur->azVal[i], pCur->rdr.n+1);
+        char *zNew = (char *) sqlite3_realloc64(pCur->azVal[i], pCur->rdr.n+1);
         if( zNew==0 ){
           csv_errmsg(&pCur->rdr, "out of memory");
           csv_xfer_error(pTab, &pCur->rdr);

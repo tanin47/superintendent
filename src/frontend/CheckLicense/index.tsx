@@ -1,6 +1,5 @@
 import React, {ReactElement} from 'react';
 import './index.scss';
-import Store from 'electron-store';
 import {checkIfLicenseIsValid} from "../api";
 import CheckLicenseForm from "./Form";
 
@@ -8,12 +7,11 @@ type Result = 'loading' | 'failed'
 
 export default function CheckLicense({onFinished}: {onFinished: () => void}): ReactElement {
   const [result, setResult] = React.useState<Result>('loading');
-  const store = React.useMemo(() => new Store(), []);
 
   React.useEffect(() => {
     setTimeout(
       () => {
-        const licenseKey = store.get('license-key') as string | null | undefined;
+        const licenseKey = window.Store.get('license-key');
 
         if (!licenseKey) {
           setResult('failed');

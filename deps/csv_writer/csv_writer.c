@@ -1,4 +1,4 @@
-#include <sqlite3ext.h>
+#include "sqlite3ext.h"
 #define SQLITE_VTAB_DIRECTONLY         3
 SQLITE_EXTENSION_INIT1
 #include <string.h>

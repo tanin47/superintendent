@@ -6,9 +6,7 @@
   "main": "dist/prod/main.js",
   "scripts": {
     "build:watch": "webpack --watch --config webpack.dev.js",
-    "build": "webpack --config webpack.dev.js",
     "start": "electron dist/dev/main.js",
-    "pack": "yarn run build:prod && electron-builder --mac --linux --win",
     "test": "jest --useStderr",
     "wdio": "wdio run ./wdio.conf.ts"
   },
@@ -75,10 +73,9 @@
       "./deps/ext/ext.so"
     ],
     "asarUnpack": [
-      "dist/prod/worker.js",
+      "dist/prod",
       "node_modules"
-    ],
-    "afterSign": "scripts/notarize.js"
+    ]
   },
   "author": "Tanin Na Nakorn",
   "devDependencies": {
@@ -86,7 +83,7 @@
     "@types/chart.js": "^2.9.32",
     "@types/codemirror": "^5.60.0",
     "@types/electron": "^1.6.10",
-    "@types/jest": "^26.0.23",
+    "@types/jest": "^29.5.11",
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0",
     "@wdio/cli": "^8.26.0",
@@ -97,7 +94,6 @@
     "electron": "^19.0.7",
     "electron-builder": "23.0.3",
     "electron-notarize": "1.2.1",
-    "electron-rebuild": "3.2.7",
     "file-loader": "^6.2.0",
     "gulp": "^4.0.2",
     "html-webpack-plugin": "^4.5.0",

@@ -1,6 +1,25 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ThreadsPlugin = require('threads-plugin');
 
+const electronPreload = {
+  entry: './src/preload.ts',
+  target: 'electron-preload',
+  resolve: {
+    extensions: ['.ts', '.js'],
+  },
+  module: {
+    rules: [
+      {
+        test: /\.ts$/,
+        use: [{loader: 'ts-loader'}]
+      },
+    ]
+  },
+  output: {
+    filename: 'preload.js',
+  },
+};
+
 const electronWorkerConfiguration = {
   entry: './src/data-store/worker.ts',
   target: 'node',
@@ -58,7 +77,7 @@ const electronConfiguration = {
 
 const reactConfiguration = {
   entry: './src/frontend/renderer.tsx',
-  target: 'electron-renderer',
+  target: 'web',
   resolve: {
     extensions: ['.tsx', '.ts', '.js'],
   },
@@ -106,6 +125,7 @@ const reactConfiguration = {
 };
 
 module.exports = {
+  electronPreload,
   electronWorkerConfiguration,
   electronConfiguration,
   reactConfiguration

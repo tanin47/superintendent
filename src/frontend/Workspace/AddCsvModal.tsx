@@ -4,7 +4,6 @@ import './AddCsvModal.scss';
 import {addCsv, convertFileList} from "../api";
 import {Sheet} from "./types";
 import {Format} from "../../types";
-import path from 'path';
 import {ctrlCmdChar} from "./constants";
 
 type Status = 'draft' | 'loading' | 'added' | 'errored';
@@ -232,7 +231,7 @@ export default React.forwardRef(function AddCsv({
     for (const file of fileList) {
 
       let format: Format = 'comma';
-      const basename = path.basename(file);
+      const basename = window.path.basename(file);
 
       if (basename.endsWith('.tsv')) {
         format = 'tab';
@@ -339,7 +338,7 @@ export default React.forwardRef(function AddCsv({
           />
           Drop files or click here to add files in order to add the list.
           <span className="short-key">
-            {ctrlCmdChar} P
+            {ctrlCmdChar()} P
           </span>
         </div>
         <div className="file-list-panel">

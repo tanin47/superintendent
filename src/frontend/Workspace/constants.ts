@@ -1,3 +1,7 @@
 
-export const ctrlCmdChar = process.platform === 'darwin' ? '⌘' : 'Ctrl';
-export const altOptionChar = process.platform === 'darwin' ? '⌥' : 'Alt';
+export function ctrlCmdChar() {
+  return window.util.getPlatform() === 'darwin' ? '⌘' : 'Ctrl';
+}
+export function altOptionChar() {
+  return window.util.getPlatform() === 'darwin' ? '⌥' : 'Alt';
+}

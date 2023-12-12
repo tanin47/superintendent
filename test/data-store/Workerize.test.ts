@@ -32,7 +32,8 @@ describe('Workerize', () => {
       it(`Import ${format.filename}`, async () => {
         await workerize.addCsv(`./test/data-store/csv-samples/${format.filename}`, true, format.separator, '');
 
-        const sql = `SELECT * FROM ${format.filename.split('.')[0]}`;
+        const table = format.filename.split('.')[0];
+        const sql = `SELECT * FROM ${table}`;
         const result = await workerize.query(sql, null);
 
         expect(result).toEqual(
@@ -44,7 +45,9 @@ describe('Workerize', () => {
             rows: [
               ['Harmonia', 'Waite', 'Har"quote"monia.Waite@yopmail.com'],
               ['Joy', `something${format.separator}another`, 'Joy.Haerr@yopmail.com']
-            ]
+            ],
+            dependsOn: [table],
+            isCsv: false,
           }
         );
       });
@@ -82,11 +85,13 @@ describe('Workerize', () => {
           columns: [{name: 'bom_column_1', maxCharWidthCount: 6}, {name: 'bom_column_2', maxCharWidthCount: 6}],
           name: expect.any(String),
           sql: "SELECT * FROM bom",
-          rows: [['value1', 'value2']]
+          rows: [['value1', 'value2']],
+          dependsOn: ["bom"],
+          isCsv: false,
         }
       );
 
-      await workerize.exportCsv('bom', exportedPath);
+      await workerize.exportCsv('bom', exportedPath, ',');
       expect(fs.readFileSync(exportedPath, {encoding: 'utf8'})).toEqual(
         'bom_column_1,bom_column_2\r\nvalue1,value2\r\n'
       );
@@ -102,10 +107,12 @@ describe('Workerize', () => {
           columns: [{name: 'name', maxCharWidthCount: 4}, {name: 'Name_dup', maxCharWidthCount: 7}],
           name: expect.any(String),
           sql: "SELECT * FROM dup_column",
-          rows: [['john', 'doe, do']]
+          rows: [['john', 'doe, do']],
+          dependsOn: ["dup_column"],
+          isCsv: false,
         }
       );
-      await workerize.exportCsv('dup_column', exportedPath);
+      await workerize.exportCsv('dup_column', exportedPath, ',');
       expect(fs.readFileSync(exportedPath, {encoding: 'utf8'})).toEqual(
         'name,Name_dup\r\njohn,"doe, do"\r\n'
       );
@@ -121,10 +128,12 @@ describe('Workerize', () => {
           columns: [{name: 'something', maxCharWidthCount: 5}, {name: 'another', maxCharWidthCount: 5}],
           name: expect.any(String),
           sql: "SELECT * FROM unicode",
-          rows: [['ก ไก่', 'ข ไข่']]
+          rows: [['ก ไก่', 'ข ไข่']],
+          dependsOn: ["unicode"],
+          isCsv: false,
         }
       );
-      await workerize.exportCsv('unicode', exportedPath);
+      await workerize.exportCsv('unicode', exportedPath, ',');
       expect(fs.readFileSync(exportedPath, {encoding: 'utf8'})).toEqual(
         'something,another\r\n"ก ไก่","ข ไข่"\r\n'
       );
@@ -143,11 +152,13 @@ describe('Workerize', () => {
           rows: [
             ['john', 'doe, do', ' "test@doe.com"'],
             ['nanakorn, " tanin', ' somename ', 'some email'],
-          ]
+          ],
+          dependsOn: ["quote"],
+          isCsv: false,
         }
       );
 
-      await workerize.exportCsv('quote', exportedPath);
+      await workerize.exportCsv('quote', exportedPath, ',');
       expect(fs.readFileSync(exportedPath, {encoding: 'utf8'})).toEqual(
         'first_name,last_name,email\r\njohn,"doe, do"," ""test@doe.com"""\r\n"nanakorn, "" tanin"," somename ","some email"\r\n'
       );
@@ -164,7 +175,9 @@ describe('Workerize', () => {
           columns: [{name: 'month', maxCharWidthCount: 0}],
           name: expect.any(String),
           sql: "SELECT regex_replace('[0-9]+', NULL, '0', false) AS month",
-          rows: [[null]]
+          rows: [[null]],
+          dependsOn: [],
+          isCsv: false,
         }
       );
     });
@@ -178,7 +191,9 @@ describe('Workerize', () => {
           columns: [{name: 'month', maxCharWidthCount: 10}],
           name: expect.any(String),
           sql: "SELECT regex_replace('[0-9]+', '123.456.789', '00', true) AS month",
-          rows: [['00.456.789']]
+          rows: [['00.456.789']],
+          dependsOn: [],
+          isCsv: false,
         }
       );
     });
@@ -192,7 +207,9 @@ describe('Workerize', () => {
           columns: [{name: 'month', maxCharWidthCount: 8}],
           name: expect.any(String),
           sql: "SELECT regex_replace('[0-9]+', '123.456.789', '00', false) AS month",
-          rows: [['00.00.00']]
+          rows: [['00.00.00']],
+          dependsOn: [],
+          isCsv: false,
         }
       );
     });
@@ -206,7 +223,9 @@ describe('Workerize', () => {
           columns: [{name: 'month', maxCharWidthCount: 0}],
           name: expect.any(String),
           sql: "SELECT regex_replace('([0-9+)/([0-9]+/([0-9]+', 'abcd', '00', false) AS month",
-          rows: [[null]]
+          rows: [[null]],
+          dependsOn: [],
+          isCsv: false,
         }
       );
     });
@@ -222,7 +241,9 @@ describe('Workerize', () => {
           columns: [{name: 'month', maxCharWidthCount: 0}],
           name: expect.any(String),
           sql: "SELECT regex_extract('[0-9]+', NULL) AS month",
-          rows: [[null]]
+          rows: [[null]],
+          dependsOn: [],
+          isCsv: false,
         }
       );
     });
@@ -236,7 +257,9 @@ describe('Workerize', () => {
           columns: [{name: 'month', maxCharWidthCount: 1}],
           name: expect.any(String),
           sql: "SELECT regex_extract('[0-9]+/([0-9]+)/[0-9]+', '3/7/2019') AS month",
-          rows: [['7']]
+          rows: [['7']],
+          dependsOn: [],
+          isCsv: false,
         }
       );
     });
@@ -250,7 +273,9 @@ describe('Workerize', () => {
           columns: [{name: 'month', maxCharWidthCount: 1}],
           name: expect.any(String),
           sql: "SELECT regex_extract('([0-9]+)/([0-9]+)/([0-9]+)', '3/7/2019') AS month",
-          rows: [['3']]
+          rows: [['3']],
+          dependsOn: [],
+          isCsv: false,
         }
       );
     });
@@ -264,7 +289,9 @@ describe('Workerize', () => {
           columns: [{name: 'month', maxCharWidthCount: 0}],
           name: expect.any(String),
           sql: "SELECT regex_extract('([0-9]+)/([0-9]+)/([0-9]+)', 'abcd') AS month",
-          rows: [[null]]
+          rows: [[null]],
+          dependsOn: [],
+          isCsv: false,
         }
       );
     });
@@ -278,7 +305,9 @@ describe('Workerize', () => {
           columns: [{name: 'month', maxCharWidthCount: 0}],
           name: expect.any(String),
           sql: "SELECT regex_extract('([0-9+)/([0-9]+/([0-9]+', 'abcd') AS month",
-          rows: [[null]]
+          rows: [[null]],
+          dependsOn: [],
+          isCsv: false,
         }
       );
     });
@@ -294,7 +323,9 @@ describe('Workerize', () => {
           columns: [{name: 'date', maxCharWidthCount: 0}],
           name: expect.any(String),
           sql: "SELECT date_parse('%m/%d/%Y', NULL) AS date",
-          rows: [[null]]
+          rows: [[null]],
+          dependsOn: [],
+          isCsv: false,
         }
       );
     });
@@ -307,7 +338,9 @@ describe('Workerize', () => {
           columns: [{name: 'date', maxCharWidthCount: 10}],
           name: expect.any(String),
           sql: "SELECT date_parse('%m/%d/%Y', '3/7/2019') AS date",
-          rows: [['2019-03-07']]
+          rows: [['2019-03-07']],
+          dependsOn: [],
+          isCsv: false,
         }
       );
     });
@@ -321,7 +354,9 @@ describe('Workerize', () => {
           columns: [{name: 'date', maxCharWidthCount: 24}],
           name: expect.any(String),
           sql: "SELECT date_parse('%m/%d/%Y %I:%M %p', '3/7/2019 7:12 pm') AS date",
-          rows: [['2019-03-07T19:12:00.000Z']]
+          rows: [['2019-03-07T19:12:00.000Z']],
+          dependsOn: [],
+          isCsv: false,
         }
       );
     });
@@ -335,7 +370,9 @@ describe('Workerize', () => {
           columns: [{name: 'date', maxCharWidthCount: 0}],
           name: expect.any(String),
           sql: "SELECT date_parse('%m/%d/%Y %I:%M %p', 'abcd') AS date",
-          rows: [[null]]
+          rows: [[null]],
+          dependsOn: [],
+          isCsv: false,
         }
       );
     });
@@ -349,7 +386,9 @@ describe('Workerize', () => {
           columns: [{name: 'date', maxCharWidthCount: 0}],
           name: expect.any(String),
           sql: "SELECT date_parse('%uslkajf%n', '3/7/2019 7:12 pm') AS date",
-          rows: [[null]]
+          rows: [[null]],
+          dependsOn: [],
+          isCsv: false,
         }
       );
     });

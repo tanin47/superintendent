@@ -1,8 +1,5 @@
 
-import {ipcRenderer} from 'electron';
 import {Sheet} from "../Workspace/types";
-import Store from "electron-store";
-import crypto from 'crypto';
 import {CopySelection, EditorMode, ExportedWorkflow} from "../../types";
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -88,13 +85,13 @@ export function verifySignature(licenseKey: string): boolean {
 
   if (!signature || !input) { return false; }
 
-  const cryptoPublicKey = crypto.createPublicKey('-----BEGIN PUBLIC KEY-----\n' + SIGNATURE_PUBLIC_KEY + '\n-----END PUBLIC KEY-----');
+  const cryptoPublicKey = '-----BEGIN PUBLIC KEY-----\n' + SIGNATURE_PUBLIC_KEY + '\n-----END PUBLIC KEY-----';
 
-  return crypto.verify(
+  return window.crypto2.verify(
     'sha1',
-    Buffer.from(input),
+    input,
     cryptoPublicKey,
-    Buffer.from(signature, 'base64')
+    signature
   );
 }
 
@@ -111,8 +108,6 @@ export function verifyExpiredAt(licenseKey: string): boolean {
 
 export function checkIfLicenseIsValid(licenseKey: string): CheckIfLicenseIsValidResult {
   try {
-    const store = new Store();
-
     if (!verifySignature(licenseKey)) {
       return {
         success: false,
@@ -127,7 +122,7 @@ export function checkIfLicenseIsValid(licenseKey: string): CheckIfLicenseIsValid
       };
     }
 
-    store.set('license-key', licenseKey);
+    window.Store.set('license-key', licenseKey);
 
     return {success: true};
   } catch (error) {
@@ -140,7 +135,7 @@ export function checkIfLicenseIsValid(licenseKey: string): CheckIfLicenseIsValid
 }
 
 export function query(q: string, table: string | null): Promise<Sheet> {
-  return ipcRenderer
+  return window.ipcRenderer
     .invoke('query', q, table)
     .then((result) => {
       if (result.success) {
@@ -155,7 +150,7 @@ export function query(q: string, table: string | null): Promise<Sheet> {
 }
 
 export function loadMore(table: string, offset: number): Promise<string[][]> {
-  return ipcRenderer
+  return window.ipcRenderer
     .invoke('load-more', table, offset)
     .then((result) => {
       if (result.success) {
@@ -167,7 +162,7 @@ export function loadMore(table: string, offset: number): Promise<string[][]> {
 }
 
 export function copy(table: string, selection: CopySelection): Promise<boolean> {
-  return ipcRenderer
+  return window.ipcRenderer
     .invoke('copy', table, selection)
     .then((result) => {
       if (result.success) {
@@ -179,7 +174,7 @@ export function copy(table: string, selection: CopySelection): Promise<boolean> 
 }
 
 export function addCsv(path: string, withHeader: boolean, format: string, replace: string): Promise<Sheet[] | null> {
-  return ipcRenderer
+  return window.ipcRenderer
     .invoke('add-csv', path, withHeader, format, replace)
     .then((result) => {
       if (result.success) {
@@ -200,7 +195,7 @@ export function addCsv(path: string, withHeader: boolean, format: string, replac
 }
 
 export function exportWorkflow(workflow: ExportedWorkflow): Promise<void> {
-  return ipcRenderer
+  return window.ipcRenderer
     .invoke('export-workflow', workflow)
     .then((result) => {
       if (result.success) {
@@ -212,7 +207,7 @@ export function exportWorkflow(workflow: ExportedWorkflow): Promise<void> {
 }
 
 export function downloadCsv(table: string): Promise<string> {
-  return ipcRenderer
+  return window.ipcRenderer
     .invoke('download-csv', table)
     .then((result) => {
        if (result.success) {
@@ -224,7 +219,7 @@ export function downloadCsv(table: string): Promise<string> {
 }
 
 export function drop(table: string): Promise<void> {
-  return ipcRenderer
+  return window.ipcRenderer
     .invoke('drop', table)
     .then((result) => {
       // don't care
@@ -232,7 +227,7 @@ export function drop(table: string): Promise<void> {
 }
 
 export function rename(previousTableName: string, newTableName: string): Promise<void> {
-  return ipcRenderer
+  return window.ipcRenderer
     .invoke('rename', previousTableName, newTableName)
     .then((result) => {
       if (result.success) {
