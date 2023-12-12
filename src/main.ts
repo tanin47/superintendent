@@ -307,7 +307,6 @@ export default class Main {
         label: 'View',
         submenu: [
           ...(process.env.SUPERINTENDENT_IS_PROD ? [] : devViewSubmenu),
-          ...devViewSubmenu,
           { role: 'resetZoom' },
           { role: 'zoomIn' },
           { role: 'zoomOut' },

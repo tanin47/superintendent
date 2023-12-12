@@ -8,6 +8,19 @@ type Result = 'loading' | 'failed'
 export default function CheckLicense({onFinished}: {onFinished: () => void}): ReactElement {
   const [result, setResult] = React.useState<Result>('loading');
 
+  React.useEffect(
+    () => {
+      if (window.util.isWdioEnabled()) {
+        const listener = () => { onFinished(); };
+        window.ipcRenderer.on('bypass-license', listener);
+        return () => {
+          window.ipcRenderer.removeListener('bypass-license', listener);
+        }
+      }
+    },
+    [onFinished]
+  );
+
   React.useEffect(() => {
     setTimeout(
       () => {

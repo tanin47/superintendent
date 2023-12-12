@@ -8,7 +8,7 @@
     "build:watch": "webpack --watch --config webpack.dev.js",
     "start": "electron dist/dev/main.js",
     "test": "jest --useStderr",
-    "wdio": "wdio run ./wdio.conf.ts"
+    "wdio": "ENABLE_WDIO=yes wdio run ./wdio.conf.ts"
   },
   "build": {
     "appId": "tanin.superintendent",
@@ -75,7 +75,8 @@
     "asarUnpack": [
       "dist/prod",
       "node_modules"
-    ]
+    ],
+    "afterSign": "scripts/notarize.js"
   },
   "author": "Tanin Na Nakorn",
   "devDependencies": {

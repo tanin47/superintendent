@@ -1,5 +1,4 @@
-import {browser, $, expect} from '@wdio/globals'
-
+import {$, expect} from '@wdio/globals'
 
 describe('Incorrect license', () => {
     it('uses a incorrect license', async () => {

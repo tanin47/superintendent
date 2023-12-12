@@ -231,18 +231,18 @@ export default React.forwardRef(function AddCsv({
     for (const file of fileList) {
 
       let format: Format = 'comma';
-      const basename = window.path.basename(file);
+      const filename = file.split(/[\\/]/).pop()!; // get the filename
 
-      if (basename.endsWith('.tsv')) {
+      if (filename.endsWith('.tsv')) {
         format = 'tab';
-      } else if (basename.endsWith('.psv')) {
+      } else if (filename.endsWith('.psv')) {
         format = 'pipe';
-      } else if (basename.endsWith('.super')) {
+      } else if (filename.endsWith('.super')) {
         format = 'super';
       }
 
       newFiles.push({
-        name: trimFilename(basename),
+        name: trimFilename(filename),
         path: file,
         withHeader: true,
         format: format,
