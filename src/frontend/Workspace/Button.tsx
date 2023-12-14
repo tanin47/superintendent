@@ -6,15 +6,21 @@ export default function Button({
   disabled,
   icon,
   children,
+  testId,
 }: {
   onClick?: () => void | null,
   isLoading?: boolean,
   disabled?: boolean,
   icon?: JSX.Element | null,
-  children?: any
+  children?: any,
+  testId?: string | null
 }): JSX.Element {
   return (
-    <button onClick={onClick} disabled={disabled || isLoading}>
+    <button
+      onClick={onClick}
+      disabled={disabled || isLoading}
+      data-testid={testId}
+    >
       {isLoading ? (<span className="spinner" />) : (icon ? <span className="icon">{icon}</span> : null)}
       {children}
     </button>

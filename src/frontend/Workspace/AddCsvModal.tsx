@@ -327,6 +327,7 @@ export default React.forwardRef(function AddCsv({
         <div className="header-panel">Add files</div>
         <div
           className="file-upload-panel"
+          data-testid="file-upload-panel"
           onClick={() => {fileRef.current!.click();}}
         >
           <input
@@ -335,6 +336,7 @@ export default React.forwardRef(function AddCsv({
             multiple
             onChange={(event) => addFilesCallback(convertFileList(event.target.files))}
             style={{width: '1px', height: '1px', position: 'absolute', opacity: 0}}
+            data-testid="input-file"
           />
           Drop files or click here to add files in order to add the list.
           <span className="short-key">
@@ -390,6 +392,7 @@ export default React.forwardRef(function AddCsv({
               className="main"
               disabled={isLoading || files.length === 0}
               onClick={() => uploadFiles()}
+              data-testid="import-all-files"
             >
               Import all files
               <span className="short-key">⏎</span>

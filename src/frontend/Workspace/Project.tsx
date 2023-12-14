@@ -150,10 +150,10 @@ export default function Project({
       <div className="toolbarSection top">
         <div className="inner">
           <Button
-            onClick={() => {
-              openAddCsvDialog();
-            }}
-            icon={<i className="fas fa-file-upload"/>}>
+            onClick={() => openAddCsvDialog()}
+            icon={<i className="fas fa-file-upload"/>}
+            testId="add-files"
+          >
             Add files
             <span className="short-key">
               {ctrlCmdChar()} P

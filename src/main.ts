@@ -162,8 +162,6 @@ export default class Main {
           data: r
       }))
       .catch((e) => {
-        console.log(e);
-
         return {success: false, message: e.message};
       });
   }
@@ -495,7 +493,9 @@ export default class Main {
       } else {
         Main.initialFile = file;
       }
-    })
-    Main.application.on('ready', Main.onReady);
+    });
+    Main.application.whenReady().then(async () => {
+      await Main.onReady();
+    });
   }
 }

@@ -285,6 +285,7 @@ export default React.forwardRef<Ref, Props>(function Editor({
               onClick={() => {runSql();}}
               isLoading={isQueryLoading}
               icon={<i className="fas fa-play"/>}
+              testId="run-sql"
             >
               {selectedSheetName !== null ? 'Update SQL' : 'Create SQL'}
               <span className="short-key">
@@ -296,7 +297,9 @@ export default React.forwardRef<Ref, Props>(function Editor({
               <>
                 <Button
                   onClick={() => onMakingNewQuery()}
-                  icon={<i className="fas fa-plus-square"/>}>
+                  icon={<i className="fas fa-plus-square"/>}
+                  testId="new-sql"
+                >
                   New SQL
                   <span className="short-key">
                     {ctrlCmdChar()} N
