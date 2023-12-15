@@ -177,6 +177,7 @@ export default function Project({
                 onClick={() => {
                   onOpeningEditor(sheet)
                 }}
+                data-testid={`project-item-${sheet.name}`}
               >
                 {icon}
                 <span>{sheet.name}</span>
@@ -186,6 +187,7 @@ export default function Project({
                     onOpeningResult(sheet);
                     event.stopPropagation();
                   }}
+                  data-testid={`view-${sheet.name}`}
                 ></i>
                 <i
                   className="fas fa-quote-left hover-icon"
@@ -193,6 +195,7 @@ export default function Project({
                     onAddingName(sheet);
                     event.stopPropagation();
                   }}
+                  data-testid={`quote-${sheet.name}`}
                 ></i>
                 <i
                   className="fas fa-font hover-icon"
@@ -200,6 +203,7 @@ export default function Project({
                     onRenamingSheet(sheet.name);
                     event.stopPropagation();
                   }}
+                  data-testid={`rename-${sheet.name}`}
                 ></i>
                 <i
                   className="fas fa-trash-alt hover-icon"
@@ -207,6 +211,7 @@ export default function Project({
                     onDeletingSheet(sheet.name);
                     event.stopPropagation();
                   }}
+                  data-testid={`delete-${sheet.name}`}
                 ></i>
               </div>
             );

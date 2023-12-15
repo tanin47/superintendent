@@ -361,18 +361,21 @@ export default class Main {
     Main.spaces.set(space.window.webContents.id, space);
 
     space.window.on('close',(e) => {
-      const choice = dialog.showMessageBoxSync(
-        space.window,
-        {
-          type: 'question',
-          buttons: ['Yes', 'No'],
-          title: 'Confirm',
-          message: 'Are you sure you want to quit without saving the workflow?'
-        }
-      );
+      if (!process.env.ENABLE_WDIO) {
+        const choice = dialog.showMessageBoxSync(
+          space.window,
+          {
+            type: 'question',
+            buttons: ['Yes', 'No'],
+            title: 'Confirm',
+            message: 'Are you sure you want to quit without saving the workflow?'
+          }
+        );
 
-      if(choice === 1){
-        e.preventDefault();
+        if (choice === 1) {
+          e.preventDefault();
+          return;
+        }
       }
 
       space.db.close();

@@ -87,7 +87,7 @@ export function verifySignature(licenseKey: string): boolean {
 
   const cryptoPublicKey = '-----BEGIN PUBLIC KEY-----\n' + SIGNATURE_PUBLIC_KEY + '\n-----END PUBLIC KEY-----';
 
-  return window.crypto2.verify(
+  return window.cryptoApi.verify(
     'sha1',
     input,
     cryptoPublicKey,
@@ -122,7 +122,7 @@ export function checkIfLicenseIsValid(licenseKey: string): CheckIfLicenseIsValid
       };
     }
 
-    window.Store.set('license-key', licenseKey);
+    window.storeApi.set('license-key', licenseKey);
 
     return {success: true};
   } catch (error) {

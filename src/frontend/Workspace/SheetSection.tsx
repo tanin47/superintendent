@@ -177,6 +177,7 @@ export default React.forwardRef<Ref, Props>(function SheetSection({
         />
         <div
           className="selector"
+          data-testid="sheet-item-list"
           onDragOver={(event) => {
             if (draggedIndex === null) {
               return;
@@ -228,6 +229,7 @@ export default React.forwardRef<Ref, Props>(function SheetSection({
             return (
               <div
                 key={tab.sheet.name}
+                data-testid={`sheet-section-item-${tab.sheet.name}`}
                 className={`tab ${selectedTabIndex === index ? 'selected' : ''}`}
                 onClick={(event) => {
                   setSelectedTabIndex(index);

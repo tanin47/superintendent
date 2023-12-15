@@ -33,7 +33,7 @@ export default function CheckLicenseForm({onFinished}: {onFinished: () => void})
             />
           </div>
           <div className="remark">
-            You can get a license key by clicking <span className="link" onClick={() => window.shell.openExternal('https://superintendent.app/buy')}>here</span>.
+            You can get a license key by clicking <span className="link" onClick={() => window.shellApi.openExternal('https://superintendent.app/buy')}>here</span>.
           </div>
         </div>
         <div className="cta">

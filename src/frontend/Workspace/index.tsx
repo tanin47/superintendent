@@ -314,37 +314,37 @@ export default function Workspace(): ReactElement {
         </ResizeBar>
         <div className="inner" unselectable="on">
           <div className="left">
-            <div className="selector">
-              <MaybeTippy
-                theme="material"
-                interactive
-                content={
-                  <span className="tooltip">
-                    Charts cannot render more than 11,000 rows.
-                  </span>
-                }
-                shown={!isChartEnabled(shownSheetInfo?.showCount)}
-              >
-                <div className={`select ${isChartEnabled(shownSheetInfo?.showCount) ? '' : 'disabled'}`}>
-                  <select
-                    value={presentationType}
-                    onChange={(event) => {
-                      setPresentationType(event.target.value as PresentationType);
-                    }}
-                    disabled={!isChartEnabled(shownSheetInfo?.showCount)}
-                  >
-                    {PresentationTypes.map((value) => {
-                      return (
-                        <option key={value} value={value}>{PresentationTypeLabel[value]}</option>
-                      )
-                    })}
-                  </select>
-                </div>
-              </MaybeTippy>
-            </div>
+            {/*<div className="selector">*/}
+            {/*  <MaybeTippy*/}
+            {/*    theme="material"*/}
+            {/*    interactive*/}
+            {/*    content={*/}
+            {/*      <span className="tooltip">*/}
+            {/*        Charts cannot render more than 11,000 rows.*/}
+            {/*      </span>*/}
+            {/*    }*/}
+            {/*    shown={!isChartEnabled(shownSheetInfo?.showCount)}*/}
+            {/*  >*/}
+            {/*    <div className={`select ${isChartEnabled(shownSheetInfo?.showCount) ? '' : 'disabled'}`}>*/}
+            {/*      <select*/}
+            {/*        value={presentationType}*/}
+            {/*        onChange={(event) => {*/}
+            {/*          setPresentationType(event.target.value as PresentationType);*/}
+            {/*        }}*/}
+            {/*        disabled={!isChartEnabled(shownSheetInfo?.showCount)}*/}
+            {/*      >*/}
+            {/*        {PresentationTypes.map((value) => {*/}
+            {/*          return (*/}
+            {/*            <option key={value} value={value}>{PresentationTypeLabel[value]}</option>*/}
+            {/*          )*/}
+            {/*        })}*/}
+            {/*      </select>*/}
+            {/*    </div>*/}
+            {/*  </MaybeTippy>*/}
+            {/*</div>*/}
             {shownSheetInfo && (
               <>
-                <span className="separator" />
+                {/*<span className="separator" />*/}
                 <span className={`total ${blinkingShownSheetCount ? 'blinking' : ''}`}>
                   {formatTotal(shownSheetInfo.totalRowCount)}
                   {shownSheetInfo.showCount < shownSheetInfo.totalRowCount &&

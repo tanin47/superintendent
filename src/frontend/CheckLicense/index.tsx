@@ -10,7 +10,7 @@ export default function CheckLicense({onFinished}: {onFinished: () => void}): Re
 
   React.useEffect(
     () => {
-      if (window.util.isWdioEnabled()) {
+      if (window.miscApi.isWdioEnabled()) {
         const listener = () => { onFinished(); };
         window.ipcRenderer.on('bypass-license', listener);
         return () => {
@@ -24,7 +24,7 @@ export default function CheckLicense({onFinished}: {onFinished: () => void}): Re
   React.useEffect(() => {
     setTimeout(
       () => {
-        const licenseKey = window.Store.get('license-key');
+        const licenseKey = window.storeApi.get('license-key');
 
         if (!licenseKey) {
           setResult('failed');

@@ -58,7 +58,10 @@ export default React.forwardRef<Ref, Props>(function Editor({
 
   React.useEffect(
     () => {
-      if (selectedSheetName === null) { return; }
+      if (selectedSheetName === null) {
+        setShownSheet(null);
+        return;
+      }
 
       const sheet = sheets.find((s) => s.name === selectedSheetName);
 
@@ -311,6 +314,7 @@ export default React.forwardRef<Ref, Props>(function Editor({
             <Button
               onClick={() => {formatSql()}}
               icon={<i className="fas fa-align-justify" />}
+              testId="format-sql"
             >
               Format
               <span className="short-key">
@@ -321,7 +325,7 @@ export default React.forwardRef<Ref, Props>(function Editor({
           <div className="right">
             <Button
               onClick={() => {
-                window.shell.openExternal("https://docs.superintendent.app")
+                window.shellApi.openExternal("https://docs.superintendent.app")
               }}
               icon={<i className="fas fa-question-circle"/>}
             >

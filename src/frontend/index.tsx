@@ -3,6 +3,10 @@ import './index.scss';
 import Workspace from './Workspace';
 import CheckLicense from './CheckLicense';
 
+if (window.miscApi.isWdioEnabled()) {
+  // @ts-ignore
+  confirm = () => { return true; };
+}
 
 type Page = 'check-license' | 'workspace';
 

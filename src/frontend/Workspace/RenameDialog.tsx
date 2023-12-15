@@ -81,10 +81,12 @@ export default function RenameDialog({
           className="rename-textbox"
           ref={(ref) => ref?.focus()} value={tableName}
           onChange={(event) => setTableName(event.target.value)}
+          data-testid="rename-textbox"
         />
         <button
           className="main"
           onClick={() => renameCallback()}
+          data-testid="rename-button"
         >
           Rename
           <span className="short-key">⏎</span>

@@ -1,4 +1,5 @@
-import {checkIfLicenseIsValid, extractLicenseInfo, verifyExpiredAt, verifySignature} from '../../../src/frontend/api';
+import {cryptoApi, storeApi} from "../../../src/external";
+import {checkIfLicenseIsValid, extractLicenseInfo} from '../../../src/frontend/api';
 import fs from 'fs';
 
 describe('api', () => {
@@ -22,6 +23,9 @@ ${signature}
   });
 
   it('validates the license key correctly', () => {
+    (window as any).cryptoApi = cryptoApi;
+    (window as any).storeApi = storeApi
+
     jest.useFakeTimers().setSystemTime(new Date('2022-07-23'));
     const contract = JSON.parse(fs.readFileSync('./test/frontend/api/contract/license.json').toString());
 
