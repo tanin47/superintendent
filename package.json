@@ -6,7 +6,7 @@
   "main": "dist/prod/main.js",
   "scripts": {
     "build:watch": "webpack --watch --config webpack.dev.js",
-    "start": "electron dist/dev/main.js",
+    "start": "electron --app=dist/dev/main.js",
     "test": "jest --useStderr",
     "wdio": "ENABLE_WDIO=yes wdio run ./wdio.conf.ts"
   },
@@ -99,6 +99,8 @@
     "gulp": "^4.0.2",
     "html-webpack-plugin": "^4.5.0",
     "jest": "^27.0.6",
+    "node-abi": "3.52.0",
+    "node-gyp": "^10.0.1",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "sass": "^1.29.0",
@@ -107,8 +109,8 @@
     "threads-plugin": "^1.4.0",
     "ts-jest": "^27.0.3",
     "ts-loader": "^8.0.11",
-    "ts-node": "^10.0.0",
-    "typescript": "^4.3.5",
+    "ts-node": "10.9.2",
+    "typescript": "5.3.3",
     "wdio-electron-service": "^6.0.0",
     "web-worker": "^1.2.0",
     "webpack": "^5.9.0",
@@ -128,12 +130,13 @@
     "randomcolor": "^0.6.2",
     "react-modal": "^3.14.3",
     "react-virtualized-auto-sizer": "^1.0.5",
-    "react-window": "tanin47/react-window#4bed2c46bc9342a527a40c1495d9037e0def4fd7",
+    "react-window": "tanin47/react-window#ecadbf767a96624c194d09af39f9e13a05bfe8ce",
     "react-window-infinite-loader": "^1.0.7",
     "sql-formatter": "^4.0.2",
     "sweetalert2": "^11.0.18",
     "threads": "^1.6.5",
     "tiny-worker": "^2.3.0",
     "tippy.js": "^6.3.1"
-  }
+  },
+  "packageManager": "yarn@4.0.2"
 }

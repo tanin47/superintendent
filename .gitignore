@@ -15,5 +15,6 @@ out
 *.so
 yarn.lock
 yarn-error.log
+.yarn
 
 out/
