@@ -32,6 +32,10 @@
         padding-right: 6px;
       }
 
+      span.name {
+        padding-right: 20px;
+      }
+
       &.selected {
         background-color: #1865BB;
       }
@@ -45,6 +49,7 @@
 
       .hover-icon {
         opacity: 0;
+
       }
 
       &:hover {

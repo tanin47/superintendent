@@ -180,7 +180,7 @@ export default function Project({
                 data-testid={`project-item-${sheet.name}`}
               >
                 {icon}
-                <span>{sheet.name}</span>
+                <span className="name">{sheet.name}</span>
                 <i
                   className="fas fa-search hover-icon"
                   onClick={(event) => {

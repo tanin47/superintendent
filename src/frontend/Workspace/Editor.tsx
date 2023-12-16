@@ -55,10 +55,14 @@ export default React.forwardRef<Ref, Props>(function Editor({
   const [isQueryLoading, setIsQueryLoading] = React.useState<boolean>(false);
   const [shownSheet, setShownSheet] = React.useState<Sheet | null>(null);
   const [shouldShowDraftNotice, setShouldShowDraftNotice] = React.useState<boolean>(false);
+  const [shouldShowCsvNotice, setShouldShowCsvNotice] = React.useState<boolean>(false);
 
   React.useEffect(
     () => {
       if (selectedSheetName === null) {
+        codeMirrorInstance.current?.setOption('readOnly', false);
+        setShouldShowDraftNotice(false);
+        setShouldShowCsvNotice(false);
         setShownSheet(null);
         return;
       }
@@ -98,6 +102,9 @@ export default React.forwardRef<Ref, Props>(function Editor({
 
       codeMirrorInstance.current!.focus();
       setShownSheet(sheet);
+
+      codeMirrorInstance.current!.setOption('readOnly', sheet.isCsv ? "nocursor" : false);
+      setShouldShowCsvNotice(sheet.isCsv);
     },
     [sheets, selectedSheetName]
   );
@@ -290,13 +297,13 @@ export default React.forwardRef<Ref, Props>(function Editor({
               icon={<i className="fas fa-play"/>}
               testId="run-sql"
             >
-              {selectedSheetName !== null ? 'Update SQL' : 'Create SQL'}
+              Run SQL
               <span className="short-key">
                 {ctrlCmdChar()} ⏎
               </span>
             </Button>
             <span className="separator" />
-            {selectedSheetName !== null && (
+            {(selectedSheetName !== null || shownSheet?.isCsv) && (
               <>
                 <Button
                   onClick={() => onMakingNewQuery()}
@@ -339,18 +346,35 @@ export default React.forwardRef<Ref, Props>(function Editor({
           This is a draft. Click <a href="#" onClick={() => revertSql()}>here</a> to revert to the original SQL.
         </div>
       )}
+      {shouldShowCsvNotice && (
+        <div className="draft-notice">
+          This is an imported CSV. You cannot modify its SQL.
+        </div>
+      )}
       <div
         style={{
           position: 'relative',
           flexGrow: 1000,
         }}
       >
+        {shouldShowCsvNotice && (
+          <div
+            style={{
+              backgroundColor: '#333',
+              opacity: 0.5,
+              position: 'absolute',
+              width: '100%',
+              height: '100%',
+              zIndex: 1000
+            }}
+          />
+        )}
         <div
           style={{
             position: 'absolute',
             width: '100%',
             height: '100%',
-            backgroundColor: '#fff'
+            backgroundColor: '#ccc'
           }}
         >
           <textarea ref={textareaRef} placeholder="Compose a beautiful SQL..." />

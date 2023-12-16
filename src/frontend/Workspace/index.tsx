@@ -346,6 +346,7 @@ export default function Workspace(): ReactElement {
               <>
                 {/*<span className="separator" />*/}
                 <span className={`total ${blinkingShownSheetCount ? 'blinking' : ''}`}>
+                  <i className="fas fa-table"></i>
                   {formatTotal(shownSheetInfo.totalRowCount)}
                   {shownSheetInfo.showCount < shownSheetInfo.totalRowCount &&
                     <>
