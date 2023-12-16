@@ -1,6 +1,6 @@
 
 import {Sheet} from "../Workspace/types";
-import {CopySelection, EditorMode, ExportedWorkflow} from "../../types";
+import {CopySelection, EditorMode, ExportedWorkflow, ExportWorkflowChannel} from "../../types";
 
 const urlParams = new URLSearchParams(window.location.search);
 
@@ -196,7 +196,7 @@ export function addCsv(path: string, withHeader: boolean, format: string, replac
 
 export function exportWorkflow(workflow: ExportedWorkflow): Promise<void> {
   return window.ipcRenderer
-    .invoke('export-workflow', workflow)
+    .invoke(ExportWorkflowChannel, workflow)
     .then((result) => {
       if (result.success) {
         // do nothing

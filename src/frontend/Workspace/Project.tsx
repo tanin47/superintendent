@@ -56,10 +56,11 @@ export default function Project({
 
       await exportWorkflow(workflow);
     };
-    window.ipcRenderer.on(ExportWorkflowChannel, callback);
+
+    const removeListener = window.ipcRenderer.on(ExportWorkflowChannel, callback);
 
     return () => {
-      window.ipcRenderer.removeListener(ExportWorkflowChannel, callback) ;
+      removeListener();
     };
   }, [sheets]);
 
@@ -129,9 +130,9 @@ export default function Project({
       const listener = (event: any, path: string) => {
         addFiles([path]);
       };
-      window.ipcRenderer.on('open-file', listener);
+      const removeListener = window.ipcRenderer.on('open-file', listener);
       return () => {
-        window.ipcRenderer.removeListener('open-file', listener);
+        removeListener();
       }
     },
     [addFiles]

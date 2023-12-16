@@ -5,8 +5,14 @@ import {cryptoApi, storeApi} from "./external";
 
 contextBridge.exposeInMainWorld( 'ipcRenderer', {
   invoke: (channel, ...args: any[]) => ipcRenderer.invoke(channel, ...args),
-  on: (channel, listener) => ipcRenderer.on(channel, listener),
-  removeListener: (channel, listener) => ipcRenderer.removeListener(channel, listener)
+  on: (channel: string, listener: (event: Electron.IpcRendererEvent, ...args: any[]) => void) => {
+    const wrapped = (event: Electron.IpcRendererEvent, ...args: any[]) => listener(event, ...args);
+    ipcRenderer.on(channel, wrapped);
+
+    return () => {
+      ipcRenderer.removeListener(channel, wrapped);
+    };
+  },
 });
 contextBridge.exposeInMainWorld( 'storeApi', storeApi);
 contextBridge.exposeInMainWorld( 'cryptoApi', cryptoApi);
@@ -22,8 +28,7 @@ declare global {
   interface Window {
     ipcRenderer: {
       invoke: (channel: string, ...args: any[]) => Promise<any>,
-      on: (channel: string, listener: (event: Electron.IpcRendererEvent, ...args: any[]) => void) => Electron.IpcRenderer,
-      removeListener: (channel: string, listener: (...args: any[]) => void) => Electron.IpcRenderer
+      on: (channel: string, listener: (event: Electron.IpcRendererEvent, ...args: any[]) => void) => () => void
     },
     storeApi: {
       get: (key: string) => string | null | undefined,

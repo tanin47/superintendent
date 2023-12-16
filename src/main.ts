@@ -131,6 +131,7 @@ export default class Main {
   }
 
   private static async initExportWorkflow(space: Workspace): Promise<void> {
+    console.log("init export")
     space.window.webContents.send(ExportWorkflowChannel, 'abracadabra');
   }
 
@@ -147,6 +148,7 @@ export default class Main {
       return Promise.resolve("exit");
     }
 
+    console.log("export");
     const writer = fs.createWriteStream(file, {flags: 'w'});
 
     writer.write(JSON.stringify(workflow, null, 2));
@@ -424,7 +426,7 @@ export default class Main {
       );
     });
 
-    ipcMain.handle('export-workflow', async (event, workflow) => {
+    ipcMain.handle(ExportWorkflowChannel, async (event, workflow) => {
       return Main.wrapResponse(Main.exportWorkflow(Main.getSpace(event), workflow));
     });
 

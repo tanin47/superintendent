@@ -12,9 +12,9 @@ export default function CheckLicense({onFinished}: {onFinished: () => void}): Re
     () => {
       if (window.miscApi.isWdioEnabled()) {
         const listener = () => { onFinished(); };
-        window.ipcRenderer.on('bypass-license', listener);
+        const removeListener = window.ipcRenderer.on('bypass-license', listener);
         return () => {
-          window.ipcRenderer.removeListener('bypass-license', listener);
+          removeListener();
         }
       }
     },

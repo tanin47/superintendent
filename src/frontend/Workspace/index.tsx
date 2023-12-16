@@ -67,20 +67,20 @@ export default function Workspace(): ReactElement {
         ];
       });
     };
-    window.ipcRenderer.on(ImportWorkflowChannel, callback);
+    const removeListener = window.ipcRenderer.on(ImportWorkflowChannel, callback);
     (window as any).importWorkflowHookIsLoaded = true;
 
     return () => {
-      window.ipcRenderer.removeListener(ImportWorkflowChannel, callback) ;
+      removeListener();
     };
   }, []);
 
   React.useEffect(() => {
     const callback = (event, mode: any) => { setEditorMode(mode as EditorMode); };
-    window.ipcRenderer.on(EditorModeChannel, callback);
+    const removeListener = window.ipcRenderer.on(EditorModeChannel, callback);
 
     return () => {
-      window.ipcRenderer.removeListener(EditorModeChannel, callback) ;
+      removeListener();
     };
   }, [setEditorMode]);
 
