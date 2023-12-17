@@ -69,8 +69,9 @@ export const config: Options.Testrunner = {
             appArgs: []
         },
         'wdio:chromedriverOptions': {
-            binary: 'C:\\Users\\tanin\\Downloads\\chromedriver_win32\\chromedriver',
-            // binary: '/Users/tanin/Downloads/chromedriver',
+            binary: process.platform === 'win32' ?
+              'C:\\Users\\tanin\\Downloads\\chromedriver_win32\\chromedriver' :
+              '/Users/tanin/Downloads/chromedriver',
         }
     }],
 

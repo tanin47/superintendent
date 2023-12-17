@@ -547,6 +547,7 @@ function Table({
         <div
           key={`column-${columnIndex}`}
           className="cell"
+          data-testid={`cell-${rowIndex}-${columnIndex}`}
           style={{
             borderRight: '1px solid #ccc',
             borderBottom: 'thin solid #ccc',
@@ -587,6 +588,7 @@ function Table({
       return (
         <div
           key={`loading-next-${columnIndex}`}
+          data-testid={`cell-${rowIndex}-${columnIndex}`}
           style={{
             maxWidth: `${columnWidths[columnIndex]}px`,
             minWidth: `${columnWidths[columnIndex]}px`,

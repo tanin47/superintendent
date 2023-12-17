@@ -5,4 +5,5 @@ export async function clearEditor() {
   await $('.CodeMirror').click();
   await browser.keys([Key.Ctrl, 'a']);
   await browser.keys(Key.Backspace);
+  await $('.CodeMirror').click();
 }

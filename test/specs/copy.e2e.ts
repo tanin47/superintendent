@@ -22,4 +22,42 @@ describe('A simple scenario', () => {
 
         await expect($('.CodeMirror')).toHaveText("1\ntest");
     });
+
+    it('copy row', async () => {
+        const sql = "select 'test', 'yo'\n" +
+          "union all select 'aaa', 'bbb'";
+
+        await clearEditor();
+        await $('.CodeMirror').click();
+        await browser.keys(sql);
+        await $('[data-testid="run-sql"]').click();
+
+        await $('[data-testid="cell-2-0"]').click();
+        await browser.keys([Key.Ctrl, 'c']);
+
+        await clearEditor();
+        await browser.keys([Key.Ctrl, 'v']);
+
+        await expect($('.CodeMirror')).toHaveText("1\naaa,bbb");
+    });
+
+    it('copy column', async () => {
+        await $('[data-testid="cell-0-2"]').click();
+        await browser.keys([Key.Ctrl, 'c']);
+
+        await clearEditor();
+        await browser.keys([Key.Ctrl, 'v']);
+
+        await expect($('.CodeMirror')).toHaveText("1\n'yo'\n2\nyo\n3\nbbb");
+    });
+
+    it('copy all', async () => {
+        await $('[data-testid="cell-0-0"]').click();
+        await browser.keys([Key.Ctrl, 'c']);
+
+        await clearEditor();
+        await browser.keys([Key.Ctrl, 'v']);
+
+        await expect($('.CodeMirror')).toHaveText("1\n'test','yo'\n2\ntest,yo\n3\naaa,bbb");
+    });
 });
