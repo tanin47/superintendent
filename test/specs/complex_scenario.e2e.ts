@@ -1,5 +1,6 @@
 import {$, expect} from '@wdio/globals'
 import {Key} from 'webdriverio'
+import {clearEditor} from "./helpers";
 
 describe('A simple scenario', () => {
     beforeAll(async () => {
@@ -55,8 +56,9 @@ describe('A simple scenario', () => {
 
     it("joins 2 table", async () => {
         await $('[data-testid="new-sql"]').click();
+        await clearEditor();
+
         await $('.CodeMirror').click();
-        await browser.keys("select 1".split('').map(() => Key.Backspace));
         await browser.keys("select * from csv join albatross");
         await $('[data-testid="run-sql"]').click();
         await expect($('.sheet')).toHaveText(

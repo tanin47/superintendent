@@ -624,6 +624,7 @@ function Table({
         <div
           key={`cell-${rowIndex}-${columnIndex}`}
           className="cell"
+          data-testid={`cell-${rowIndex}-${columnIndex}`}
           style={{
             borderRight: '1px solid #ccc',
             borderBottom: 'thin solid #ccc',

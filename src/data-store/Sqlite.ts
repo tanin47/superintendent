@@ -237,12 +237,15 @@ export class Sqlite extends Datastore {
       }
 
       html += '</tr>';
-      text += '\n';
     }
 
     let count = 0;
 
     for (const row of statement.iterate()) {
+      if (text !== '') {
+        text += '\n';
+      }
+
       const textItems: Array<string> = [];
       const htmlItems: Array<string> = [];
 
@@ -264,7 +267,6 @@ export class Sqlite extends Datastore {
       text += textItems.join(',');
       html += htmlItems.join('');
       html += '</tr>';
-      text += '\n';
     }
 
     html += '</table>';
