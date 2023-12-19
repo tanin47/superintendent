@@ -19,10 +19,17 @@ type CopyingData = {
 let canvas: HTMLCanvasElement = document.createElement("canvas");
 
 function getTextWidth(text: string, font: string): number {
-  const context = canvas.getContext("2d")!;
-  context.font = font;
-  const metrics = context.measureText(text);
-  return Math.ceil(metrics.width) + 8; // for padding
+  const lines = text.split('\n');
+  let width = 0;
+
+  lines.forEach((line) => {
+    const context = canvas.getContext("2d")!;
+    context.font = font;
+    const metrics = context.measureText(line);
+    width = Math.max(width, metrics.width);
+  });
+
+  return Math.ceil(width) + 7; // for padding
 }
 
 function getRowHeight(row: string[]): number {
@@ -105,7 +112,10 @@ function useInnerElementType(
             rowIndex: 0,
             columnIndex: 0,
             style: {
+              boxSizing: 'border-box',
               display: "inline-flex",
+              minWidth: columnWidths[0],
+              maxWidth: columnWidths[0],
               width: columnWidths[0],
               height: computeRowHeight(0),
               position: "sticky",
@@ -132,6 +142,7 @@ function useInnerElementType(
               rowIndex,
               columnIndex,
               style: {
+                boxSizing: 'border-box',
                 marginLeft,
                 display: "inline-flex",
                 width,
@@ -161,6 +172,7 @@ function useInnerElementType(
               rowIndex,
               columnIndex,
               style: {
+                boxSizing: 'border-box',
                 marginTop,
                 width,
                 height,
@@ -286,21 +298,32 @@ function Table({
   onCopyingFinished: () => void
 }): JSX.Element {
   const [forceUpdate, setForceUpdate] = React.useState<number>(0);
-  const columnWidths = [sheet.resizedColumns && sheet.resizedColumns[0] ? sheet.resizedColumns[0] : 30];
-  sheet.columns.forEach((column, index) => {
-    if (sheet.resizedColumns && sheet.resizedColumns[index + 1]) {
-      columnWidths.push(sheet.resizedColumns[index + 1]);
-      return;
-    }
+  const columnWidths = React.useRef<number[]>([]);;
 
-    const width = 1 + Math.max(
-      getTextWidth(column.name, 'bold 12px JetBrains Mono'),
-      getTextWidth('#'.repeat(column.maxCharWidthCount), '12px JetBrains Mono'),
-      20
-    );
+  React.useEffect(
+    () => {
+      columnWidths.current = [sheet.resizedColumns && sheet.resizedColumns[0] ? sheet.resizedColumns[0] : 30];
 
-    columnWidths.push(width);
-  });
+      sheet.columns.forEach((column, index) => {
+        if (sheet.resizedColumns && sheet.resizedColumns[index + 1]) {
+          columnWidths.current.push(sheet.resizedColumns[index + 1]);
+          return;
+        }
+
+        const width = Math.max(
+          getTextWidth(column.name, 'bold 12px JetBrains Mono'),
+          getTextWidth('#'.repeat(column.maxCharWidthCount), '12px JetBrains Mono'),
+          20
+        );
+
+        columnWidths.current.push(width);
+      });
+
+      gridRef.current?.updateColumn(0);
+      gridRef.current?.updateRow(0);
+    },
+    [sheet]
+  )
 
   const [userSelect, _setUserSelect] = React.useState<UserSelectTarget | null>(null);
   const setUserSelect = (newUserSelect: UserSelectTarget | null) => {
@@ -313,7 +336,7 @@ function Table({
       if (userSelect && userSelect.rowIndex === rowIndex && userSelect.colIndex === colIndex) return; // selecting text the cell.
       setUserSelect({rowIndex, colIndex});
     },
-    [setUserSelect, userSelect]
+    [userSelect]
   );
 
   const [selection, _setSelection] = React.useState<Selection | null>(null);
@@ -328,7 +351,7 @@ function Table({
       _setSelection(sheet.selection);
       _setUserSelect(sheet.userSelect);
     },
-    [sheet, _setSelection, _setUserSelect]
+    [sheet]
   );
 
   const startSelection = React.useCallback(
@@ -346,7 +369,7 @@ function Table({
       setSelection(newSelection);
       setUserSelect(null);
     },
-      [setIsSelecting, setSelection, setUserSelect, userSelect]
+      [userSelect]
   );
 
   const addSelection = React.useCallback(
@@ -363,22 +386,13 @@ function Table({
 
       setSelection(newSelection);
     },
-    [setSelection, selection, isSelecting]
+    [selection, isSelecting]
   );
 
-  const [mouseDownX, setMouseDownX] = React.useState<number>(0);
-  const [mouseDownColWidth, setMouseDownColWidth] = React.useState<number>(0);
-  const [resizingColIndex, setResizingColIndex] = React.useState<number | null>(null);
+  const mouseDownX = React.useRef<number>(0);
+  const mouseDownColWidth = React.useRef<number>(0);
+  const resizingColIndex = React.useRef<number | null>(null);
   const gridRef = React.useRef<any>(null);
-
-  React.useEffect(
-    () => {
-      if (gridRef.current) {
-        gridRef.current.updateColumn(0);
-      }
-    },
-    [sheet]
-  );
 
   const resizeColMouseDownHandler = React.useCallback(
     (colIndex: number) => (event: React.MouseEvent) => {
@@ -387,38 +401,39 @@ function Table({
       }
 
       if (!sheet.resizedColumns[colIndex]) {
-        sheet.resizedColumns[colIndex] = columnWidths[colIndex];
+        sheet.resizedColumns[colIndex] = columnWidths.current[colIndex];
       }
-      setMouseDownX(event.clientX);
-      setMouseDownColWidth(sheet.resizedColumns[colIndex]);
-      setResizingColIndex(colIndex);
+      mouseDownX.current = event.clientX;
+      mouseDownColWidth.current = sheet.resizedColumns[colIndex];
+      resizingColIndex.current = colIndex;
 
       event.stopPropagation();
     },
-    [setMouseDownX, setMouseDownColWidth, setResizingColIndex, sheet]
+    [sheet]
   );
 
   React.useEffect(() => {
     const handler = (event) => {
-      if (resizingColIndex === null) { return; }
+      if (resizingColIndex.current === null) { return; }
       if (!gridRef.current) { return; }
 
-      sheet.resizedColumns[resizingColIndex] = Math.max(event.clientX - mouseDownX + mouseDownColWidth, 20);
-      columnWidths[resizingColIndex] = sheet.resizedColumns[resizingColIndex];
+      sheet.resizedColumns[resizingColIndex.current] = Math.max(event.clientX - mouseDownX.current + mouseDownColWidth.current, 20);
+      columnWidths.current[resizingColIndex.current] = sheet.resizedColumns[resizingColIndex.current];
 
-      gridRef.current.updateColumn(resizingColIndex);
+      gridRef.current.updateColumn(resizingColIndex.current!);
     };
     document.addEventListener('mousemove', handler);
 
     return () => {
       document.removeEventListener('mousemove', handler) ;
     };
-  }, [resizingColIndex, mouseDownColWidth, mouseDownX, gridRef, sheet]);
+  }, [sheet]);
 
   React.useEffect(() => {
     const handler = (event) => {
-      if (resizingColIndex !== null) {
-        setResizingColIndex(null);
+      if (resizingColIndex.current !== null) {
+        gridRef.current.updateColumn(resizingColIndex.current!);
+        resizingColIndex.current = null;
       }
 
       if (isSelecting) {
@@ -430,7 +445,7 @@ function Table({
     return () => {
       document.removeEventListener('mouseup', handler);
     }
-  }, [resizingColIndex, setResizingColIndex, isSelecting, setIsSelecting]);
+  }, [isSelecting]);
 
   React.useEffect(() => {
     const handler = async (event): Promise<void> => {
@@ -504,7 +519,7 @@ function Table({
   };
 
   const Cell = ({columnIndex, rowIndex, style}: {columnIndex: number, rowIndex: number, style: any}): JSX.Element => {
-    let backgroundColor = '';
+    let backgroundColor = '#fff';
 
     if (
       !!selection &&
@@ -549,10 +564,12 @@ function Table({
           className="cell"
           data-testid={`cell-${rowIndex}-${columnIndex}`}
           style={{
+            boxSizing: 'border-box',
             borderRight: '1px solid #ccc',
             borderBottom: 'thin solid #ccc',
             maxWidth: `${columnWidths[columnIndex]}px`,
             minWidth: `${columnWidths[columnIndex]}px`,
+            width: `${columnWidths[columnIndex]}px`,
             paddingLeft: '4px',
             fontFamily: 'JetBrains Mono, monospace',
             fontSize: '12px',
@@ -560,7 +577,7 @@ function Table({
             backgroundColor,
             lineHeight: '20px',
             textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
+            whiteSpace: 'pre',
             overflow: 'hidden',
             userSelect: 'none',
             textAlign: columnIndex === 0 ? 'center' : 'left',
@@ -590,8 +607,10 @@ function Table({
           key={`loading-next-${columnIndex}`}
           data-testid={`cell-${rowIndex}-${columnIndex}`}
           style={{
+            boxSizing: 'border-box',
             maxWidth: `${columnWidths[columnIndex]}px`,
             minWidth: `${columnWidths[columnIndex]}px`,
+            width: `${columnWidths[columnIndex]}px`,
             paddingLeft: '4px',
             fontFamily: 'JetBrains Mono, monospace',
             fontSize: '12px',
@@ -599,7 +618,7 @@ function Table({
             backgroundColor: '#ccc',
             lineHeight: '20px',
             textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
+            whiteSpace: 'pre',
             overflow: 'hidden',
             userSelect: 'none',
             ...style,
@@ -628,10 +647,12 @@ function Table({
           className="cell"
           data-testid={`cell-${rowIndex}-${columnIndex}`}
           style={{
+            boxSizing: 'border-box',
             borderRight: '1px solid #ccc',
             borderBottom: 'thin solid #ccc',
             maxWidth: `${columnWidths[columnIndex]}px`,
             minWidth: `${columnWidths[columnIndex]}px`,
+            width: `${columnWidths[columnIndex]}px`,
             paddingLeft: '3px',
             paddingRight: '3px',
             fontFamily: 'JetBrains Mono, monospace',
@@ -640,7 +661,7 @@ function Table({
             textAlign: columnIndex === 0 ? 'right' : 'left',
             lineHeight: '20px',
             textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
+            whiteSpace: 'pre',
             overflow: 'hidden',
             ...userSelectStyle,
             ...style,
@@ -746,8 +767,8 @@ function Table({
                 rowCount={gridRowCount}
                 computeRowHeight={computeRowHeight}
                 computeCumulativeRowHeight={computeCumulativeRowHeight}
-                columnCount={columnWidths.length}
-                columnWidths={columnWidths}
+                columnCount={columnWidths.current.length}
+                columnWidths={columnWidths.current}
                 initialScrollLeft={sheet.scrollLeft || 0}
                 initialScrollTop={sheet.scrollTop || 0}
                 width={width}
