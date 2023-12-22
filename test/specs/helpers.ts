@@ -7,3 +7,8 @@ export async function clearEditor() {
   await browser.keys(Key.Backspace);
   await $('.CodeMirror').click();
 }
+
+export async function fillEditor(text: string) {
+  await clearEditor();
+  await browser.keys(text);
+}

@@ -224,13 +224,6 @@ const Grid = React.forwardRef(function Grid({
   children: any
 },
   ref: any): JSX.Element {
-  const computeColumnWidth = React.useCallback(
-    (index: number) => {
-      return columnWidths[index];
-    },
-    [columnWidths]
-  );
-
   const baseGridRef = React.useRef<any>();
 
   React.useImperativeHandle(ref, () => ({
@@ -255,7 +248,13 @@ const Grid = React.forwardRef(function Grid({
       rowCount={rowCount}
       rowHeight={computeRowHeight}
       columnCount={columnCount}
-      columnWidth={computeColumnWidth}
+      columnWidth={(index: number) => {
+        if (index >= columnWidths.length) {
+          return 0;
+        } else {
+          return columnWidths[index];
+        }
+      }}
       width={width}
       height={height}
       initialScrollLeft={initialScrollLeft}
@@ -518,7 +517,13 @@ function Table({
     return (start <= value && value <= end) || (end <= value && value <= start);
   };
 
-  const Cell = ({columnIndex, rowIndex, style}: {columnIndex: number, rowIndex: number, style: any}): JSX.Element => {
+  const Cell = ({columnIndex, rowIndex, style}: {columnIndex: number, rowIndex: number, style: any}): JSX.Element | null => {
+    // There's a race condition between sheet and columnWidths because columnWidths is a ref.
+    // There's a test that tests this bug.
+    if ((columnIndex - 1) >= sheet.columns.length) {
+      return null;
+    }
+
     let backgroundColor = '#fff';
 
     if (
