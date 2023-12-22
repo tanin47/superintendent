@@ -2,6 +2,7 @@ import React, {ReactElement} from 'react';
 import {PresentationType, Sheet as SheetType} from "./types";
 import Sheet from "./Sheet";
 import './SheetSection.scss';
+import {SortDirection} from "../../types";
 
 let timer: NodeJS.Timeout;
 
@@ -18,6 +19,7 @@ type Props = {
   sheets: SheetType[],
   onSelectedSheetUpdated: (sheet: SheetType | null) => void,
   onRenamingSheet: (sheetName: string) => void,
+  onSorting: (sheet: SheetType, column: string, direction: SortDirection) => void,
   presentationType: PresentationType
 };
 
@@ -25,6 +27,7 @@ export default React.forwardRef<Ref, Props>(function SheetSection({
   sheets,
   onSelectedSheetUpdated,
   onRenamingSheet,
+  onSorting,
   presentationType,
 }: Props, ref): ReactElement {
 
@@ -32,43 +35,27 @@ export default React.forwardRef<Ref, Props>(function SheetSection({
   const [tabs, setTabs] = React.useState<Tab[]>([]);
   const [shadowSheets, setShadowSheets] = React.useState<SheetType[]>([]);
   const [selectedTabIndex, setSelectedTabIndex] = React.useState<number>(0);
-  const [blinkingSelectedTab, setBlinkingSelectedTab] = React.useState<boolean>(false);
   const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
-  const blinkingTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   React.useImperativeHandle(
     ref,
     () => ({
       open: (sheetId) => {
-        try {
-          for (let index=0;index<tabs.length;index++) {
-            if (tabs[index].sheet.name === sheetId) {
-              setSelectedTabIndex(index);
-              return;
-            }
+        for (let index=0;index<tabs.length;index++) {
+          if (tabs[index].sheet.name === sheetId) {
+            setSelectedTabIndex(index);
+            return;
           }
+        }
 
-          for (let index=0;index<shadowSheets.length;index++) {
-            if (shadowSheets[index].name === sheetId) {
-              tabs.push({
-                sheet: shadowSheets[index]
-              })
-              setTabs([...tabs])
-              setSelectedTabIndex(tabs.length - 1);
-            }
+        for (let index=0;index<shadowSheets.length;index++) {
+          if (shadowSheets[index].name === sheetId) {
+            tabs.push({
+              sheet: shadowSheets[index]
+            })
+            setTabs([...tabs])
+            setSelectedTabIndex(tabs.length - 1);
           }
-        } finally {
-          if (blinkingTimeoutRef.current) {
-            clearInterval(blinkingTimeoutRef.current);
-          }
-
-          setBlinkingSelectedTab(true);
-          blinkingTimeoutRef.current = setTimeout(
-            () => {
-              setBlinkingSelectedTab(false)
-            },
-            1500
-          );
         }
       },
       getSelectedTab: () => {
@@ -135,12 +122,6 @@ export default React.forwardRef<Ref, Props>(function SheetSection({
     [sheets]
   );
 
-  const handleClick = React.useCallback(
-    (index: number) => {
-    },
-    []
-  );
-
   const rearrangedCallback = React.useCallback(
     (movedIndex: number, newIndex: number): void => {
       const copied = [...tabs];
@@ -174,6 +155,7 @@ export default React.forwardRef<Ref, Props>(function SheetSection({
           sheet={tabs[selectedTabIndex].sheet}
           onSelectedSheetUpdated={onSelectedSheetUpdated}
           presentationType={presentationType}
+          onSorting={onSorting}
         />
         <div
           className="selector"
@@ -221,11 +203,16 @@ export default React.forwardRef<Ref, Props>(function SheetSection({
             />
           </div>
           {tabs.map((tab, index) => {
-            const icon = tab.sheet.isCsv ? (
+            let icon = tab.sheet.isCsv ? (
               <i className="fas fa-file-csv icon"></i>
             ) : (
               <i className="fas fa-caret-square-right icon"></i>
             );
+
+            if (tab.sheet.isLoading) {
+              icon = <span className="spinner" />;
+            }
+
             return (
               <div
                 key={tab.sheet.name}
@@ -260,8 +247,11 @@ export default React.forwardRef<Ref, Props>(function SheetSection({
                   rearrangedCallback(draggedIndex, index);
                 }}
               >
+                {tab.sheet.isLoading && (
+                  <div className="overlay" style={{cursor: 'pointer'}}/>
+                )}
                 {icon}
-                <span className={`${selectedTabIndex === index && blinkingSelectedTab ? 'blinking' : ''}`}>{tab.sheet.name}</span>
+                <span>{tab.sheet.name}</span>
                 <i
                   className="fas fa-times"
                   onClick={(event) => {

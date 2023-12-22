@@ -1,4 +1,4 @@
-import {CopySelection} from "../types";
+import {CopySelection, Sort, SortDirection} from "../types";
 import {getRandomBird} from "./Birds";
 
 export type Column = {
@@ -30,6 +30,7 @@ export abstract class Datastore {
   abstract exportCsv(table: string, filePath: string, delimiter: string): Promise<void>;
 
   abstract query(sql: string, table: string | null): Promise<Result>;
+  abstract sort(table: string, sorts: Sort[]): Promise<Result>;
   abstract copy(table: string, selection: CopySelection): Promise<{text: string, html: string}>;
   abstract loadMore(table: string, offset: number): Promise<Row[]>;
   abstract drop(table: string): Promise<void>;
@@ -70,5 +71,9 @@ export abstract class Datastore {
 
   protected makeQueryTableName(): string {
     return this.getTableName(getRandomBird());
+  }
+
+  protected makeUnsortedTableName(name: string): string {
+    return `${name}___unsorted`;
   }
 }

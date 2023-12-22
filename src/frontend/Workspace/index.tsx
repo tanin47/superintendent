@@ -1,6 +1,6 @@
 import React, {ReactElement} from 'react';
 import './index.scss';
-import {downloadCsv, drop, getInitialEditorMode} from '../api';
+import {downloadCsv, drop, getInitialEditorMode, query, sort} from '../api';
 import {EditorMode, EditorModeChannel, ExportedWorkflow, ImportWorkflowChannel} from '../../types';
 import {PresentationType, PresentationTypes, Sheet} from './types';
 import SheetSection, {Ref as SheetSectionRef} from './SheetSection';
@@ -56,13 +56,15 @@ export default function Workspace(): ReactElement {
             count: 0,
             columns: [],
             rows: [],
+            sorts: [],
             presentationType: 'table',
             scrollLeft: null,
             scrollTop: null,
             resizedColumns: {},
             selection: null,
             userSelect: null,
-            editorState: null
+            editorState: null,
+            isLoading: false,
           } as Sheet))
         ];
       });
@@ -140,7 +142,26 @@ export default function Workspace(): ReactElement {
       }
     },
     [sheets, editorSelectedSheetName]
-  )
+  );
+
+  const runSql = React.useCallback(
+    async (sql: string, sheetName: string | null) => {
+      const found = sheets.find((s) => s.name === sheetName);
+
+      if (found) {
+        found.isLoading = true;
+        setSheets([...sheets])
+      }
+
+      const sheet = await query(
+        sql,
+        sheetName
+      );
+      addNewSheetCallback(sheet);
+      return sheet;
+    },
+    [sheets, addNewSheetCallback]
+  );
 
   const exportCsv = React.useCallback(
     () => {
@@ -301,7 +322,7 @@ export default function Workspace(): ReactElement {
             sheets={sheets}
             selectedSheetName={editorSelectedSheetName}
             onMakingNewQuery={() => makeNewQuery()}
-            onSheetAdded={(sheet) => addNewSheetCallback(sheet)}
+            onRunningSql={runSql}
           />
         </div>
       </div>
@@ -409,7 +430,7 @@ export default function Workspace(): ReactElement {
           }
 
           setShownSheetInfo((prev) => {
-            if (!!prev && !!info && prev.name === info.name && prev.showCount < info.showCount) {
+            if (!!prev && !!info && prev.name === info.name && prev.totalRowCount !== info.totalRowCount) {
               if (blinkingShownSheetCountTimeoutRef.current) {
                 clearInterval(blinkingShownSheetCountTimeoutRef.current);
               }
@@ -427,6 +448,14 @@ export default function Workspace(): ReactElement {
           });
         }}
         onRenamingSheet={(name) => setRenamingSheetName(name)}
+        onSorting={(sheet, column, direction) => {
+          sheet.isLoading = true;
+          setSheets([...sheets]);
+          sort(sheet, column, direction)
+            .then((sheet) => {
+              addNewSheetCallback(sheet);
+            });
+        }}
       />
     </div>
   );

@@ -9,6 +9,9 @@ export const ImportWorkflowChannel = 'import-workflow';
 
 export const EditorModeChannel = 'editor-mode-changed';
 
+export type SortDirection = 'asc' | 'desc' | 'none';
+export type Sort = {name: string, direction: SortDirection};
+
 export type CopySelection = {
   columns: Array<string>,
   startRow: number,

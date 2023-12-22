@@ -1,3 +1,4 @@
+import {Sort, SortDirection} from "../../types";
 
 export const PresentationTypes = ['table', 'line', 'pie', 'bar'] as const;
 export type PresentationType = typeof PresentationTypes[number];
@@ -31,9 +32,11 @@ export type Sheet = {
   scrollLeft: number | null,
   scrollTop: number | null,
   resizedColumns: {[col:number]: number},
+  sorts: Sort[],
   selection: Selection | null,
   userSelect: UserSelectTarget | null,
   editorState: SheetEditorState | null,
+  isLoading: boolean
 };
 
 export type Selection = {

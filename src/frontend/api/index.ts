@@ -1,6 +1,6 @@
 
 import {Sheet} from "../Workspace/types";
-import {CopySelection, EditorMode, ExportedWorkflow, ExportWorkflowChannel} from "../../types";
+import {CopySelection, EditorMode, ExportedWorkflow, ExportWorkflowChannel, SortDirection} from "../../types";
 
 const urlParams = new URLSearchParams(window.location.search);
 
@@ -142,6 +142,30 @@ export function query(q: string, table: string | null): Promise<Sheet> {
         return {
           presentationType: 'table',
           ...result.data
+        };
+      } else {
+        throw result;
+      }
+    });
+}
+
+export function sort(sheet: Sheet, column: string, direction: SortDirection): Promise<Sheet> {
+  let sorts = sheet.sorts.filter((s) => s.name != column);
+  if (direction != 'none') {
+    sorts.push({name: column, direction});
+  }
+
+  return window.ipcRenderer
+    .invoke('sort', sheet.name, sorts)
+    .then((result) => {
+      if (result.success) {
+        return {
+          ...sheet,
+          presentationType: 'table',
+          ...result.data,
+          sorts,
+          isLoading: false,
+          isCsv: sheet.isCsv
         };
       } else {
         throw result;

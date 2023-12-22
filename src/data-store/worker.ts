@@ -1,7 +1,7 @@
 import { expose } from 'threads/worker';
 import {Env, Sqlite} from "./Sqlite";
 import {Result, Row} from "./Datastore";
-import {CopySelection} from "../types";
+import {CopySelection, Sort} from "../types";
 
 let sqlite: Sqlite | null;
 
@@ -26,6 +26,9 @@ expose({
   },
   async query(sql: string, table: string | null): Promise<Result> {
     return sqlite!.query(sql, table);
+  },
+  async sort(table: string, sorts: Sort[]): Promise<Result> {
+    return sqlite!.sort(table, sorts);
   },
   async copy(table: string, selection: CopySelection): Promise<{text: string, html: string}> {
     return sqlite!.copy(table, selection);

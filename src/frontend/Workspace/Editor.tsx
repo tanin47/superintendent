@@ -30,7 +30,7 @@ type Props = {
   mode: EditorMode,
   sheets: Array<Sheet>,
   selectedSheetName: string | null,
-  onSheetAdded: (sheet: Sheet) => void,
+  onRunningSql: (sql: string, sheetName: string | null) => Promise<Sheet>,
   onMakingNewQuery: () => void
 };
 
@@ -47,7 +47,7 @@ export default React.forwardRef<Ref, Props>(function Editor({
   mode,
   sheets,
   selectedSheetName,
-  onSheetAdded,
+  onRunningSql,
   onMakingNewQuery,
 }: Props, ref): JSX.Element {
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
@@ -160,12 +160,11 @@ export default React.forwardRef<Ref, Props>(function Editor({
       const value = textareaRef.current!.value;
 
       setIsQueryLoading(true);
-      query(
+      onRunningSql(
         value,
         selectedSheetName ?? null
       )
         .then((sheet) => {
-          onSheetAdded(sheet);
           setShouldShowDraftNotice(false);
         })
         .catch((err) => {
@@ -175,7 +174,7 @@ export default React.forwardRef<Ref, Props>(function Editor({
           setIsQueryLoading(false);
         });
     },
-    [sheets, isQueryLoading, onSheetAdded, selectedSheetName]
+    [sheets, isQueryLoading, selectedSheetName]
   );
 
   React.useEffect(() => {

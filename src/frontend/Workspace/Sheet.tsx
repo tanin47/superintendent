@@ -8,7 +8,7 @@ import AutoSizer from 'react-virtualized-auto-sizer';
 import InfiniteLoader from 'react-window-infinite-loader';
 import {loadMore, copy} from "../api";
 import './Sheet.scss';
-import {CopySelection} from "../../types";
+import {CopySelection, SortDirection} from "../../types";
 import CopyingModal from "./CopyingModal";
 import {isChartEnabled, makeCopy} from "./helper";
 
@@ -17,6 +17,8 @@ type CopyingData = {
 };
 
 let canvas: HTMLCanvasElement = document.createElement("canvas");
+
+const MIN_CELL_WIDTH = 30;
 
 function getTextWidth(text: string, font: string): number {
   const lines = text.split('\n');
@@ -29,7 +31,7 @@ function getTextWidth(text: string, font: string): number {
     width = Math.max(width, metrics.width);
   });
 
-  return Math.ceil(width) + 7; // for padding
+  return Math.ceil(width) + 9; // for padding
 }
 
 function getRowHeight(row: string[]): number {
@@ -207,6 +209,7 @@ const Grid = React.forwardRef(function Grid({
   onScrolled,
   infiniteLoaderRef,
   onItemsRendered,
+  onSorting,
   children
 }: {
   rowCount: number,
@@ -221,6 +224,7 @@ const Grid = React.forwardRef(function Grid({
   onScrolled: (left: number, top: number) => void,
   onItemsRendered: (params: any) => void,
   infiniteLoaderRef: (r: any) => void,
+  onSorting: (sheet: Sheet, column: string, direction: SortDirection) => void,
   children: any
 },
   ref: any): JSX.Element {
@@ -289,19 +293,21 @@ function Table({
   sheet,
   onSelectedSheetUpdated,
   onCopyingStarted,
-  onCopyingFinished
+  onCopyingFinished,
+  onSorting,
 }: {
   sheet: Sheet,
   onSelectedSheetUpdated: (sheet: Sheet | null) => void,
   onCopyingStarted: (data: CopyingData) => void,
-  onCopyingFinished: () => void
+  onCopyingFinished: () => void,
+  onSorting: (sheet: Sheet, column: string, direction: SortDirection) => void
 }): JSX.Element {
   const [forceUpdate, setForceUpdate] = React.useState<number>(0);
   const columnWidths = React.useRef<number[]>([]);;
 
   React.useEffect(
     () => {
-      columnWidths.current = [sheet.resizedColumns && sheet.resizedColumns[0] ? sheet.resizedColumns[0] : 30];
+      columnWidths.current = [sheet.resizedColumns && sheet.resizedColumns[0] ? sheet.resizedColumns[0] : MIN_CELL_WIDTH];
 
       sheet.columns.forEach((column, index) => {
         if (sheet.resizedColumns && sheet.resizedColumns[index + 1]) {
@@ -310,9 +316,9 @@ function Table({
         }
 
         const width = Math.max(
-          getTextWidth(column.name, 'bold 12px JetBrains Mono'),
+          getTextWidth(column.name, 'bold 12px JetBrains Mono') + 17, // +17 for the sorting icon.
           getTextWidth('#'.repeat(column.maxCharWidthCount), '12px JetBrains Mono'),
-          20
+          MIN_CELL_WIDTH
         );
 
         columnWidths.current.push(width);
@@ -388,6 +394,7 @@ function Table({
     [selection, isSelecting]
   );
 
+
   const mouseDownX = React.useRef<number>(0);
   const mouseDownColWidth = React.useRef<number>(0);
   const resizingColIndex = React.useRef<number | null>(null);
@@ -416,7 +423,7 @@ function Table({
       if (resizingColIndex.current === null) { return; }
       if (!gridRef.current) { return; }
 
-      sheet.resizedColumns[resizingColIndex.current] = Math.max(event.clientX - mouseDownX.current + mouseDownColWidth.current, 20);
+      sheet.resizedColumns[resizingColIndex.current] = Math.max(event.clientX - mouseDownX.current + mouseDownColWidth.current, MIN_CELL_WIDTH);
       columnWidths.current[resizingColIndex.current] = sheet.resizedColumns[resizingColIndex.current];
 
       gridRef.current.updateColumn(resizingColIndex.current!);
@@ -563,6 +570,19 @@ function Table({
 
 
     if (rowIndex === 0) {
+      let sortClass = 'unsort fa-sort';
+      let direction: SortDirection = 'none';
+
+      if (sheet.sorts && columnIndex > 0) {
+        const columnName = sheet.columns[columnIndex - 1].name;
+        direction = sheet.sorts.find((s) => s.name === columnName)?.direction || 'none';
+
+        if (direction != 'none') {
+          const icon = direction === 'asc' ? 'fa-sort-alpha-down' : 'fa-sort-alpha-up';
+          sortClass = `${direction} ${icon}`;
+        }
+      }
+
       return (
         <div
           key={`column-${columnIndex}`}
@@ -582,6 +602,7 @@ function Table({
             backgroundColor,
             lineHeight: '20px',
             textOverflow: 'ellipsis',
+            verticalAlign: 'middle',
             whiteSpace: 'pre',
             overflow: 'hidden',
             userSelect: 'none',
@@ -593,11 +614,35 @@ function Table({
           onMouseEnter={addSelection(rowIndex, columnIndex)}
         >
           {columnIndex > 0 && (
-            <div
-              className="resize-column-left-bar"
-              onMouseDown={resizeColMouseDownHandler(columnIndex - 1)}
+            <>
+              <div
+                className="resize-column-left-bar"
+                onMouseDown={resizeColMouseDownHandler(columnIndex - 1)}
 
-            />
+              />
+              <i
+                className={`fas sort ${sortClass}`}
+                data-testid="sort-button"
+                tabIndex={-1}
+                onMouseDown={(event) => {
+                  event.stopPropagation();
+                }}
+                onClick={(event) => {
+                  sheet.sorts ||= [];
+                  const columnName = sheet.columns[columnIndex - 1].name;
+                  let newDirection: SortDirection;
+                  if (direction === 'asc') {
+                    newDirection = 'desc';
+                  } else if (direction === 'desc') {
+                    newDirection = 'none';
+                  } else {
+                    newDirection = 'asc';
+                  }
+                  onSorting(sheet, columnName, newDirection);
+                  event.stopPropagation();
+                }}
+              ></i>
+            </>
           )}
           {columnIndex === 0 ? '\u00A0' : sheet.columns[columnIndex - 1].name}
           <div
@@ -779,6 +824,7 @@ function Table({
                 width={width}
                 height={height}
                 onItemsRendered={onItemsRendered}
+                onSorting={onSorting}
                 onScrolled={(left, top) => {
                   sheet.scrollLeft = left;
                   sheet.scrollTop = top;
@@ -856,11 +902,13 @@ function Graph({type, sheet}: {type: ChartType, sheet: Sheet}): JSX.Element {
 export default function Sheet({
   sheet,
   presentationType,
-  onSelectedSheetUpdated
+  onSelectedSheetUpdated,
+  onSorting,
 }: {
   sheet: Sheet,
   presentationType: PresentationType,
-  onSelectedSheetUpdated: (sheet: Sheet | null) => void
+  onSelectedSheetUpdated: (sheet: Sheet | null) => void,
+  onSorting: (sheet: Sheet, column: string, direction: SortDirection) => void
 }): JSX.Element {
 
   if (sheet.columns.length === 0) {
@@ -889,7 +937,13 @@ export default function Sheet({
 
   switch (updatedPresentationType) {
     case 'table':
-      view = <Table sheet={sheet} onSelectedSheetUpdated={onSelectedSheetUpdated} onCopyingStarted={(data) => setCopyingData(data)} onCopyingFinished={() => setCopyingData(null)} />;
+      view = <Table
+        sheet={sheet}
+        onSelectedSheetUpdated={onSelectedSheetUpdated}
+        onCopyingStarted={(data) => setCopyingData(data)}
+        onCopyingFinished={() => setCopyingData(null)}
+        onSorting={onSorting}
+      />;
       break;
     case 'line':
       view = <Graph type="line" sheet={sheet} />;
@@ -908,6 +962,14 @@ export default function Sheet({
     <>
       <CopyingModal isOpen={!!copyingData} cellCount={copyingData?.cellCount || 0} />
       <div className="sheet" tabIndex={-1}>
+        {sheet.isLoading && (
+          <div
+            className="overlay"
+            style={{
+              display: sheet.isLoading ? 'block' : 'none',
+            }}
+          />
+        )}
         <div className="inner">
           {view}
         </div>

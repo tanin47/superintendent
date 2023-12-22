@@ -3,7 +3,7 @@ import sqlite, {Database} from 'better-sqlite3';
 import path from "path";
 import fs from "fs";
 import {Parser} from "csv-parse";
-import {CopySelection} from "../types";
+import {CopySelection, Sort, SortDirection} from "../types";
 import {getRandomBird} from "./Birds";
 
 export type Env = {
@@ -151,6 +151,11 @@ export class Sqlite extends Datastore {
     return Promise.resolve();
   }
 
+  async exists(table: string): Promise<boolean> {
+    const numOfRowsResult = this.db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").all(table);
+    return Promise.resolve(numOfRowsResult.length > 0);
+  }
+
   async drop(table: string): Promise<void> {
     try {
       this.db.exec(`DROP TABLE IF EXISTS "${table}"`);
@@ -207,6 +212,35 @@ export class Sqlite extends Datastore {
     }
 
     return result;
+  }
+
+  async sort(table: string, sorts: Sort[]): Promise<Result> {
+    const filteredSorts = sorts.filter((s) => s.direction != 'none');
+    const unsortedTable = this.makeUnsortedTableName(table);
+
+    if (filteredSorts.length === 0) {
+      if (await this.exists(unsortedTable)) {
+        await this.drop(table);
+        await this.rename(unsortedTable, table);
+      } else {
+        // do nothing.
+      }
+
+      return this.queryAllFromTable(table, `SELECT * FROM "${table}"`);
+    } else {
+      if (!await this.exists(unsortedTable)) {
+        await this.rename(table, unsortedTable)
+      }
+      await this.drop(table);
+
+      const orderClause = filteredSorts
+        .map((s) => `${s.name} ${s.direction}`)
+        .join(', ');
+
+      const sql = `SELECT * FROM "${unsortedTable}" ORDER BY ${orderClause}`;
+      this.db.exec(`CREATE TABLE "${table}" AS ${sql}`);
+      return this.queryAllFromTable(table, sql);
+    }
   }
 
   async copy(table: string, selection: CopySelection): Promise<{text: string, html: string}> {

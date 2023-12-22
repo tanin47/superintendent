@@ -427,6 +427,10 @@ export default class Main {
       return Main.wrapResponse(Main.getSpace(event).db.query(sql, table));
     });
 
+    ipcMain.handle('sort', async (event, table, sorts) => {
+      return Main.wrapResponse(Main.getSpace(event).db.sort(table, sorts));
+    });
+
     ipcMain.handle('copy', async (event, table, selection) => {
       return Main.wrapResponse(
         Main.getSpace(event).db.copy(table, selection)

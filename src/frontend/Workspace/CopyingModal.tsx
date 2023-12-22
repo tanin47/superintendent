@@ -16,7 +16,7 @@ export default function CopyingModal({
       className="modal"
       overlayClassName="modal-overlay"
     >
-      Copying {cellCount.toLocaleString('en-US')} {cellCount > 1 ? 'cells' : 'cell'}...
+      <span className="spinner" /> Copying {cellCount.toLocaleString('en-US')} {cellCount > 1 ? 'cells' : 'cell'}...
     </Modal>
   );
 }

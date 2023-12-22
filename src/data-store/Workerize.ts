@@ -1,7 +1,7 @@
 import {Datastore, Result, Row} from './Datastore';
 import path from "path";
 import {spawn, Thread, Worker} from 'threads';
-import {CopySelection} from "../types";
+import {CopySelection, Sort, SortDirection} from "../types";
 
 // Every method must be called through the worker because this runs on a different thread.
 export class Workerize extends Datastore {
@@ -39,6 +39,10 @@ export class Workerize extends Datastore {
 
   async query(sql: string, table: string | null): Promise<Result> {
     return this.worker.query(sql, table);
+  }
+
+  async sort(table: string, sorts: Sort[]): Promise<Result> {
+    return this.worker.sort(table, sorts);
   }
 
   async copy(table: string, selection: CopySelection): Promise<{text: string, html: string}> {
