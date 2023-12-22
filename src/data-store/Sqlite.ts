@@ -234,7 +234,7 @@ export class Sqlite extends Datastore {
       await this.drop(table);
 
       const orderClause = filteredSorts
-        .map((s) => `${s.name} ${s.direction}`)
+        .map((s) => `"${s.name}" ${s.direction}`)
         .join(', ');
 
       const sql = `SELECT * FROM "${unsortedTable}" ORDER BY ${orderClause}`;

@@ -13,7 +13,7 @@ describe('Sort', () => {
     it('sort 1 column', async () => {
         await $('[data-testid="add-files"]').click();
         await $('[data-testid="input-file"]').clearValue();
-        await $('[data-testid="input-file"]').addValue(await browser.uploadFile('./test/specs/csv-samples/sort.csv'));
+        await $('[data-testid="input-file"]').addValue(await browser.uploadFile('./test/specs/csv-samples/456sort.csv'));
         await $('[data-testid="import-all-files"]').click();
 
         await expect($('.sheet')).toHaveText(
@@ -21,7 +21,7 @@ describe('Sort', () => {
           "a\n30\n100\n" +
           "b\n20\n300\n" +
           "c\n10\n400\n" +
-          " first_col\nsecond_col\nthird_col\n" +
+          " first_col\n123_second_col\nthird_col\n" +
           "1\n2\n3\n4"
         );
 
@@ -56,7 +56,7 @@ describe('Sort', () => {
           "a\n30\n100\n" +
           "b\n20\n300\n" +
           "c\n10\n400\n" +
-          " first_col\nsecond_col\nthird_col\n" +
+          " first_col\n123_second_col\nthird_col\n" +
           "1\n2\n3\n4"
         );
 
@@ -84,7 +84,7 @@ describe('Sort', () => {
           "b\n20\n300\n" +
           "a\n20\n200\n" +
           "a\n30\n100\n" +
-          " first_col\nsecond_col\nthird_col\n" +
+          " first_col\n123_second_col\nthird_col\n" +
           "1\n2\n3\n4"
         );
     });

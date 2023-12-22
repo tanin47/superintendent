@@ -138,6 +138,14 @@ export default function Project({
     [addFiles]
   );
 
+  const sortedSheet = sheets.sort((left, right) => {
+    if (left.isCsv != right.isCsv) {
+      if (left.isCsv) { return -1; }
+      else { return 1; }
+    } else {
+      return left.name.toLowerCase().localeCompare(right.name.toLowerCase());
+    }
+  });
 
   return (
     <>
@@ -164,7 +172,7 @@ export default function Project({
       </div>
       <div className="project-panel">
         <div className="body">
-          {sheets.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase())).map((sheet) => {
+          {sortedSheet.map((sheet) => {
             const icon = sheet.isCsv ? (
               <i className="fas fa-file-csv"></i>
             ) : (
