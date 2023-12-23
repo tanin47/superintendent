@@ -43,10 +43,10 @@ export default function Project({
 
   React.useEffect(() => {
     const callback = async () => {
-      const workflow: ExportedWorkflow = {nodes: []};
+      const workflow: ExportedWorkflow = {sheets: []};
 
       sheets.forEach((sheet) => {
-        workflow.nodes.push({
+        workflow.sheets.push({
           name: sheet.name,
           sql: sheet.sql,
           isCsv: sheet.isCsv,

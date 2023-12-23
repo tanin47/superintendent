@@ -126,6 +126,7 @@ function FileItem({
                   onReplaceChanged(replace);
                 }}
                 disabled={disabled || format === "super"}
+                data-testid="add-csv-sheet-option"
               >
                 <option value="" key="">as a new sheet</option>
                 {sheets

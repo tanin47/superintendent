@@ -109,8 +109,8 @@ export default class Main {
 
     const workflow: ExportedWorkflow = JSON.parse(data);
 
-    for await (const node of workflow.nodes) {
-      await selectedSpace.db.reserveTableName(node.name)
+    for await (const sheet of workflow.sheets) {
+      await selectedSpace.db.reserveTableName(sheet.name)
     }
 
     const promise = new Promise<void>((resolve) => {
@@ -131,7 +131,6 @@ export default class Main {
   }
 
   private static async initExportWorkflow(space: Workspace): Promise<void> {
-    console.log("init export")
     space.window.webContents.send(ExportWorkflowChannel, 'abracadabra');
   }
 
@@ -148,7 +147,6 @@ export default class Main {
       return Promise.resolve("exit");
     }
 
-    console.log("export");
     const writer = fs.createWriteStream(file, {flags: 'w'});
 
     writer.write(JSON.stringify(workflow, null, 2));

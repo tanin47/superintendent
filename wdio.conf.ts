@@ -32,7 +32,7 @@ export const config: Options.Testrunner = {
     // will be called from there.
     //
     specs: [
-        './test/specs/**/*.ts'
+        './test/specs/**/*.e2e.ts'
     ],
     // Patterns to exclude.
     exclude: [
@@ -157,7 +157,7 @@ export const config: Options.Testrunner = {
         // an assertion fails.
         expectationResultHandler: function(passed, assertion) {
             // do something
-        }
+        },
     },
 
     //

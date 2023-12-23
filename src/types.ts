@@ -20,7 +20,7 @@ export type CopySelection = {
   includeColumnNames: boolean,
 };
 
-export type WorkflowNode = {
+export type WorkflowSheet = {
   name: string,
   sql: string,
   isCsv: boolean,
@@ -28,5 +28,5 @@ export type WorkflowNode = {
 }
 
 export type ExportedWorkflow = {
-  nodes: WorkflowNode[],
+  sheets: WorkflowSheet[],
 }

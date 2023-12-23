@@ -1,6 +1,6 @@
 import {$, expect} from '@wdio/globals'
 import {Key} from 'webdriverio'
-import {clearEditor} from "./helpers";
+import {clearEditor, getTabs} from "./helpers";
 
 describe('A simple scenario', () => {
     beforeAll(async () => {
@@ -39,18 +39,10 @@ describe('A simple scenario', () => {
           "2"
         );
 
-        const tabs = await $$('[data-testid="sheet-item-list"] .tab')
-          .map(async (elem) => {
-              return {
-                  label: await elem.getText(),
-                  className: (await elem.getAttribute("class")).trim()
-              };
-          })
-
-        await expect(tabs).toEqual([
-          {label: 'albatross', className: 'tab'},
-          {label: 'csv', className: 'tab'},
-          {label: 'tab', className: 'tab selected'},
+        await expect(await getTabs()).toEqual([
+          {label: 'albatross', isSelected: false},
+          {label: 'csv', isSelected: false},
+          {label: 'tab', isSelected: true},
         ]);
     });
 

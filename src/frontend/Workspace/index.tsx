@@ -48,10 +48,10 @@ export default function Workspace(): ReactElement {
       setSheets((prevSheets) => {
         return [
           ...prevSheets,
-          ...workflow.nodes.map((node) => ({
-            name: node.name,
-            isCsv: node.isCsv,
-            sql: node.sql,
+          ...workflow.sheets.map((sheet) => ({
+            name: sheet.name,
+            isCsv: sheet.isCsv,
+            sql: sheet.sql,
             dependsOn: [],
             count: 0,
             columns: [],

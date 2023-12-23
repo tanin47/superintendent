@@ -184,7 +184,12 @@ export default React.forwardRef<Ref, Props>(function SheetSection({
                 const selectedSheetName = tabs[selectedTabIndex].sheet.name;
 
                 tabs.sort((a, b) => {
-                  return a.sheet.name.localeCompare(b.sheet.name);
+                  if (a.sheet.isCsv != b.sheet.isCsv) {
+                    if (a.sheet.isCsv) { return -1; }
+                    else { return 1; }
+                  } else {
+                    return a.sheet.name.toLowerCase().localeCompare(b.sheet.name.toLowerCase());
+                  }
                 });
 
                 if (sortDirection === 'desc') {
