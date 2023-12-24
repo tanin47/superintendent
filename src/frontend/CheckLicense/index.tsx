@@ -41,7 +41,7 @@ export default function CheckLicense ({ onFinished }: { onFinished: () => void }
       },
       100
     )
-  }, [])
+  }, [onFinished])
 
   if (result === 'loading') {
     return (

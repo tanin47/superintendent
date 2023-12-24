@@ -64,6 +64,7 @@ export default React.forwardRef<Ref, Props>(function SheetSection ({
 
   React.useEffect(
     () => {
+      let changed = false
       const existings = new Map(shadowSheets.map((s, index) => [s.name, index]))
       let newSelectedTabIndex = selectedTabIndex
 
@@ -84,13 +85,13 @@ export default React.forwardRef<Ref, Props>(function SheetSection ({
                 break
               }
             }
+            changed = true
           }
         } else {
           shadowSheets.push(sheet)
-          tabs.push({
-            sheet
-          })
+          tabs.push({ sheet })
           newSelectedTabIndex = tabs.length - 1
+          changed = true
         }
       }
 
@@ -100,27 +101,40 @@ export default React.forwardRef<Ref, Props>(function SheetSection ({
       for (let index = 0; index < tabs.length; index++) {
         if (!sheetNameSet.has(tabs[index].sheet.name)) {
           deletedTabIndices.add(index)
+          changed = true
         }
       }
 
       const newTabs = tabs.filter((t, i) => !deletedTabIndices.has(i))
-      setTabs(newTabs)
-      setSelectedTabIndex(Math.min(Math.max(0, newSelectedTabIndex), newTabs.length - 1))
+
+      if (changed) {
+        setTabs(newTabs)
+      }
+
+      newSelectedTabIndex = Math.min(Math.max(0, newSelectedTabIndex), newTabs.length - 1)
+      if (newSelectedTabIndex !== selectedTabIndex) {
+        setSelectedTabIndex(newSelectedTabIndex)
+      }
 
       const deletedShadowSheetIndices = new Set<number>()
 
       for (let index = 0; index < shadowSheets.length; index++) {
         if (!sheetNameSet.has(shadowSheets[index].name)) {
           deletedShadowSheetIndices.add(index)
+          changed = true
         }
       }
-      setShadowSheets(shadowSheets.filter((t, i) => !deletedShadowSheetIndices.has(i)))
+      if (changed) {
+        setShadowSheets(shadowSheets.filter((t, i) => !deletedShadowSheetIndices.has(i)))
+      }
     },
-    [sheets]
+    [selectedTabIndex, shadowSheets, sheets, tabs]
   )
 
   const rearrangedCallback = React.useCallback(
     (movedIndex: number, newIndex: number): void => {
+      if (movedIndex === newIndex) { return }
+
       const copied = [...tabs]
       const moved = copied.splice(movedIndex, 1)
       copied.splice(newIndex, 0, moved[0])
@@ -129,7 +143,9 @@ export default React.forwardRef<Ref, Props>(function SheetSection ({
       const selectedSheetName = tabs[selectedTabIndex].sheet.name
       for (let i = 0; i < copied.length; i++) {
         if (copied[i].sheet.name === selectedSheetName) {
-          setSelectedTabIndex(i)
+          if (i !== selectedTabIndex) {
+            setSelectedTabIndex(i)
+          }
         }
       }
     },
@@ -140,7 +156,7 @@ export default React.forwardRef<Ref, Props>(function SheetSection ({
     () => {
       onSelectedSheetUpdated(selectedTabIndex >= 0 && selectedTabIndex < tabs.length ? tabs[selectedTabIndex].sheet : null)
     },
-    [tabs, selectedTabIndex]
+    [tabs, selectedTabIndex, onSelectedSheetUpdated]
   )
 
   let content: JSX.Element | null = null

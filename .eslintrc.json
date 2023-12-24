@@ -19,9 +19,10 @@
     "rules": {
         "@typescript-eslint/no-non-null-assertion": "off",
         "@typescript-eslint/strict-boolean-expressions": "off",
-        "react-hooks/rules-of-hooks": "warn",
-        "react-hooks/exhaustive-deps": "warn"
+        "react-hooks/rules-of-hooks": "error",
+        "react-hooks/exhaustive-deps": "error"
     },
+    "ignorePatterns": ["node_modules", "dist", "test"],
     "settings": {
         "react": {
             "version": "detect"

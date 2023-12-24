@@ -1,6 +1,6 @@
 import {$, expect} from '@wdio/globals'
 import {Key} from 'webdriverio'
-import {clearEditor, getTabs} from "./helpers";
+import {clearEditor, expectDefaultEditorText, getTabs} from "./helpers";
 
 describe('A simple scenario', () => {
     beforeAll(async () => {
@@ -94,7 +94,7 @@ describe('A simple scenario', () => {
         await $('[data-testid="format-sql"] span').click();
         await expect($('.CodeMirror')).toHaveText("1\nselect\n2\n  *\n3\nfrom\n4\n  csv\n5\n  join albatross");
         await $('[data-testid="project-item-csv"] span').click();
-        await expect($('.CodeMirror')).toHaveText("1\nSELECT * FROM \"csv\"");
+        await expectDefaultEditorText();
 
         await $('[data-testid="project-item-csv"]').click({button: 'right'});
         await $('[data-testid="project-context-menu-view"]').click();

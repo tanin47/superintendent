@@ -29,6 +29,17 @@ interface SheetInfo {
   totalRowCount: number
 }
 
+function areSheetInfosEqual (left: SheetInfo | null, right: SheetInfo | null): boolean {
+  if (left === right) { return true }
+  if (left === null || right === null) { return false }
+
+  return (
+    left.name === right.name &&
+      left.showCount === right.showCount &&
+      left.totalRowCount === right.totalRowCount
+  )
+}
+
 export default function Workspace (): ReactElement {
   const [editorMode, setEditorMode] = React.useState<EditorMode>(getInitialEditorMode())
   const [sheets, setSheets] = React.useState<Sheet[]>([])
@@ -190,6 +201,7 @@ export default function Workspace (): ReactElement {
   const makeNewQuery = React.useCallback(
     () => {
       setEditorSelectedSheet(null)
+      setTimeout(() => { editorRef.current!.focus() }, 10)
     },
     []
   )
@@ -391,6 +403,10 @@ export default function Workspace (): ReactElement {
               showCount: newSheet.rows.length,
               totalRowCount: newSheet.count
             }
+          }
+
+          if (areSheetInfosEqual(info, shownSheetInfo)) {
+            return
           }
 
           if (!isChartEnabled(info?.showCount)) {

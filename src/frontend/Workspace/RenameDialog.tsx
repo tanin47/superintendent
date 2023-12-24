@@ -43,7 +43,7 @@ export default function RenameDialog ({
           setErrorMsg(error.message)
         })
     },
-    [renamingSheet, onClosed, setErrorMsg, tableName]
+    [renamingSheet, tableName, onClosed, onUpdated]
   )
 
   React.useEffect(() => {

@@ -195,7 +195,7 @@ function useInnerElementType (
           </div>
         )
       }),
-    [cell, columnWidths, computeRowHeight]
+    [cell, columnWidths, computeCumulativeRowHeight, computeRowHeight]
   )
 }
 
@@ -526,7 +526,7 @@ function Table ({
       document.removeEventListener('copy', handler)
       document.removeEventListener('cut', handler)
     }
-  }, [selection, userSelect])
+  }, [onCopyingFinished, onCopyingStarted, selection, sheet, userSelect])
 
   const isWithinRange = (value: number, start: number, end: number): boolean => {
     return (start <= value && value <= end) || (end <= value && value <= start)
@@ -799,7 +799,7 @@ function Table ({
           }
         })
     },
-    [sheet, gridRef]
+    [sheet, onSelectedSheetUpdated]
   )
 
   const isItemLoaded = React.useCallback(
@@ -917,6 +917,14 @@ export default function SheetComponent ({
   onSelectedSheetUpdated: (sheet: Sheet | null) => void
   onSorting: (sheet: Sheet, column: string, direction: SortDirection) => void
 }): JSX.Element {
+  React.useEffect(
+    () => {
+      Chart.register(...registerables)
+    },
+    []
+  )
+  const [copyingData, setCopyingData] = React.useState<CopyingData | null>(null)
+
   if (sheet.columns.length === 0) {
     let msg = `Please run ${sheet.name} in order to see the result.`
 
@@ -926,16 +934,7 @@ export default function SheetComponent ({
     return <div className="sheet" tabIndex={-1}><div className="empty-warning">{msg}</div></div>
   }
 
-  React.useEffect(
-    () => {
-      Chart.register(...registerables)
-    },
-    []
-  )
-
   let view: JSX.Element
-
-  const [copyingData, setCopyingData] = React.useState<CopyingData | null>(null)
 
   let updatedPresentationType = presentationType
 

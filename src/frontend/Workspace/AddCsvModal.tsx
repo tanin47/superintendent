@@ -299,7 +299,7 @@ export default React.forwardRef(function AddCsv ({
     return () => {
       document.removeEventListener('keyup', handler)
     }
-  }, [isOpen, uploadFiles])
+  }, [close, isOpen, uploadFiles])
 
   React.useEffect(() => {
     const handler = (event): boolean => {

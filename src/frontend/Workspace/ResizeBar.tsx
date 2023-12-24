@@ -22,7 +22,7 @@ export default function ResizeBar ({
 
       onResizing(downSize, event.clientX - mouseDownX, event.clientY - mouseDownY)
     },
-    [downSize, isResizing, mouseDownX, mouseDownY]
+    [downSize, isResizing, mouseDownX, mouseDownY, onResizing]
   )
   const upHandler = React.useCallback(
     (event) => {

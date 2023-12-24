@@ -13,6 +13,10 @@ export async function fillEditor(text: string) {
   await browser.keys(text);
 }
 
+export async function expectDefaultEditorText() {
+  await expect($('.CodeMirror')).toHaveText('Compose a beautiful SQL...\n1')
+}
+
 export type Tab = {
   label: string,
   isSelected: boolean

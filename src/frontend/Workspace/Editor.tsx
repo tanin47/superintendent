@@ -103,7 +103,7 @@ export default React.forwardRef<Ref, Props>(function Editor ({
       codeMirrorInstance.current.setOption('readOnly', selectedSheet.isCsv ? 'nocursor' : false)
       setShouldShowCsvNotice(selectedSheet.isCsv)
     },
-    [selectedSheet]
+    [selectedSheet, shownSheet]
   )
 
   React.useImperativeHandle(ref, () => ({
@@ -173,7 +173,7 @@ export default React.forwardRef<Ref, Props>(function Editor ({
           setIsQueryLoading(false)
         })
     },
-    [sheets, isQueryLoading, selectedSheet]
+    [isQueryLoading, onRunningSql, selectedSheet]
   )
 
   React.useEffect(() => {
@@ -227,7 +227,7 @@ export default React.forwardRef<Ref, Props>(function Editor ({
         firstCharRecorded = false
       }
     })
-  }, [])
+  }, [initialValue, mode])
 
   React.useEffect(() => {
     if (!codeMirrorInstance.current) { return }
