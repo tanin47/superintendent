@@ -72,8 +72,8 @@ describe('A simple scenario', () => {
     });
 
     it("renames", async () => {
-        await $('[data-testid="project-item-albatross"]').moveTo();
-        await $('[data-testid="rename-albatross"]').click();
+        await $('[data-testid="project-item-albatross"]').click({button: 'right'});
+        await $('[data-testid="project-context-menu-rename"]').click();
         await $('[data-testid="rename-textbox"]').setValue('bird');
         await $('[data-testid="rename-button"]').click();
         await $('[data-testid="project-item-bird"] span').click();
@@ -82,8 +82,8 @@ describe('A simple scenario', () => {
 
     it("deletes", async () => {
         await expect($('[data-testid="new-sql"]')).toExist();
-        await $('[data-testid="project-item-bird"]').moveTo();
-        await $('[data-testid="delete-bird"]').click();
+        await $('[data-testid="project-item-bird"]').click({button: 'right'});
+        await $('[data-testid="project-context-menu-delete"]').click();
         await expect($('[data-testid="project-item-bird"]')).not.toExist();
         await expect($('[data-testid="new-sql"]')).not.toExist();
     });
@@ -96,18 +96,14 @@ describe('A simple scenario', () => {
         await $('[data-testid="project-item-csv"] span').click();
         await expect($('.CodeMirror')).toHaveText("1\nSELECT * FROM \"csv\"");
 
-        await $('[data-testid="view-csv"]').click();
+        await $('[data-testid="project-item-csv"]').click({button: 'right'});
+        await $('[data-testid="project-context-menu-view"]').click();
         await expect($('[data-testid="sheet-section-item-csv"]')).toHaveElementClass(expect.stringContaining('selected'));
         await expect($('[data-testid="sheet-section-item-anhinga"]')).not.toHaveElementClass(expect.stringContaining('selected'));
 
-        await $('[data-testid="view-anhinga"]').click();
+        await $('[data-testid="project-item-anhinga"]').click({button: 'right'});
+        await $('[data-testid="project-context-menu-view"]').click();
         await expect($('[data-testid="sheet-section-item-anhinga"]')).toHaveElementClass(expect.stringContaining('selected'));
         await expect($('[data-testid="sheet-section-item-csv"]')).not.toHaveElementClass(expect.stringContaining('selected'));
-    });
-
-    it("quotes a table name", async () => {
-        await expect($('.CodeMirror')).toHaveText("1\nSELECT * FROM \"csv\"");
-        await $('[data-testid="quote-anhinga"]').click();
-        await expect($('.CodeMirror')).toHaveText("1\nanhingaSELECT * FROM \"csv\"");
     });
 });

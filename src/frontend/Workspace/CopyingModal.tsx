@@ -1,13 +1,12 @@
-import React from "react";
-import {Sheet} from "./types";
-import {Ref} from "./AddCsvModal";
-import Modal from 'react-modal';
+import React from 'react'
+import { type Ref } from './AddCsvModal'
+import Modal from 'react-modal'
 
-export default function CopyingModal({
+export default function CopyingModal ({
   isOpen,
   cellCount
 }: {
-  isOpen: boolean,
+  isOpen: boolean
   cellCount: number
 }, ref: React.ForwardedRef<Ref>): JSX.Element {
   return (
@@ -18,5 +17,5 @@ export default function CopyingModal({
     >
       <span className="spinner" /> Copying {cellCount.toLocaleString('en-US')} {cellCount > 1 ? 'cells' : 'cell'}...
     </Modal>
-  );
+  )
 }

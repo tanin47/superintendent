@@ -1,73 +1,72 @@
-import React from "react";
-import {Sheet as SheetType} from "./types";
-import {rename} from "../api";
-import {ctrlCmdChar} from "./constants";
-import Modal from 'react-modal';
+import React from 'react'
+import { type Sheet as SheetType } from './types'
+import { rename } from '../api'
+import Modal from 'react-modal'
 
-export default function RenameDialog({
+export default function RenameDialog ({
   renamingSheet,
   onUpdated,
   onClosed
 }: {
-  renamingSheet: SheetType | null,
-  onUpdated: (name: string) => void,
+  renamingSheet: SheetType | null
+  onUpdated: (name: string) => void
   onClosed: () => void
 }): JSX.Element {
-  const [tableName, setTableName] = React.useState<string>('');
-  const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
+  const [tableName, setTableName] = React.useState<string>('')
+  const [errorMsg, setErrorMsg] = React.useState<string | null>(null)
 
   React.useEffect(
     () => {
-      setTableName(renamingSheet ? renamingSheet.name : '');
+      setTableName(renamingSheet ? renamingSheet.name : '')
     },
     [setTableName, renamingSheet]
   )
 
   const renameCallback = React.useCallback(
     () => {
-      setErrorMsg(null); // Clear error message.
-      if (!renamingSheet) return;
+      setErrorMsg(null) // Clear error message.
+      if (!renamingSheet) return
 
-      const sanitized = tableName.trim();
+      const sanitized = tableName.trim()
 
-      if (sanitized == renamingSheet.name) {
-        onClosed();
-        return;
+      if (sanitized === renamingSheet.name) {
+        onClosed()
+        return
       }
 
       rename(renamingSheet.name, sanitized)
         .then((result) => {
-          onUpdated(sanitized);
+          onUpdated(sanitized)
         })
         .catch((error) => {
-          setErrorMsg(error.message);
-        });
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+          setErrorMsg(error.message)
+        })
     },
     [renamingSheet, onClosed, setErrorMsg, tableName]
-  );
+  )
 
   React.useEffect(() => {
-    const handler = (event) => {
-      if (!renamingSheet) { return; }
+    const handler = (event): void => {
+      if (!renamingSheet) { return }
 
       if (event.code === 'Enter') {
-        event.stopPropagation();
-        renameCallback();
-        return;
+        event.stopPropagation()
+        renameCallback()
+        return
       }
 
       if (event.code === 'Escape') {
-        event.stopPropagation();
-        onClosed();
-        return;
+        event.stopPropagation()
+        onClosed()
       }
-    };
-    document.addEventListener('keyup', handler);
+    }
+    document.addEventListener('keyup', handler)
 
     return () => {
-      document.removeEventListener('keyup', handler) ;
-    };
-  }, [renamingSheet, renameCallback, onClosed]);
+      document.removeEventListener('keyup', handler)
+    }
+  }, [renamingSheet, renameCallback, onClosed])
 
   return (
     <Modal
@@ -80,12 +79,12 @@ export default function RenameDialog({
           type="text"
           className="rename-textbox"
           ref={(ref) => ref?.focus()} value={tableName}
-          onChange={(event) => setTableName(event.target.value)}
+          onChange={(event) => { setTableName(event.target.value) }}
           data-testid="rename-textbox"
         />
         <button
           className="main"
-          onClick={() => renameCallback()}
+          onClick={() => { renameCallback() }}
           data-testid="rename-button"
         >
           Rename
@@ -93,7 +92,7 @@ export default function RenameDialog({
         </button>
         <button
           className="cancel"
-          onClick={() => onClosed()}
+          onClick={() => { onClosed() }}
         >
           Cancel
           <span className="short-key">ESC</span>
@@ -101,5 +100,5 @@ export default function RenameDialog({
       </div>
       {errorMsg !== null && (<div className="rename-error">Error: {errorMsg}</div>)}
     </Modal>
-  );
+  )
 }

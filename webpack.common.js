@@ -1,85 +1,85 @@
-const HtmlWebpackPlugin = require('html-webpack-plugin');
-const ThreadsPlugin = require('threads-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+const ThreadsPlugin = require('threads-plugin')
 
 const electronPreload = {
   entry: './src/preload.ts',
   target: 'electron-preload',
   resolve: {
-    extensions: ['.ts', '.js'],
+    extensions: ['.ts', '.js']
   },
   module: {
     rules: [
       {
         test: /\.ts$/,
-        use: [{loader: 'ts-loader'}]
-      },
+        use: [{ loader: 'ts-loader' }]
+      }
     ]
   },
   output: {
-    filename: 'preload.js',
-  },
-};
+    filename: 'preload.js'
+  }
+}
 
 const electronWorkerConfiguration = {
   entry: './src/data-store/worker.ts',
   target: 'node',
   resolve: {
-    extensions: ['.ts', '.js'],
+    extensions: ['.ts', '.js']
   },
   module: {
     rules: [
       {
         test: /\.ts$/,
-        use: [{loader: 'ts-loader'}]
+        use: [{ loader: 'ts-loader' }]
       },
       {
         test: /\.node$/,
         loader: 'node-loader'
-      },
+      }
     ]
   },
   output: {
-    filename: 'worker.js',
+    filename: 'worker.js'
   },
   externals: {
     'better-sqlite3': 'commonjs better-sqlite3'
-  },
-};
+  }
+}
 
 const electronConfiguration = {
   entry: './src/app.ts',
   target: 'electron-main',
   resolve: {
-    extensions: ['.ts', '.js'],
+    extensions: ['.ts', '.js']
   },
   module: {
     rules: [
       {
         test: /\.ts$/,
-        use: [{loader: 'ts-loader'}]
+        use: [{ loader: 'ts-loader' }]
       },
       {
         test: /\.node$/,
         loader: 'node-loader'
-      },
+      }
     ]
   },
   output: {
-    filename: 'main.js',
+    filename: 'main.js'
   },
   plugins: [
-    new ThreadsPlugin(),
+    new ThreadsPlugin()
   ],
   externals: {
-    'better-sqlite3': 'commonjs better-sqlite3',
-  },
-};
+    'better-sqlite3': 'commonjs better-sqlite3'
+  }
+}
 
 const reactConfiguration = {
   entry: './src/frontend/renderer.tsx',
   target: 'web',
   resolve: {
-    extensions: ['.tsx', '.ts', '.js'],
+    extensions: ['.tsx', '.ts', '.js']
   },
   module: {
     rules: [
@@ -92,15 +92,15 @@ const reactConfiguration = {
         use: [
           'style-loader',
           'css-loader',
-          'sass-loader',
-        ],
+          'sass-loader'
+        ]
       },
       {
         test: /\.css$/i,
         use: [
           'style-loader',
-          'css-loader',
-        ],
+          'css-loader'
+        ]
       },
       {
         test: /\.(woff(2)?|ttf|eot|svg)(\?v=\d+\.\d+\.\d+)?$/,
@@ -115,18 +115,18 @@ const reactConfiguration = {
     ]
   },
   output: {
-    filename: 'renderer.js',
+    filename: 'renderer.js'
   },
   plugins: [
     new HtmlWebpackPlugin({
       template: './src/frontend/index.html'
     })
-  ],
-};
+  ]
+}
 
 module.exports = {
   electronPreload,
   electronWorkerConfiguration,
   electronConfiguration,
   reactConfiguration
-};
+}

@@ -1,6 +1,7 @@
 import {$, expect} from '@wdio/globals'
 import {Key} from 'webdriverio'
 import {clearEditor} from "./helpers";
+import stringMatching = jasmine.stringMatching;
 
 describe('Sort', () => {
     beforeAll(async () => {
@@ -87,5 +88,13 @@ describe('Sort', () => {
           " first_col\n123_second_col\nthird_col\n" +
           "1\n2\n3\n4"
         );
+    });
+
+    it('BUG: ensure SQL is not changed', async () => {
+      await expect($('[data-testid="project-item-456sort"]')).not.toHaveElementClass(expect.stringContaining('selected'));
+
+      await $('[data-testid="project-item-456sort"] span').click();
+      await expect($('.CodeMirror')).toHaveText("1\nSELECT * FROM \"456sort\"");
+      await expect($('[data-testid="project-item-456sort"] .fa-file-csv')).toExist();
     });
 });

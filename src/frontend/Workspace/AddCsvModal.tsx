@@ -1,35 +1,35 @@
-import React from 'react';
-import Modal from 'react-modal';
-import './AddCsvModal.scss';
-import {addCsv, convertFileList} from "../api";
-import {Sheet} from "./types";
-import {Format} from "../../types";
-import {ctrlCmdChar} from "./constants";
+import React from 'react'
+import Modal from 'react-modal'
+import './AddCsvModal.scss'
+import { addCsv, convertFileList } from '../api'
+import { type Sheet } from './types'
+import { type Format } from '../../types'
+import { ctrlCmdChar } from './constants'
 
-type Status = 'draft' | 'loading' | 'added' | 'errored';
+type Status = 'draft' | 'loading' | 'added' | 'errored'
 
-type File = {
-  name: string,
-  path: string,
-  withHeader: boolean,
-  format: Format,
-  replace: string,
+interface File {
+  name: string
+  path: string
+  withHeader: boolean
+  format: Format
+  replace: string
   status: Status
-};
-
-const MAX_LENGTH = 30;
-
-function trimFilename(name: string): string {
-  const length = MAX_LENGTH - 3;
-  if (name.length <= length) {
-    return name;
-  }
-
-  const half = length / 2;
-  return `${name.substring(0, half)}...${name.substring(name.length - half, name.length)}`;
 }
 
-function FileItem({
+const MAX_LENGTH = 30
+
+function trimFilename (name: string): string {
+  const length = MAX_LENGTH - 3
+  if (name.length <= length) {
+    return name
+  }
+
+  const half = length / 2
+  return `${name.substring(0, half)}...${name.substring(name.length - half, name.length)}`
+}
+
+function FileItem ({
   file,
   disabled,
   sheets,
@@ -38,26 +38,26 @@ function FileItem({
   onReplaceChanged,
   onDeleted
 }: {
-  file: File,
-  sheets: Sheet[],
-  disabled: boolean,
-  onWithHeaderChanged: (newWithHeader: boolean) => void,
-  onFormatChanged: (newFormat: Format) => void,
-  onReplaceChanged: (newReplace: string) => void,
+  file: File
+  sheets: Sheet[]
+  disabled: boolean
+  onWithHeaderChanged: (newWithHeader: boolean) => void
+  onFormatChanged: (newFormat: Format) => void
+  onReplaceChanged: (newReplace: string) => void
   onDeleted: () => void
 }): JSX.Element {
-  const [format, setFormat] = React.useState(file.format);
-  const [replace, setReplace] = React.useState('');
-  const [withHeader, setWithHeader] = React.useState(file.withHeader);
+  const [format, setFormat] = React.useState(file.format)
+  const [replace, setReplace] = React.useState('')
+  const [withHeader, setWithHeader] = React.useState(file.withHeader)
 
-  let icon = <i className="fas fa-file draft icon" />;
+  let icon = <i className="fas fa-file draft icon" />
 
   if (file.status === 'added') {
-    icon = <i className="fas fa-check-square added icon" />;
+    icon = <i className="fas fa-check-square added icon" />
   } else if (file.status === 'loading') {
-    icon = <i className="spinner icon" />;
+    icon = <i className="spinner icon" />
   } else if (file.status === 'errored') {
-    icon = <i className="fas fa-exclamation-circle errored icon" />;
+    icon = <i className="fas fa-exclamation-circle errored icon" />
   }
 
   return (
@@ -70,15 +70,15 @@ function FileItem({
       <div className="right">
         <div className="line">
           <div className="selector">
-            <div className="select" style={{width: '110px'}}>
+            <div className="select" style={{ width: '110px' }}>
               <select
                 value={`${withHeader}`}
                 onChange={(event) => {
-                  const newWithHeader = event.target.value == "true";
-                  setWithHeader(newWithHeader);
-                  onWithHeaderChanged(newWithHeader);
+                  const newWithHeader = event.target.value === 'true'
+                  setWithHeader(newWithHeader)
+                  onWithHeaderChanged(newWithHeader)
                 }}
-                disabled={disabled || format === "super"}
+                disabled={disabled || format === 'super'}
               >
                 <option value="true">with header</option>
                 <option value="false">without header</option>
@@ -90,9 +90,9 @@ function FileItem({
               <select
                 value={format}
                 onChange={(event) => {
-                  const newFormat = event.target.value as Format;
-                  setFormat(newFormat);
-                  onFormatChanged(newFormat);
+                  const newFormat = event.target.value as Format
+                  setFormat(newFormat)
+                  onFormatChanged(newFormat)
                 }}
                 disabled={disabled}
               >
@@ -110,22 +110,22 @@ function FileItem({
           <i
             className={`fas fa-times ${disabled ? 'disabled' : ''}`}
             onClick={() => {
-              if (disabled) { return; }
-              onDeleted();
+              if (disabled) { return }
+              onDeleted()
             }}
           />
         </div>
         <div className="line">
           <div className="selector">
-            <div className="select" style={{width: '215px'}}>
+            <div className="select" style={{ width: '215px' }}>
               <select
                 value={replace}
                 onChange={(event) => {
-                  const replace = event.target.value;
-                  setReplace(replace);
-                  onReplaceChanged(replace);
+                  const replace = event.target.value
+                  setReplace(replace)
+                  onReplaceChanged(replace)
                 }}
-                disabled={disabled || format === "super"}
+                disabled={disabled || format === 'super'}
                 data-testid="add-csv-sheet-option"
               >
                 <option value="" key="">as a new sheet</option>
@@ -139,7 +139,7 @@ function FileItem({
                       >
                         Replace {s.name}
                       </option>
-                    );
+                    )
                   })
                 }
               </select>
@@ -151,47 +151,47 @@ function FileItem({
   )
 }
 
-export type Ref = {
+export interface Ref {
   addFiles: (fileList: string[] | null) => void
 }
 
-export default React.forwardRef(function AddCsv({
+export default React.forwardRef(function AddCsv ({
   isOpen,
   sheets,
   onClose,
   onAdded
 }: {
-  isOpen: boolean,
-  sheets: Sheet[],
-  onClose: () => void,
+  isOpen: boolean
+  sheets: Sheet[]
+  onClose: () => void
   onAdded: (sheet: Sheet) => void
 }, ref: React.ForwardedRef<Ref>): JSX.Element {
-  const [files, setFiles] = React.useState<File[]>([]);
-  const [isLoading, setIsLoading] = React.useState<boolean>(false);
-  const fileRef = React.useRef<HTMLInputElement>(null);
+  const [files, setFiles] = React.useState<File[]>([])
+  const [isLoading, setIsLoading] = React.useState<boolean>(false)
+  const fileRef = React.useRef<HTMLInputElement>(null)
 
-  React.useEffect(() => Modal.setAppElement('#app'), []);
+  React.useEffect(() => Modal.setAppElement('#app'), [])
 
   const uploadFiles = React.useCallback(async () => {
-    if (files.length === 0) { return; }
-    setIsLoading(true);
+    if (files.length === 0) { return }
+    setIsLoading(true)
 
-    for (let index=0;index<files.length;index++) {
-      const file = files[index];
+    for (let index = 0; index < files.length; index++) {
+      const file = files[index]
       setFiles((prevFiles) => {
         prevFiles[index] = {
           ...prevFiles[index],
           status: 'loading'
-        };
+        }
 
-        return [...prevFiles];
-      });
+        return [...prevFiles]
+      })
 
       try {
-        const sheets = await addCsv(file.path, file.withHeader, file.format, file.replace);
-        if (sheets) {
+        const sheets = await addCsv(file.path, file.withHeader, file.format, file.replace)
+        if (sheets != null && sheets.length > 0) {
           sheets.forEach((sheet) => {
-            onAdded(sheet);
+            onAdded(sheet)
           })
         }
 
@@ -199,124 +199,125 @@ export default React.forwardRef(function AddCsv({
           prevFiles[index] = {
             ...prevFiles[index],
             status: 'added'
-          };
+          }
 
-          return [...prevFiles];
-        });
+          return [...prevFiles]
+        })
       } catch (e) {
         if (e instanceof Error) {
-          alert(e.message);
+          alert(e.message)
         } else {
-          alert(`Unknown error: ${e}`);
+          // @ts-expect-error unknown type
+          alert(`Unknown error: ${e.toString()}`)
         }
         setFiles((prevFiles) => {
           prevFiles[index] = {
             ...prevFiles[index],
             status: 'errored'
-          };
+          }
 
-          return [...prevFiles];
-        });
+          return [...prevFiles]
+        })
       }
     }
 
-    setIsLoading(false);
-    setFiles([]);
-    onClose();
-  }, [setIsLoading, onClose, onAdded, setFiles, files]);
+    setIsLoading(false)
+    setFiles([])
+    onClose()
+  }, [setIsLoading, onClose, onAdded, setFiles, files])
 
   const addFilesCallback = React.useCallback((fileList: string[] | null) => {
-    if (!fileList || isLoading) { return; }
+    if (fileList == null || fileList.length === 0 || isLoading) { return }
 
-    const newFiles: File[] = [];
+    const newFiles: File[] = []
     for (const file of fileList) {
+      let format: Format = 'comma'
+      const filename = file.split(/[\\/]/).pop() // get the filename
 
-      let format: Format = 'comma';
-      const filename = file.split(/[\\/]/).pop()!; // get the filename
+      if (filename === undefined) { continue }
 
       if (filename.endsWith('.tsv')) {
-        format = 'tab';
+        format = 'tab'
       } else if (filename.endsWith('.psv')) {
-        format = 'pipe';
+        format = 'pipe'
       } else if (filename.endsWith('.super')) {
-        format = 'super';
+        format = 'super'
       }
 
       newFiles.push({
         name: trimFilename(filename),
         path: file,
         withHeader: true,
-        format: format,
+        format,
         replace: '',
-        status: 'draft',
-      });
+        status: 'draft'
+      })
     }
 
-    if (fileRef.current) {
-      fileRef.current.value = '';
+    if (fileRef.current != null) {
+      fileRef.current.value = ''
     }
 
-    setFiles((prevFiles) => [...prevFiles, ...newFiles]);
-  }, [setFiles, fileRef, isLoading]);
+    setFiles((prevFiles) => [...prevFiles, ...newFiles])
+  }, [setFiles, fileRef, isLoading])
 
   React.useImperativeHandle(
     ref,
     () => ({
       addFiles: (fileList: string[] | null) => {
-        addFilesCallback(fileList);
+        addFilesCallback(fileList)
       }
     }),
     [addFilesCallback]
-  );
+  )
 
   const close = React.useCallback(
     () => {
-      setFiles([]);
-      onClose();
+      setFiles([])
+      onClose()
     },
     [setFiles, onClose]
   )
 
   React.useEffect(() => {
-    const handler = (event) => {
-      if (!isOpen) { return; }
+    const handler = (event): void => {
+      if (!isOpen) { return }
 
       if (event.code === 'Enter') {
-        event.stopPropagation();
-        uploadFiles();
-        return;
+        event.stopPropagation()
+        void uploadFiles()
+        return
       }
 
       if (event.code === 'Escape') {
-        event.stopPropagation();
-        close();
-        return;
+        event.stopPropagation()
+        close()
       }
-    };
-    document.addEventListener('keyup', handler);
+    }
+    document.addEventListener('keyup', handler)
 
     return () => {
-      document.removeEventListener('keyup', handler) ;
-    };
-  }, [isOpen, uploadFiles]);
+      document.removeEventListener('keyup', handler)
+    }
+  }, [isOpen, uploadFiles])
 
   React.useEffect(() => {
-    const handler = (event) => {
-      if (!isOpen) { return true; }
+    const handler = (event): boolean => {
+      if (!isOpen) { return true }
 
-      if (event.code === 'KeyP' && (event.metaKey || event.ctrlKey)) {
-        fileRef.current!.click();
-        return false;
+      if (event.code === 'KeyP' && (Boolean(event.metaKey) || Boolean(event.ctrlKey))) {
+        fileRef.current!.click()
+        return false
       }
 
-      return true;
-    };
-    document.addEventListener('keydown', handler);
+      return true
+    }
+    document.addEventListener('keydown', handler)
 
     return () => {
-      document.removeEventListener('keydown', handler) ;
-    };
-  }, [isOpen, fileRef]);
+      document.removeEventListener('keydown', handler)
+    }
+  }, [isOpen, fileRef])
 
   return (
     <Modal
@@ -329,14 +330,14 @@ export default React.forwardRef(function AddCsv({
         <div
           className="file-upload-panel"
           data-testid="file-upload-panel"
-          onClick={() => {fileRef.current!.click();}}
+          onClick={() => { fileRef.current!.click() }}
         >
           <input
             ref={fileRef}
             type="file"
             multiple
-            onChange={(event) => addFilesCallback(convertFileList(event.target.files))}
-            style={{width: '1px', height: '1px', position: 'absolute', opacity: 0}}
+            onChange={(event) => { addFilesCallback(convertFileList(event.target.files)) }}
+            style={{ width: '1px', height: '1px', position: 'absolute', opacity: 0 }}
             data-testid="input-file"
           />
           Drop files or click here to add files in order to add the list.
@@ -355,9 +356,9 @@ export default React.forwardRef(function AddCsv({
                   prevFiles[index] = {
                     ...prevFiles[index],
                     withHeader: newWithHeader
-                  };
+                  }
 
-                  return [...prevFiles];
+                  return [...prevFiles]
                 })
               }}
               onFormatChanged={(newFormat) => {
@@ -365,9 +366,9 @@ export default React.forwardRef(function AddCsv({
                   prevFiles[index] = {
                     ...prevFiles[index],
                     format: newFormat
-                  };
+                  }
 
-                  return [...prevFiles];
+                  return [...prevFiles]
                 })
               }}
               onReplaceChanged={(newReplace) => {
@@ -375,16 +376,16 @@ export default React.forwardRef(function AddCsv({
                   prevFiles[index] = {
                     ...prevFiles[index],
                     replace: newReplace
-                  };
+                  }
 
-                  return [...prevFiles];
+                  return [...prevFiles]
                 })
               }}
               onDeleted={() => {
                 setFiles((prevFiles) => prevFiles.filter((f, i) => i !== index))
               }}
               sheets={sheets}
-            />;
+            />
           })}
         </div>
         <div className="cta-panel">
@@ -392,7 +393,7 @@ export default React.forwardRef(function AddCsv({
             <button
               className="main"
               disabled={isLoading || files.length === 0}
-              onClick={() => uploadFiles()}
+              onClick={() => { void uploadFiles() }}
               data-testid="import-all-files"
             >
               Import all files
@@ -403,7 +404,7 @@ export default React.forwardRef(function AddCsv({
             <button
               className="cancel"
               disabled={isLoading}
-              onClick={() => {close();}}
+              onClick={() => { close() }}
             >
               Cancel
               <span className="short-key">ESC</span>
@@ -412,5 +413,5 @@ export default React.forwardRef(function AddCsv({
         </div>
       </div>
     </Modal>
-  );
-});
+  )
+})

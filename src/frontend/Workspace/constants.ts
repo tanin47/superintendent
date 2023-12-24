@@ -1,7 +1,6 @@
-
-export function ctrlCmdChar() {
-  return window.miscApi.getPlatform() === 'darwin' ? '⌘' : 'Ctrl';
+export function ctrlCmdChar (): string {
+  return window.miscApi.getPlatform() === 'darwin' ? '⌘' : 'Ctrl'
 }
-export function altOptionChar() {
-  return window.miscApi.getPlatform() === 'darwin' ? '⌥' : 'Alt';
+export function altOptionChar (): string {
+  return window.miscApi.getPlatform() === 'darwin' ? '⌥' : 'Alt'
 }

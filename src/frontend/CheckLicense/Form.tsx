@@ -1,11 +1,11 @@
-import React, {ReactElement} from 'react';
-import './Form.scss';
-import {checkIfLicenseIsValid} from "../api";
+import React, { type ReactElement } from 'react'
+import './Form.scss'
+import { checkIfLicenseIsValid } from '../api'
 
-export default function CheckLicenseForm({onFinished}: {onFinished: () => void}): ReactElement {
-  const [licenseKey, setLicenseKey] = React.useState('');
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+export default function CheckLicenseForm ({ onFinished }: { onFinished: () => void }): ReactElement {
+  const [licenseKey, setLicenseKey] = React.useState('')
+  const [isLoading] = React.useState(false)
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
 
   const placeholder = React.useMemo(() => [
     '---- Superintendent license ----',
@@ -16,8 +16,8 @@ export default function CheckLicenseForm({onFinished}: {onFinished: () => void})
     'Key1:',
     'SomeKeyLine1',
     'SomeKeyLine2',
-    '---- End of Superintendent license ----',
-  ].join('\n'), []);
+    '---- End of Superintendent license ----'
+  ].join('\n'), [])
 
   return (
     <div id="checkLicenseForm">
@@ -28,28 +28,28 @@ export default function CheckLicenseForm({onFinished}: {onFinished: () => void})
             <textarea
               disabled={isLoading}
               value={licenseKey}
-              onChange={(event) => {setLicenseKey(event.target.value)}}
+              onChange={(event) => { setLicenseKey(event.target.value) }}
               placeholder={placeholder}
             />
           </div>
           <div className="remark">
-            You can get a license key by clicking <span className="link" onClick={() => window.shellApi.openExternal('https://superintendent.app/buy')}>here</span>.
+            You can get a license key by clicking <span className="link" onClick={() => { window.shellApi.openExternal('https://superintendent.app/buy') }}>here</span>.
           </div>
         </div>
         <div className="cta">
-          {errorMessage && (
+          {errorMessage != null && (
             <div className="error-message">{errorMessage}</div>
           )}
           <div className="button-panel">
             <button
               disabled={isLoading}
               onClick={() => {
-                const result = checkIfLicenseIsValid(licenseKey);
+                const result = checkIfLicenseIsValid(licenseKey)
 
                 if (result.success) {
-                  onFinished();
+                  onFinished()
                 } else {
-                  setErrorMessage(result.errorMessage!);
+                  setErrorMessage(result.errorMessage!)
                 }
               }}
             >Submit</button>
@@ -57,5 +57,5 @@ export default function CheckLicenseForm({onFinished}: {onFinished: () => void})
         </div>
       </div>
     </div>
-  );
+  )
 }

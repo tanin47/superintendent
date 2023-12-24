@@ -1,7 +1,7 @@
-import Swal from 'sweetalert2';
+import Swal from 'sweetalert2'
 
-export function showError(title: string, message: string): void {
-  Swal.fire({
+export function showError (title: string, message: string): void {
+  void Swal.fire({
     title,
     text: message,
     icon: 'error',
@@ -9,11 +9,11 @@ export function showError(title: string, message: string): void {
     confirmButtonColor: '#333',
     allowOutsideClick: false,
     allowEscapeKey: false
-  });
+  })
 }
 
-export function showSuccess(title: string, message: string): void {
-  Swal.fire({
+export function showSuccess (title: string, message: string): void {
+  void Swal.fire({
     title,
     text: message,
     icon: 'success',
@@ -21,5 +21,5 @@ export function showSuccess(title: string, message: string): void {
     confirmButtonColor: '#333',
     allowOutsideClick: false,
     allowEscapeKey: false
-  });
+  })
 }

@@ -1,51 +1,51 @@
-import { expose } from 'threads/worker';
-import {Env, Sqlite} from "./Sqlite";
-import {Result, Row} from "./Datastore";
-import {CopySelection, Sort} from "../types";
+import { expose } from 'threads/worker'
+import { type Env, Sqlite } from './Sqlite'
+import { type Result, type Row } from './Datastore'
+import { type CopySelection, type Sort } from '../types'
 
-let sqlite: Sqlite | null;
+let sqlite: Sqlite | null
 
 expose({
-  init(env: Env): void {
+  init (env: Env): void {
     if (sqlite != null) {
-      throw new Error('It should have been null.');
+      throw new Error('It should have been null.')
     }
-    sqlite = new Sqlite(env);
+    sqlite = new Sqlite(env)
   },
-  async close() {
-    sqlite!.close();
+  async close () {
+    await sqlite!.close()
   },
-  async addSqlite(filePath: string): Promise<Result[]> {
-    return sqlite!.addSqlite(filePath);
+  async addSqlite (filePath: string): Promise<Result[]> {
+    return await sqlite!.addSqlite(filePath)
   },
-  async addCsv(filePath: string, withHeader: boolean, separator: string, replace: string): Promise<Result[]> {
-    return sqlite!.addCsv(filePath, withHeader, separator, replace);
+  async addCsv (filePath: string, withHeader: boolean, separator: string, replace: string): Promise<Result[]> {
+    return await sqlite!.addCsv(filePath, withHeader, separator, replace)
   },
-  async exportCsv(table: string, filePath: string, delimiter: string): Promise<void> {
-    return sqlite!.exportCsv(table, filePath, delimiter);
+  async exportCsv (table: string, filePath: string, delimiter: string): Promise<void> {
+    await sqlite!.exportCsv(table, filePath, delimiter)
   },
-  async query(sql: string, table: string | null): Promise<Result> {
-    return sqlite!.query(sql, table);
+  async query (sql: string, table: string | null): Promise<Result> {
+    return await sqlite!.query(sql, table)
   },
-  async sort(table: string, sorts: Sort[]): Promise<Result> {
-    return sqlite!.sort(table, sorts);
+  async sort (table: string, sorts: Sort[]): Promise<Result> {
+    return await sqlite!.sort(table, sorts)
   },
-  async copy(table: string, selection: CopySelection): Promise<{text: string, html: string}> {
-    return sqlite!.copy(table, selection);
+  async copy (table: string, selection: CopySelection): Promise<{ text: string, html: string }> {
+    return await sqlite!.copy(table, selection)
   },
-  async loadMore(table: string, offset: number): Promise<Row[]> {
-    return sqlite!.loadMore(table, offset);
+  async loadMore (table: string, offset: number): Promise<Row[]> {
+    return await sqlite!.loadMore(table, offset)
   },
-  async drop(table: string): Promise<void> {
-    return sqlite!.drop(table);
+  async drop (table: string): Promise<void> {
+    await sqlite!.drop(table)
   },
-  async rename(previousTableName: string, newTableName: string): Promise<void> {
-    return sqlite!.rename(previousTableName, newTableName);
+  async rename (previousTableName: string, newTableName: string): Promise<void> {
+    await sqlite!.rename(previousTableName, newTableName)
   },
-  async getAllTables(): Promise<string[]> {
-    return sqlite!.getAllTables();
+  async getAllTables (): Promise<string[]> {
+    return await sqlite!.getAllTables()
   },
-  async reserveTableName(name: string): Promise<void> {
-    return sqlite!.reserveTableName(name);
-  },
+  async reserveTableName (name: string): Promise<void> {
+    await sqlite!.reserveTableName(name)
+  }
 })
