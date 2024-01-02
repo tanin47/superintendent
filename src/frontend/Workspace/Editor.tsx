@@ -81,7 +81,7 @@ export default React.forwardRef<Ref, Props>(function Editor ({
         }
       }
 
-      if (selectedSheet?.editorState?.draft && selectedSheet?.editorState?.draft !== selectedSheet.sql) {
+      if (selectedSheet?.editorState?.draft && selectedSheet?.editorState?.draft.trim() !== selectedSheet.sql.trim()) {
         codeMirrorInstance.current.setValue(selectedSheet?.editorState?.draft)
         setShouldShowDraftNotice(true)
       } else {
@@ -352,8 +352,8 @@ export default React.forwardRef<Ref, Props>(function Editor ({
         </div>
       </div>
       {shouldShowDraftNotice && (
-        <div className="draft-notice">
-          This is a draft. Click <a href="#" onClick={() => { revertSql() }}>here</a> to revert to the original SQL.
+        <div className="draft-notice" data-testid="draft-notice">
+          This is a draft. Click <span className="link" onClick={() => { revertSql() }}>here</span> to revert to the original SQL.
         </div>
       )}
       {shouldShowCsvNotice && (
