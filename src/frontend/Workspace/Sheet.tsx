@@ -330,6 +330,7 @@ function Table ({
 
       gridRef.current?.updateColumn(0)
       gridRef.current?.updateRow(0)
+      setForceUpdate(forceUpdate => forceUpdate + 1)
     },
     [sheet]
   )
