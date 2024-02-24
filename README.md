@@ -8,12 +8,11 @@ You can use VSCode.
 2. Run `yarn run electron-builder install-app-deps` to build native binaries.
 3. run `yarn run build:watch` and `yarn run start` in 2 separate windows to start Electron with hot reload.
    - or `yarn run gulp start`
-4. Run `yarn wdio` to run all tests.
-5. Run `yarn wdio --spec ./test/specs/draft_notice.e2e.ts` to run specific tests.
 4. Run tests: `yarn install --force` and `yarn jest`.
 5. Run UI tests: `yarn run electron-builder install-app-deps` and `yarn wdio`. 
    - For now, we should modify: `./node_modules/wdio-electron-service/dist/launcher.js` in order to make it work with the dev build.
    - See: https://github.com/webdriverio-community/wdio-electron-service/issues/331
+   - Run `yarn wdio --spec ./test/specs/draft_notice.e2e.ts` to run specific tests.
 4. To build the prod artifacts:
    - Mac: run `APPLEID=<EMAIL> APPLEIDPASS=<PASS> yarn run gulp release`
    - Windows: run `set CSC_LINK=c:\Users\tanin\projects\tanin_na_nakorn.p12`, `set CSC_KEY_PASSWORD=474747` and `yarn run gulp release`
