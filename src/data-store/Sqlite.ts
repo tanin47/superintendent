@@ -22,7 +22,7 @@ export class Sqlite extends Datastore {
   }
 
   private open (): void {
-    this.db = sqlite(':memory:')
+    this.db = sqlite('') // temporary mode
     this.db.pragma('journal_mode = OFF;')
     this.db.pragma('synchronous = OFF;')
     this.db.pragma('locking_mode = EXCLUSIVE;')
