@@ -42,7 +42,8 @@ const electronWorkerConfiguration = {
     filename: 'worker.js'
   },
   externals: {
-    'better-sqlite3': 'commonjs better-sqlite3'
+    'better-sqlite3': 'commonjs better-sqlite3',
+    duckdb: 'commonjs duckdb'
   }
 }
 

@@ -7,7 +7,7 @@ import {
   type EditorMode, EditorModeChannel,
   type ExportDelimiter,
   ExportDelimiters, type ExportedWorkflow, ExportWorkflowChannel,
-  type Format, ImportWorkflowChannel, type Sort
+  type Format, ImportWorkflowChannel, type Sort, type DatabaseEngine, DatabaseEngineChannel
 } from './types'
 import fs from 'fs'
 import { getRandomBird } from './data-store/Birds'
@@ -168,6 +168,10 @@ export default class Main {
       })
   }
 
+  private static getDatabaseEngine (): DatabaseEngine {
+    return (Main.store.get('databaseEngine') as (DatabaseEngine | null)) ?? 'sqlite'
+  }
+
   private static getEditorMode (): EditorMode {
     return (Main.store.get('editorMode') as (EditorMode | null)) ?? 'default'
   }
@@ -186,6 +190,33 @@ export default class Main {
 
     const setExportDelimiter = (delimiter: ExportDelimiter): void => {
       Main.store.set('exportDelimiter', delimiter)
+    }
+
+    const setDatabaseEngine = (engine: DatabaseEngine, makeNewSpaceIfChanged: boolean = false): void => {
+      const previous = Main.getDatabaseEngine()
+
+      Main.store.set('databaseEngine', engine)
+
+      if (previous !== engine) {
+        void switchDatabaseEngine(engine)
+      }
+    }
+
+    async function switchDatabaseEngine (engine: DatabaseEngine): Promise<void> {
+      const hasTables = (await Main.getFocusedSpace().db.getAllTables()).length > 0
+
+      if (hasTables) {
+        await Main.makeWorkspace()
+      } else {
+        const current = Main.getFocusedSpace()
+        await current.db.close()
+        current.db = await Workerize.create(engine)
+        await current.db.open()
+
+        Main.spaces.forEach((space) => {
+          space.window.webContents.send(DatabaseEngineChannel, engine)
+        })
+      }
     }
 
     const setEditorMode = (mode: EditorMode): void => {
@@ -268,6 +299,30 @@ export default class Main {
                 { type: 'separator' },
                 { role: 'selectAll' }
               ]),
+          { type: 'separator' },
+          {
+            label: 'Database Engine',
+            submenu: [
+              {
+                label: 'SQLite',
+                type: 'radio',
+                checked: Main.getDatabaseEngine() === 'sqlite',
+                click: function (item) {
+                  item.checked = true
+                  setDatabaseEngine('sqlite', true)
+                }
+              },
+              {
+                label: 'DuckDB',
+                type: 'radio',
+                checked: Main.getDatabaseEngine() === 'duckdb',
+                click: function (item) {
+                  item.checked = true
+                  setDatabaseEngine('duckdb', true)
+                }
+              }
+            ]
+          },
           { type: 'separator' },
           {
             label: 'Editor Mode',
@@ -362,10 +417,11 @@ export default class Main {
       }
     })
 
-    const space = {
-      window,
-      db: await Workerize.create()
-    }
+    const databaseEngine = Main.getDatabaseEngine()
+    const db = await Workerize.create(databaseEngine)
+    await db.open()
+
+    const space = { window, db }
     Main.spaces.set(space.window.webContents.id, space)
 
     space.window.on('close', (e) => {
@@ -414,7 +470,7 @@ export default class Main {
     await space.window.loadFile(
       path.join(__dirname, 'index.html'),
       {
-        query: { editorMode: Main.getEditorMode(), ...initialFileMap }
+        query: { editorMode: Main.getEditorMode(), databaseEngine, ...initialFileMap }
       }
     )
 

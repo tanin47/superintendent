@@ -62,7 +62,6 @@ export default function Workspace (): ReactElement {
             name: sheet.name,
             isCsv: sheet.isCsv,
             sql: sheet.sql,
-            dependsOn: [],
             count: 0,
             columns: [],
             rows: [],
@@ -129,12 +128,7 @@ export default function Workspace (): ReactElement {
 
   const deleteSheetCallback = React.useCallback(
     (name: string): void => {
-      const downstreams = sheets.filter((s) => s.dependsOn.includes(name))
-      let confirmMsg = `Are you sure you want to remove: ${name}?`
-      if (downstreams.length > 0) {
-        const dependClause = downstreams.length === 1 ? `${downstreams.length} other table depends on it.` : `${downstreams.length} other tables depend on it.`
-        confirmMsg += `\n\n ${dependClause}`
-      }
+      const confirmMsg = `Are you sure you want to remove: ${name}?`
       if (!confirm(confirmMsg)) {
         return
       }

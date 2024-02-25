@@ -56,8 +56,7 @@ export default function Project ({
         workflow.sheets.push({
           name: sheet.name,
           sql: sheet.sql,
-          isCsv: sheet.isCsv,
-          dependsOn: sheet.dependsOn
+          isCsv: sheet.isCsv
         })
       })
 

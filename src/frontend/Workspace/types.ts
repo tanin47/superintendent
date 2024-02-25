@@ -23,7 +23,6 @@ export interface Sheet {
   name: string
   previousName?: string | null
   isCsv: boolean
-  dependsOn: string[]
   sql: string
   count: number
   columns: Column[]

@@ -1,5 +1,5 @@
 import { type Column, Datastore, type Result, type Row } from './Datastore'
-import sqlite, { type Database } from 'better-sqlite3'
+import { Database } from 'duckdb-async'
 import path from 'path'
 import fs from 'fs'
 import { Parser } from 'csv-parse'
@@ -7,7 +7,7 @@ import { type CopySelection, type Sort } from '../types'
 import { getRandomBird } from './Birds'
 import { type Env } from './worker'
 
-export class Sqlite extends Datastore {
+export class Duckdb extends Datastore {
   private readonly env!: Env
   private db!: Database
 
@@ -17,54 +17,15 @@ export class Sqlite extends Datastore {
   }
 
   async open (): Promise<void> {
-    this.db = sqlite('') // temporary mode
-    this.db.pragma('journal_mode = OFF;')
-    this.db.pragma('synchronous = OFF;')
-    this.db.pragma('locking_mode = EXCLUSIVE;')
-
-    const prefix = process.env.SUPERINTENDENT_IS_PROD ? this.env.resourcePath : '.'
-    let ext = 'dylib'
-
-    switch (this.env.platform) {
-      case 'darwin':
-        ext = 'dylib'
-        break
-      case 'linux':
-        ext = 'so'
-        break
-      case 'win32':
-        ext = 'dll'
-        break
-      default:
-        throw new Error(`The platform ${this.env.platform} is not supported.`)
-    }
-
-    this.db.loadExtension(path.join(prefix, 'deps', 'ext', `ext.${ext}`))
-    this.db.loadExtension(path.join(prefix, 'deps', 'csv', `csv.${ext}`))
-    this.db.loadExtension(path.join(prefix, 'deps', 'csv_writer', `csv_writer.${ext}`))
+    this.db = await Database.create(':memory:')
   }
 
   async close (): Promise<void> {
-    this.db.close()
+    await this.db.close()
   }
 
   async addSqlite (filePath: string): Promise<Result[]> {
-    this.db.exec(`ATTACH DATABASE '${filePath}' AS temp_database;`)
-
-    const rows = this.db.prepare('SELECT tbl_name FROM temp_database.sqlite_master WHERE type = \'table\';').raw(true).all()
-
-    const results: Result[] = []
-
-    for (const row of rows) {
-      const oldName = row[0] as string
-      const table = this.getTableName(oldName)
-      this.db.exec(`CREATE TABLE "${table}" AS SELECT * FROM "temp_database"."${oldName}"`)
-      results.push(this.queryAllFromTable(table, `SELECT * FROM "${table}"`))
-    }
-
-    this.db.exec('DETACH DATABASE temp_database;')
-
-    return results
+    throw new Error('not supported')
   }
 
   async addCsv (filePath: string, withHeader: boolean, separator: string, replace: string): Promise<Result[]> {
@@ -106,12 +67,10 @@ export class Sqlite extends Datastore {
       })
       break
     }
-    const createTable = `CREATE TABLE x(${columns.map((c) => `"${c}" TEXT`).join(', ')})`
 
-    const virtualTable = this.getTableName('virtual_' + table)
-    this.db.exec(`CREATE VIRTUAL TABLE "${virtualTable}" USING csv(filename='${filePath}', header=${withHeader}, schema='${createTable}', separator='${separator}')`)
-    this.db.exec(`CREATE TABLE "${table}" AS SELECT * FROM "${virtualTable}"`)
-    await this.drop(virtualTable)
+    const columnsParam = `{${columns.map((c) => `'${c}': 'TEXT'`).join(', ')}}`
+
+    await this.db.exec(`CREATE TABLE "${table}" AS FROM read_csv('${filePath}', delim = '${separator}', header = ${withHeader}, columns = ${columnsParam}, all_varchar = true, null_padding = true)`)
 
     if (replace && replace !== '' && table !== replace) {
       await this.drop(replace)
@@ -119,43 +78,24 @@ export class Sqlite extends Datastore {
       table = replace
     }
 
-    const result = this.queryAllFromTable(table, `SELECT * FROM "${table}"`)
+    const result = await this.queryAllFromTable(table, `SELECT * FROM "${table}"`)
     result.isCsv = true
     result.sql = ''
     return [result]
   }
 
   async exportCsv (table: string, filePath: string, delimiter: string): Promise<void> {
-    let columns: string[]
-    {
-      const statement = this.db.prepare(`SELECT * FROM "${table}" LIMIT 1`).raw(true)
-
-      columns = statement.columns().map((c) => c.name)
-
-      const iterator = statement.iterate()
-      while (true) {
-        const { done } = iterator.next() // drain it
-        if (done) {
-          break
-        }
-      }
-    }
-
-    this.db.exec(`CREATE VIRTUAL TABLE "temp_table_name" USING csv_writer(filename='${filePath}', columns='${columns!.join(',')}', separator='${delimiter}')`)
-    this.db.exec(`INSERT INTO "temp_table_name" SELECT * FROM "${table}"`)
-    this.db.exec('DROP TABLE "temp_table_name"')
-
-    await Promise.resolve()
+    await this.db.exec(`COPY "${table}" TO '${filePath}' (HEADER, DELIMITER '${delimiter}')`)
   }
 
   async exists (table: string): Promise<boolean> {
-    const numOfRowsResult = this.db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").all(table)
+    const numOfRowsResult = await this.db.all(`SELECT * FROM information_schema.tables where table_name = '${table}'`)
     return await Promise.resolve(numOfRowsResult.length > 0)
   }
 
   async drop (table: string): Promise<void> {
     try {
-      this.db.exec(`DROP TABLE IF EXISTS "${table}"`)
+      await this.db.exec(`DROP TABLE IF EXISTS "${table}"`)
 
       for (let i = 0; i < this.tables.length; i++) {
         if (table === this.tables[i]) {
@@ -168,7 +108,7 @@ export class Sqlite extends Datastore {
 
   async rename (previousTableName: string, newTableName: string): Promise<void> {
     try {
-      this.db.exec(`ALTER TABLE "${previousTableName}" RENAME TO "${newTableName}"`)
+      await this.db.exec(`ALTER TABLE "${previousTableName}" RENAME TO "${newTableName}"`)
     } catch (e) {
       await Promise.reject(e); return
     }
@@ -183,13 +123,13 @@ export class Sqlite extends Datastore {
 
   async query (sql: string, table: string | null): Promise<Result> {
     const sanitizedSql = sql.replace(/[\n\s\r ]+/g, ' ').replace(/\\"/g, '').toLocaleLowerCase()
-    const isDependentOnSelf = sanitizedSql.includes(`from ${table}`) || sanitizedSql.includes(`join "${table}"`)
+    const isDependentOnSelf = sanitizedSql.includes(`from ${table}`) || sanitizedSql.includes(`join ${table}`)
 
     const newTable = this.makeQueryTableName()
 
-    this.db.exec(`CREATE TABLE "${newTable}" AS ${sql}`)
+    await this.db.exec(`CREATE TABLE "${newTable}" AS ${sql}`)
 
-    const result = this.queryAllFromTable(newTable, sql)
+    const result = await this.queryAllFromTable(newTable, sql)
     result.isCsv = false
 
     const shouldReplaceTable = !isDependentOnSelf && table !== null && newTable !== table
@@ -215,7 +155,7 @@ export class Sqlite extends Datastore {
         // do nothing.
       }
 
-      return this.queryAllFromTable(table, `SELECT * FROM "${table}"`)
+      return await this.queryAllFromTable(table, `SELECT * FROM "${table}"`)
     } else {
       if (!await this.exists(unsortedTable)) {
         await this.rename(table, unsortedTable)
@@ -227,14 +167,14 @@ export class Sqlite extends Datastore {
         .join(', ')
 
       const sql = `SELECT * FROM "${unsortedTable}" ORDER BY ${orderClause}`
-      this.db.exec(`CREATE TABLE "${table}" AS ${sql}`)
-      return this.queryAllFromTable(table, sql)
+      await this.db.exec(`CREATE TABLE "${table}" AS ${sql}`)
+      return await this.queryAllFromTable(table, sql)
     }
   }
 
   async copy (table: string, selection: CopySelection): Promise<{ text: string, html: string }> {
     const sql = `select ${selection.columns.map((c) => `"${c}"`).join(',')} from "${table}" limit ${selection.endRow - selection.startRow + 1} offset ${selection.startRow}`
-    const statement = this.db.prepare(sql).raw(true)
+    const rows = await this.db.all(sql)
 
     let html = ''
     let text = ''
@@ -264,7 +204,7 @@ export class Sqlite extends Datastore {
 
     let count = 0
 
-    for (const row of statement.iterate()) {
+    for (const row of rows) {
       if (text !== '') {
         text += '\n'
       }
@@ -278,11 +218,11 @@ export class Sqlite extends Datastore {
         html += `<td style="border: 1px solid #ccc;">${selection.startRow + 1 + count++}</td>`
       }
 
-      for (let i = 0; i < row.length; i++) {
+      for (let i = 0; i < selection.columns.length; i++) {
         htmlItems.push('<td style="border: 1px solid #ccc;">')
 
-        textItems.push(row[i] as string)
-        htmlItems.push(row[i] as string)
+        textItems.push(row[selection.columns[i]] as string)
+        htmlItems.push(row[selection.columns[i]] as string)
 
         htmlItems.push('</td>')
       }
@@ -298,18 +238,20 @@ export class Sqlite extends Datastore {
   }
 
   async loadMore (table: string, offset: number): Promise<Row[]> {
-    const statement = this.db.prepare(`SELECT * FROM "${table}" LIMIT ${Datastore.MAX_ROW_LOAD_MORE} OFFSET ${offset}`).raw(true)
-    const allRows = statement.all()
+    const statement = await this.db.prepare(`SELECT * FROM "${table}" LIMIT ${Datastore.MAX_ROW_LOAD_MORE} OFFSET ${offset}`)
+    const columns = statement.columns()
+    const rows = await statement.all()
 
-    return await Promise.resolve(allRows)
+    return await Promise.resolve(rows.map((r) => columns.map((c) => r[c.name])))
   }
 
-  private queryAllFromTable (table: string, sql: string): Result {
-    const numOfRowsResult = this.db.prepare(`SELECT COUNT(*) AS number_of_rows FROM "${table}"`).all()
-    const numOfRows = numOfRowsResult.length === 0 ? 0 : (numOfRowsResult[0].number_of_rows as number)
+  private async queryAllFromTable (table: string, sql: string): Promise<Result> {
+    const numOfRowsResult = await this.db.all(`SELECT COUNT(*) AS number_of_rows FROM "${table}"`)
+    const numOfRows = numOfRowsResult.length === 0 ? 0 : Number(numOfRowsResult[0].number_of_rows)
 
-    const statement = this.db.prepare(`SELECT * FROM "${table}" LIMIT ${Datastore.MAX_ROW}`).raw(true)
-    const allRows = statement.all()
+    const statement = await this.db.prepare(`SELECT * FROM "${table}" LIMIT ${Datastore.MAX_ROW}`)
+    const columnNames = statement.columns().map((c) => c.name)
+    const allRows = (await statement.all()).map((r) => columnNames.map((c) => r[c]))
 
     let previewedNumOfRows = Math.min(numOfRows, Datastore.MAX_ROW)
 
@@ -317,11 +259,10 @@ export class Sqlite extends Datastore {
       previewedNumOfRows = 100
     }
 
-    const columnNames = statement.columns().map((c) => c.name)
     const sampleSql = `SELECT * FROM (SELECT rowid, * FROM "${table}" LIMIT ${Datastore.MAX_ROW}) WHERE ((rowid - 1) % ${Math.ceil(previewedNumOfRows / 100)}) = 0 OR rowid = ${previewedNumOfRows}`
     const metdataSql = `SELECT ${columnNames.map((col) => { return `MAX(COALESCE(NULLIF(INSTR(CAST("${col}" AS text), x'0a'), 0), LENGTH(CAST("${col}" AS text)))) AS "${col}"` }).join(',')} FROM (${sampleSql})`
 
-    const metadataResult = this.db.prepare(metdataSql).all()
+    const metadataResult = await this.db.all(metdataSql)
 
     const columns: Column[] = columnNames.map((col) => {
       return {
@@ -338,7 +279,7 @@ export class Sqlite extends Datastore {
 
       for (const key in metadataResult[0]) {
         if (Object.prototype.hasOwnProperty.call(metadataResult[0], key) && Object.prototype.hasOwnProperty.call(columnMap, key)) {
-          columnMap[key].maxCharWidthCount = metadataResult[0][key] || 0
+          columnMap[key].maxCharWidthCount = Number(metadataResult[0][key]) || 0
         }
       }
     }

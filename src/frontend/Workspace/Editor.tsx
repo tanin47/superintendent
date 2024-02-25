@@ -10,12 +10,13 @@ import 'codemirror/addon/hint/anyword-hint'
 import 'codemirror/addon/comment/comment'
 import 'codemirror/keymap/vim.js'
 import './Editor.scss'
-import { type EditorMode } from '../../types'
+import { DatabaseEngineChannel, type DatabaseEngine, type EditorMode } from '../../types'
 import { type Sheet } from './types'
 import { format } from 'sql-formatter'
 import Button from './Button'
 import { altOptionChar, ctrlCmdChar } from './constants'
 import * as dialog from './dialog'
+import { getInitialDatabaseEngine } from '../api'
 
 export interface Ref {
   getValue: () => string
@@ -314,6 +315,16 @@ export default React.forwardRef<Ref, Props>(function Editor ({
     )
   }
 
+  const [databaseEngine, setDatabaseEngine] = React.useState<DatabaseEngine>(getInitialDatabaseEngine())
+  React.useEffect(() => {
+    const callback = (event, engine: any): void => { setDatabaseEngine(engine as DatabaseEngine) }
+    const removeListener = window.ipcRenderer.on(DatabaseEngineChannel, callback)
+
+    return () => {
+      removeListener()
+    }
+  })
+
   return (
     <>
       <div className="toolbarSection top" style={{ borderLeft: '1px solid #666' }}>
@@ -338,8 +349,7 @@ export default React.forwardRef<Ref, Props>(function Editor ({
                 {altOptionChar()} ⏎
               </span>
             </Button>
-          </div>
-          <div className="right">
+            <span className="separator" />
             <Button
               onClick={() => {
                 window.shellApi.openExternal('https://docs.superintendent.app')
@@ -348,6 +358,11 @@ export default React.forwardRef<Ref, Props>(function Editor ({
             >
               Docs
             </Button>
+          </div>
+          <div className="right">
+            <span className="databaseEngine">
+              {databaseEngine === 'duckdb' ? 'DuckDB' : 'SQLite'}
+            </span>
           </div>
         </div>
       </div>

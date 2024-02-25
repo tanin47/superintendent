@@ -51,7 +51,7 @@ describe('A simple scenario', () => {
         await clearEditor();
 
         await $('.CodeMirror').click();
-        await browser.keys("select * from csv join albatross");
+        await browser.keys("select * from csv join albatross on true");
         await $('[data-testid="run-sql"]').click();
         await expect($('.sheet')).toHaveText(
           "Harmonia\n" +
@@ -90,9 +90,9 @@ describe('A simple scenario', () => {
 
     it("switches sql and sheet, and format SQL", async () => {
         await $('[data-testid="project-item-anhinga"] span').click();
-        await expect($('.CodeMirror')).toHaveText("1\nselect * from csv join albatross");
+        await expect($('.CodeMirror')).toHaveText("1\nselect * from csv join albatross on true");
         await $('[data-testid="format-sql"] span').click();
-        await expect($('.CodeMirror')).toHaveText("1\nselect\n2\n  *\n3\nfrom\n4\n  csv\n5\n  join albatross");
+        await expect($('.CodeMirror')).toHaveText("1\nselect\n2\n  *\n3\nfrom\n4\n  csv\n5\n  join albatross on true");
         await $('[data-testid="project-item-csv"] span').click();
         await expectDefaultEditorText();
 

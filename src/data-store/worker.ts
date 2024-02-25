@@ -1,16 +1,26 @@
 import { expose } from 'threads/worker'
-import { type Env, Sqlite } from './Sqlite'
-import { type Result, type Row } from './Datastore'
-import { type CopySelection, type Sort } from '../types'
+import { Duckdb } from './Duckdb'
+import { type Datastore, type Result, type Row } from './Datastore'
+import { type DatabaseEngine, type CopySelection, type Sort } from '../types'
+import { Sqlite } from './Sqlite'
 
-let sqlite: Sqlite | null
+export interface Env {
+  resourcePath: string
+  platform: string
+  databaseEngine: DatabaseEngine
+}
+
+let sqlite: Datastore | null
 
 expose({
-  init (env: Env): void {
+  async init (env: Env): Promise<void> {
     if (sqlite != null) {
       throw new Error('It should have been null.')
     }
-    sqlite = new Sqlite(env)
+    sqlite = env.databaseEngine === 'duckdb' ? new Duckdb(env) : new Sqlite(env)
+  },
+  async open () {
+    await sqlite!.open()
   },
   async close () {
     await sqlite!.close()

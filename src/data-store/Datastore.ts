@@ -13,7 +13,6 @@ export interface Result {
   columns: Column[]
   rows: Row[]
   count: number
-  dependsOn: string[]
   isCsv: boolean
 }
 
@@ -23,6 +22,7 @@ export abstract class Datastore {
 
   protected tables: string[] = []
 
+  abstract open (): Promise<void>
   abstract close (): Promise<void>
 
   abstract addSqlite (filePath: string): Promise<Result[]>

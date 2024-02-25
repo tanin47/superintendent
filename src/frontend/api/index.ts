@@ -1,10 +1,10 @@
 import { type Sheet } from '../Workspace/types'
-import { type CopySelection, type EditorMode, type ExportedWorkflow, ExportWorkflowChannel, type SortDirection } from '../../types'
+import { type CopySelection, type EditorMode, type ExportedWorkflow, ExportWorkflowChannel, type SortDirection, type DatabaseEngine } from '../../types'
 
 const urlParams = new URLSearchParams(window.location.search)
 
 export function getInitialEditorMode (): EditorMode {
-  const mode = urlParams.get('editorMode') as EditorMode
+  const mode = urlParams.get('editorMode')
 
   switch (mode) {
     case 'vim':
@@ -12,7 +12,21 @@ export function getInitialEditorMode (): EditorMode {
     case 'default':
       return 'default'
   }
+
   return 'default'
+}
+
+export function getInitialDatabaseEngine (): DatabaseEngine {
+  const engine = urlParams.get('databaseEngine')
+
+  switch (engine) {
+    case 'sqlite':
+      return 'sqlite'
+    case 'duckdb':
+      return 'duckdb'
+  }
+
+  return 'sqlite'
 }
 
 export function getInitialFile (): string | null {

@@ -8,7 +8,7 @@ SQLITE_EXTENSION_INIT1
 #include <ctype.h>
 #include <stdio.h>
 
-const char NEW_LINE[] = "\r\n";
+const char NEW_LINE[] = "\n";
 
 typedef struct Columns {
   const char ** values;
