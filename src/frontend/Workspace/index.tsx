@@ -160,12 +160,25 @@ export default function Workspace (): ReactElement {
         setSheets([...sheets])
       }
 
-      const sheet = await query(
-        sql,
-        sheetName
-      )
-      addNewSheetCallback(sheet)
-      return sheet
+      try {
+        const sheet = await query(
+          sql,
+          sheetName
+        )
+
+        if (found) {
+          found.isLoading = false
+        }
+
+        addNewSheetCallback(sheet)
+        return sheet
+      } catch (e) {
+        if (found) {
+          found.isLoading = false
+          setSheets([...sheets])
+        }
+        throw e
+      }
     },
     [sheets, addNewSheetCallback]
   )
