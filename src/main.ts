@@ -169,7 +169,7 @@ export default class Main {
   }
 
   private static getDatabaseEngine (): DatabaseEngine {
-    return (Main.store.get('databaseEngine') as (DatabaseEngine | null)) ?? 'sqlite'
+    return (Main.store.get('databaseEngine') as (DatabaseEngine | null)) ?? 'duckdb'
   }
 
   private static getEditorMode (): EditorMode {

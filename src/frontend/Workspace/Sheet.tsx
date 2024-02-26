@@ -729,7 +729,7 @@ function Table ({
           onMouseEnter={addSelection(rowIndex, columnIndex)}
           onClick={doubleClickHandler(rowIndex, columnIndex)}
         >
-          {renderedValue}
+          {renderedValue.toString()}
         </div>
       )
     }
