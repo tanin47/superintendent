@@ -349,15 +349,6 @@ export default React.forwardRef<Ref, Props>(function Editor ({
                 {altOptionChar()} ⏎
               </span>
             </Button>
-            <span className="separator" />
-            <Button
-              onClick={() => {
-                window.shellApi.openExternal('https://docs.superintendent.app')
-              }}
-              icon={<i className="fas fa-question-circle"/>}
-            >
-              Docs
-            </Button>
           </div>
           <div className="right">
             <span className="databaseEngine">
