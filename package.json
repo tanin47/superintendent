@@ -129,7 +129,7 @@
     "worker-loader": "^3.0.8"
   },
   "dependencies": {
-    "@tippyjs/react": "^4.2.5",
+    "@floating-ui/react": "^0.26.9",
     "better-sqlite3": "tanin47/better-sqlite3#54c74c5be05988766826f27ee124d2c6fe4d7730",
     "chart.js": "^3.3.2",
     "codemirror": "^5.61.1",
@@ -146,8 +146,7 @@
     "sql-formatter": "^4.0.2",
     "sweetalert2": "^11.0.18",
     "threads": "^1.6.5",
-    "tiny-worker": "^2.3.0",
-    "tippy.js": "^6.3.1"
+    "tiny-worker": "^2.3.0"
   },
   "packageManager": "yarn@4.0.2",
   "repository": "git@github.com:tanin47/superintendent-app.git",

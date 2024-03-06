@@ -68,25 +68,3 @@
     }
   }
 }
-
-.tippy-box[data-theme~='context-menu'] {
-  .tippy-content {
-    padding: 3px;
-  }
-}
-
-.context-menu {
-  user-select: none;
-  font-family: 'Dosis', sans-serif;
-  font-size: 13px;
-
-  .context-menu-item {
-    cursor: pointer;
-    padding: 2px 4px;
-    border-radius: 4px;
-
-    &:hover {
-      background-color: #1865BB;
-    }
-  }
-}

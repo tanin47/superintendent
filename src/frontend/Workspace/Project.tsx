@@ -6,12 +6,108 @@ import AddCsv, { type Ref as AddCsvRef } from './AddCsvModal'
 import { convertFileList, exportWorkflow, getInitialFile } from '../api'
 import { type Sheet } from './types'
 import { type ExportedWorkflow, ExportWorkflowChannel } from '../../types'
-import Tippy from '@tippyjs/react'
+import { useFloating, useClientPoint, useInteractions, useDismiss, useTransitionStyles, shift } from '@floating-ui/react'
 
 interface ContextMenuOpenInfo {
   sheet: Sheet
   clientX: number
   clientY: number
+}
+
+function ContextMenu ({
+  open,
+  onViewing,
+  onRenaming,
+  onDeleting,
+  onClosing,
+  x,
+  y
+}: {
+  open: boolean
+  onViewing: () => void
+  onRenaming: () => void
+  onDeleting: () => void
+  onClosing: () => void
+  x: number | null
+  y: number | null
+}): JSX.Element {
+  const [point, setPoint] = React.useState<{ x: number | null, y: number | null }>({ x, y })
+
+  React.useEffect(
+    () => {
+      setPoint(({ x: prevX, y: prevY }) => {
+        return { x: x ?? prevX, y: y ?? prevY }
+      })
+    },
+    [x, y]
+  )
+
+  const { refs, floatingStyles, context } = useFloating({
+    open,
+    onOpenChange: (open) => {
+      if (!open) {
+        onClosing()
+      } else {
+        // do nothing
+      }
+    },
+    middleware: [shift()],
+    placement: 'bottom-start'
+  })
+
+  const { isMounted, styles } = useTransitionStyles(context)
+  const clientPoint = useClientPoint(context, { x: point.x, y: point.y })
+  const dismiss = useDismiss(context)
+  const { getFloatingProps } = useInteractions([clientPoint, dismiss])
+
+  if (!isMounted) { return <></> }
+
+  return (
+    <div
+      ref={refs.setFloating}
+      style={{
+        ...floatingStyles,
+        zIndex: 1000
+      }}
+      {...getFloatingProps()}
+    >
+      <div
+        className="context-menu"
+        style={{ ...styles }}
+      >
+        <div
+          className="context-menu-item"
+          onClick={() => {
+            onViewing()
+            onClosing()
+          }}
+          data-testid="project-context-menu-view"
+        >
+          View
+        </div>
+        <div
+          className="context-menu-item"
+          onClick={() => {
+            onRenaming()
+            onClosing()
+          }}
+          data-testid="project-context-menu-rename"
+        >
+          Rename
+        </div>
+        <div
+          className="context-menu-item"
+          onClick={() => {
+            onDeleting()
+            onClosing()
+          }}
+          data-testid="project-context-menu-delete"
+        >
+          Delete
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function Project ({
@@ -34,6 +130,7 @@ export default function Project ({
   onDeletingSheet: (name: string) => void
 }): JSX.Element {
   const [shouldOpenAddCsv, setShouldOpenAddCsv] = React.useState<boolean>(false)
+
   const [openContextMenu, setOpenContextMenu] = React.useState<ContextMenuOpenInfo | null>(null)
 
   const addCsvRef = React.useRef<AddCsvRef>(null)
@@ -152,8 +249,6 @@ export default function Project ({
     }
   })
 
-  const contextMenu = React.useRef<any>(null)
-
   return (
     <>
       <AddCsv
@@ -163,68 +258,15 @@ export default function Project ({
         onClose={() => { setShouldOpenAddCsv(false) }}
         onAdded={(sheet) => { onSheetAdded(sheet) }}
       />
-      <Tippy
-        ref={contextMenu}
-        placement="right-start"
-        trigger="manual"
-        theme="context-menu"
-        appendTo={document.body}
-        interactive
-        arrow={false}
-        offset={[0, 0]}
-        getReferenceClientRect={(): DOMRect => {
-          return {
-            width: 0,
-            height: 0,
-            x: openContextMenu?.clientX ?? 0,
-            y: openContextMenu?.clientY ?? 0,
-            top: openContextMenu?.clientY ?? 0,
-            bottom: openContextMenu?.clientY ?? 0,
-            left: openContextMenu?.clientX ?? 0,
-            right: openContextMenu?.clientX ?? 0,
-            toJSON: () => {}
-          } satisfies DOMRect
-        }}
-        onHidden={() => {
-          setOpenContextMenu(null)
-        }}
-        content={
-          <div className="context-menu">
-            <div
-              className="context-menu-item"
-              onClick={() => {
-                contextMenu.current._tippy.hide()
-                onOpeningResult(openContextMenu!.sheet)
-              }}
-              data-testid="project-context-menu-view"
-            >
-              View
-            </div>
-            <div
-              className="context-menu-item"
-              onClick={() => {
-                contextMenu.current._tippy.hide()
-                onRenamingSheet(openContextMenu!.sheet.name)
-              }}
-              data-testid="project-context-menu-rename"
-            >
-              Rename
-            </div>
-            <div
-              className="context-menu-item"
-              onClick={() => {
-                contextMenu.current._tippy.hide()
-                onDeletingSheet(openContextMenu!.sheet.name)
-              }}
-              data-testid="project-context-menu-delete"
-            >
-              Delete
-            </div>
-          </div>
-        }
-      >
-        <span/>
-      </Tippy>
+      <ContextMenu
+        open={openContextMenu !== null}
+        x={openContextMenu?.clientX ?? null}
+        y={openContextMenu?.clientY ?? null}
+        onClosing={() => { setOpenContextMenu(null) }}
+        onRenaming={() => { onRenamingSheet(openContextMenu!.sheet.name) }}
+        onViewing={() => { onOpeningResult(openContextMenu!.sheet) }}
+        onDeleting={() => { onDeletingSheet(openContextMenu!.sheet.name) }}
+      />
       <div className="toolbarSection top">
         <div className="inner">
           <Button
@@ -264,7 +306,6 @@ export default function Project ({
                     clientX: event.clientX,
                     clientY: event.clientY
                   })
-                  contextMenu.current._tippy.show()
                 }}
               >
                 {icon}
@@ -274,6 +315,6 @@ export default function Project ({
           })}
         </div>
       </div>
-    </>
+    </>//
   )
 }

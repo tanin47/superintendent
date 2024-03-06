@@ -101,6 +101,8 @@ describe('A simple scenario', () => {
         await expect($('[data-testid="sheet-section-item-csv"]')).toHaveElementClass(expect.stringContaining('selected'));
         await expect($('[data-testid="sheet-section-item-anhinga"]')).not.toHaveElementClass(expect.stringContaining('selected'));
 
+        await browser.pause(500) // there's a transition in the context menu
+
         await $('[data-testid="project-item-anhinga"]').click({button: 'right'});
         await $('[data-testid="project-context-menu-view"]').click();
         await expect($('[data-testid="sheet-section-item-anhinga"]')).toHaveElementClass(expect.stringContaining('selected'));

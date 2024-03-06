@@ -468,3 +468,34 @@
   z-index: 1000;
   cursor: default;
 }
+
+.context-menu {
+  user-select: none;
+  font-family: 'Dosis', sans-serif;
+  font-size: 13px;
+  background-color: #333;
+  color: #fff;
+  border: 2px solid #333;
+  border-radius: 4px;
+  line-height: 1.4;
+  white-space: normal;
+  outline: 0;
+
+  .context-menu-header {
+    padding: 2px 4px;
+    border-radius: 4px;
+    text-align: center;
+    background-color: #666;
+  }
+  
+
+  .context-menu-item {
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+
+    &:hover {
+      background-color: #1865BB;
+    }
+  }
+}

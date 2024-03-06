@@ -8,9 +8,6 @@ import Button from './Button'
 import Editor, { type Ref as EditorRef } from './Editor'
 import * as dialog from './dialog'
 import { formatTotal, isChartEnabled } from './helper'
-import Tippy from '@tippyjs/react'
-import 'tippy.js/dist/tippy.css'
-import 'tippy.js/themes/material.css'
 import { ctrlCmdChar } from './constants'
 import Project from './Project'
 import ResizeBar from './ResizeBar'
@@ -357,20 +354,7 @@ export default function Workspace (): ReactElement {
                   <i className="fas fa-table"></i>
                   {formatTotal(shownSheetInfo.totalRowCount)}
                   {shownSheetInfo.showCount < shownSheetInfo.totalRowCount &&
-                    <>
-                      <span className="preview">(Only {shownSheetInfo.showCount.toLocaleString('en-US')} are shown)</span>
-                      <Tippy
-                        theme="material"
-                        interactive
-                        content={
-                          <span className="tooltip">
-                          Please export the sheet to see all the rows.
-                        </span>
-                        }
-                      >
-                        <i className="fas fa-info-circle" />
-                      </Tippy>
-                    </>
+                    <span className="preview">(Only {shownSheetInfo.showCount.toLocaleString('en-US')} are shown)</span>
                   }
                 </span>
               </>
