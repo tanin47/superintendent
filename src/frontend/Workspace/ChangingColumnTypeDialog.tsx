@@ -178,7 +178,7 @@ export function ChangingColumnTypeDialog ({
               className="cancel"
               disabled={isLoading}
               onClick={() => { close() }}
-              data-testId="cancel-button"
+              data-testid="cancel-button"
             >
               Cancel
               <span className="short-key">ESC</span>

@@ -54,4 +54,10 @@ describe('Change column type', () => {
         await $('[data-testid="cell-0-2"]').click({button: 'right'});
         await expect($('[data-testid="column-context-menu-column-type"]')).toHaveText('TIMESTAMP')
     });
+
+    it("checks that the 3rd column is double", async () => {
+        await $('[data-testid="cell-0-1"]').click(); // clear the context menu
+        await $('[data-testid="cell-0-3"]').click({button: 'right'});
+        await expect($('[data-testid="column-context-menu-column-type"]')).toHaveText('DOUBLE')
+    });
 });
