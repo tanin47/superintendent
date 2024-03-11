@@ -1,5 +1,5 @@
 import { type Sheet } from '../Workspace/types'
-import { type CopySelection, type EditorMode, type ExportedWorkflow, ExportWorkflowChannel, type SortDirection, type DatabaseEngine } from '../../types'
+import { type CopySelection, type EditorMode, type ExportedWorkflow, ExportWorkflowChannel, type SortDirection, type DatabaseEngine, type ColumnType } from '../../types'
 
 const urlParams = new URLSearchParams(window.location.search)
 
@@ -278,6 +278,20 @@ export async function rename (previousTableName: string, newTableName: string): 
     .then((result) => {
       if (result.success === true) {
         // Succeed.
+      } else {
+        throw result
+      }
+    })
+}
+
+export async function changeColumnType (tableName: string, columnName: string, newType: ColumnType, timestampFormat: string | null = null): Promise<Sheet> {
+  return await window.ipcRenderer
+    .invoke('change-column-type', tableName, columnName, newType, timestampFormat)
+    .then((result) => {
+      if (result.success === true) {
+        return {
+          ...result.data
+        }
       } else {
         throw result
       }

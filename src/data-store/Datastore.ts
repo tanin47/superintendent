@@ -1,9 +1,10 @@
-import { type CopySelection, type Sort } from '../types'
+import { type ColumnType, type CopySelection, type Sort } from '../types'
 import { getRandomBird } from './Birds'
 
 export interface Column {
   name: string
   maxCharWidthCount: number
+  tpe: ColumnType
 }
 export type Row = string[]
 
@@ -35,6 +36,7 @@ export abstract class Datastore {
   abstract loadMore (table: string, offset: number): Promise<Row[]>
   abstract drop (table: string): Promise<void>
   abstract rename (previousTableName: string, newTableName: string): Promise<void>
+  abstract changeColumnType (tableName: string, columnName: string, newColumnType: ColumnType, timestampFormat: string | null): Promise<Result>
   abstract getAllTables (): Promise<string[]>
   abstract reserveTableName (name: string): Promise<void>
 

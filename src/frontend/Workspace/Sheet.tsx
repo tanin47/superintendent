@@ -1,5 +1,5 @@
 import React, { type ForwardedRef } from 'react'
-import { type Sheet, type Selection, type UserSelectTarget, type PresentationType } from './types'
+import { type Sheet, type Selection, type UserSelectTarget, type PresentationType, type Column } from './types'
 import { Chart, type ChartType, registerables } from 'chart.js'
 import randomColor from 'randomcolor'
 import { VariableSizeGrid as BaseGrid } from 'react-window'
@@ -10,6 +10,8 @@ import './Sheet.scss'
 import { type SortDirection } from '../../types'
 import CopyingModal from './CopyingModal'
 import { isChartEnabled, makeCopy } from './helper'
+import { useFloating, useClientPoint, useInteractions, useDismiss, useTransitionStyles, shift } from '@floating-ui/react'
+import { type ChangingColumnInfo, ChangingColumnTypeDialog } from './ChangingColumnTypeDialog'
 
 interface CopyingData {
   cellCount: number
@@ -293,6 +295,91 @@ ref: React.Ref<unknown>): JSX.Element {
   )
 })
 
+function ColumnContextMenu ({
+  column,
+  onClosing,
+  onChangingColumnType,
+  x,
+  y
+}: {
+  column: Column | null
+  onClosing: () => void
+  onChangingColumnType: () => void
+  x: number | null
+  y: number | null
+}): JSX.Element {
+  const [point, setPoint] = React.useState<{ x: number | null, y: number | null }>({ x, y })
+
+  React.useEffect(
+    () => {
+      setPoint(({ x: prevX, y: prevY }) => {
+        return { x: x ?? prevX, y: y ?? prevY }
+      })
+    },
+    [x, y]
+  )
+
+  const { refs, floatingStyles, context } = useFloating({
+    open: column !== null,
+    onOpenChange: (open) => {
+      if (!open) {
+        onClosing()
+      } else {
+        // do nothing
+      }
+    },
+    middleware: [shift()],
+    placement: 'bottom-start'
+  })
+
+  const { isMounted, styles } = useTransitionStyles(context)
+  const clientPoint = useClientPoint(context, { x: point.x, y: point.y })
+  const dismiss = useDismiss(context)
+  const { getFloatingProps } = useInteractions([clientPoint, dismiss])
+
+  if (!isMounted || !column) { return <></> }
+
+  return (
+    <div
+      ref={refs.setFloating}
+      style={{
+        ...floatingStyles,
+        zIndex: 1000
+      }}
+      {...getFloatingProps()}
+    >
+      <div
+        className="context-menu"
+        style={{ ...styles }}
+      >
+        <div
+          className="context-menu-header"
+          data-testid="column-context-menu-column-type"
+        >
+          {column.tpe.toLocaleUpperCase()}
+        </div>
+        <div
+          className="context-menu-item"
+          onClick={() => {
+            onChangingColumnType()
+            onClosing()
+          }}
+          data-testid="column-context-menu-change-column-type"
+        >
+          Change column type
+        </div>
+      </div>
+    </div>
+  )
+}
+
+interface ColumnContextMenuOpenInfo {
+  sheet: Sheet
+  columnIndex: number
+  clientX: number
+  clientY: number
+}
+
 function Table ({
   sheet,
   onSelectedSheetUpdated,
@@ -306,6 +393,8 @@ function Table ({
   onCopyingFinished: () => void
   onSorting: (sheet: Sheet, column: string, direction: SortDirection) => void
 }): JSX.Element {
+  const [columnContextMenuOpenInfo, setColumnContextMenuOpenInfo] = React.useState<ColumnContextMenuOpenInfo | null>(null)
+  const [changingColumnInfo, setChangingColumnInfo] = React.useState<ChangingColumnInfo | null>(null)
   const [, setForceUpdate] = React.useState<number>(0)
   const columnWidths = React.useRef<number[]>([])
 
@@ -620,6 +709,16 @@ function Table ({
           onCopy={() => {}}
           onMouseDown={startSelection(rowIndex, columnIndex)}
           onMouseEnter={addSelection(rowIndex, columnIndex)}
+          onContextMenu={(event) => {
+            if (columnIndex < 1) { return }
+
+            setColumnContextMenuOpenInfo({
+              sheet,
+              columnIndex: columnIndex - 1,
+              clientX: event.clientX,
+              clientY: event.clientY
+            })
+          }}
         >
           {columnIndex > 0 && (
             <>
@@ -809,42 +908,70 @@ function Table ({
   )
 
   return (
-    <AutoSizer>
-      {({ height, width }) => {
-        return (
-          <InfiniteLoader
-            itemCount={gridRowCount}
-            isItemLoaded={isItemLoaded}
-            loadMoreItems={loadMoreItems}
-          >
-            {({ onItemsRendered, ref }) => (
-              <Grid
-                ref={gridRef}
-                infiniteLoaderRef={ref}
-                key={sheet.name}
-                rowCount={gridRowCount}
-                computeRowHeight={computeRowHeight}
-                computeCumulativeRowHeight={computeCumulativeRowHeight}
-                columnCount={columnWidths.current.length}
-                columnWidths={columnWidths.current}
-                initialScrollLeft={sheet.scrollLeft ?? 0}
-                initialScrollTop={sheet.scrollTop ?? 0}
-                width={width}
-                height={height}
-                onItemsRendered={onItemsRendered}
-                onSorting={onSorting}
-                onScrolled={(left, top) => {
-                  sheet.scrollLeft = left
-                  sheet.scrollTop = top
-                }}
-              >
-                {Cell}
-              </Grid>
-            )}
-          </InfiniteLoader>
-        )
-      }}
-    </AutoSizer>
+    <>
+      <ChangingColumnTypeDialog
+        info={changingColumnInfo}
+        onChangingColumnType={(newSheet) => {
+          const current = gridRef.current
+          setForceUpdate((x) => x + 1)
+          onSelectedSheetUpdated(newSheet)
+
+          if (current) {
+            current.updateRow(0)
+          }
+        }}
+        onClosing={() => { setChangingColumnInfo(null) }}
+      />
+      <ColumnContextMenu
+        column={columnContextMenuOpenInfo ? sheet.columns[columnContextMenuOpenInfo.columnIndex] : null}
+        x={columnContextMenuOpenInfo?.clientX ?? null}
+        y={columnContextMenuOpenInfo?.clientY ?? null}
+        onClosing={() => { setColumnContextMenuOpenInfo(null) }}
+        onChangingColumnType={() => {
+          const sheet = columnContextMenuOpenInfo!.sheet
+          setChangingColumnInfo({
+            sheet,
+            column: sheet.columns[columnContextMenuOpenInfo!.columnIndex]
+          })
+        }}
+      />
+      <AutoSizer>
+        {({ height, width }) => {
+          return (
+            <InfiniteLoader
+              itemCount={gridRowCount}
+              isItemLoaded={isItemLoaded}
+              loadMoreItems={loadMoreItems}
+            >
+              {({ onItemsRendered, ref }) => (
+                <Grid
+                  ref={gridRef}
+                  infiniteLoaderRef={ref}
+                  key={sheet.name}
+                  rowCount={gridRowCount}
+                  computeRowHeight={computeRowHeight}
+                  computeCumulativeRowHeight={computeCumulativeRowHeight}
+                  columnCount={columnWidths.current.length}
+                  columnWidths={columnWidths.current}
+                  initialScrollLeft={sheet.scrollLeft ?? 0}
+                  initialScrollTop={sheet.scrollTop ?? 0}
+                  width={width}
+                  height={height}
+                  onItemsRendered={onItemsRendered}
+                  onSorting={onSorting}
+                  onScrolled={(left, top) => {
+                    sheet.scrollLeft = left
+                    sheet.scrollTop = top
+                  }}
+                >
+                  {Cell}
+                </Grid>
+              )}
+            </InfiniteLoader>
+          )
+        }}
+      </AutoSizer>
+    </>
   )
 }
 

@@ -1,9 +1,10 @@
 import { type Column, Datastore, type Result, type Row } from './Datastore'
 import { Database } from 'duckdb-async'
+import { type ColumnInfo } from 'duckdb'
 import path from 'path'
 import fs from 'fs'
 import { Parser } from 'csv-parse'
-import { type CopySelection, type Sort } from '../types'
+import { ColumnTypes, type ColumnType, type CopySelection, type Sort } from '../types'
 import { getRandomBird } from './Birds'
 import { type Env } from './worker'
 
@@ -245,13 +246,40 @@ export class Duckdb extends Datastore {
     return await Promise.resolve(rows.map((r) => columns.map((c) => r[c.name])))
   }
 
+  private async maybeFixColumnTypes (table: string, columns: ColumnInfo[]): Promise<boolean> {
+    let fix = false
+
+    for await (const column of columns) {
+      const tpe = column.type.id.toLocaleLowerCase()
+      if (ColumnTypes.includes(tpe)) { continue }
+
+      if (tpe === 'integer') {
+        await this.execChangeColumnType(table, column.name, 'BIGINT')
+      } else if (tpe === 'decimal') {
+        await this.execChangeColumnType(table, column.name, 'DOUBLE')
+      } else if (tpe === 'time' || tpe === 'date') {
+        await this.execChangeColumnType(table, column.name, 'TIMESTAMP')
+      } else {
+        throw new Error(`Unable to normalize the data type: ${tpe} of the column ${column.name} in the table ${table}`)
+      }
+
+      fix = true
+    }
+    return fix
+  }
+
   private async queryAllFromTable (table: string, sql: string): Promise<Result> {
     const numOfRowsResult = await this.db.all(`SELECT COUNT(*) AS number_of_rows FROM "${table}"`)
     const numOfRows = numOfRowsResult.length === 0 ? 0 : Number(numOfRowsResult[0].number_of_rows)
 
     const statement = await this.db.prepare(`SELECT * FROM "${table}" LIMIT ${Datastore.MAX_ROW}`)
-    const columnNames = statement.columns().map((c) => c.name)
-    const allRows = (await statement.all()).map((r) => columnNames.map((c) => r[c]))
+    const columnInfos = statement.columns()
+
+    if (await this.maybeFixColumnTypes(table, columnInfos)) {
+      return await this.queryAllFromTable(table, sql)
+    }
+
+    const allRows = (await statement.all()).map((r) => columnInfos.map((c) => r[c.name]))
 
     let previewedNumOfRows = Math.min(numOfRows, Datastore.MAX_ROW)
 
@@ -260,14 +288,20 @@ export class Duckdb extends Datastore {
     }
 
     const sampleSql = `SELECT * FROM (SELECT rowid, * FROM "${table}" LIMIT ${Datastore.MAX_ROW}) WHERE ((rowid - 1) % ${Math.ceil(previewedNumOfRows / 100)}) = 0 OR rowid = ${previewedNumOfRows}`
-    const metdataSql = `SELECT ${columnNames.map((col) => { return `MAX(COALESCE(NULLIF(INSTR(CAST("${col}" AS text), x'0a'), 0), LENGTH(CAST("${col}" AS text)))) AS "${col}"` }).join(',')} FROM (${sampleSql})`
+    const metdataSql = `SELECT ${columnInfos.map((col) => { return `MAX(COALESCE(NULLIF(INSTR(CAST("${col.name}" AS text), x'0a'), 0), LENGTH(CAST("${col.name}" AS text)))) AS "${col.name}"` }).join(',')} FROM (${sampleSql})`
 
     const metadataResult = await this.db.all(metdataSql)
 
-    const columns: Column[] = columnNames.map((col) => {
+    const columns: Column[] = columnInfos.map((col) => {
+      const colType = col.type.id.toLocaleLowerCase()
+      if (!ColumnTypes.includes(colType)) {
+        throw new Error(`The column ${col.name} of the table ${table} has an unsupported column type: ${col.type.id.toLocaleLowerCase()}`)
+      }
+
       return {
-        name: col,
-        maxCharWidthCount: 0
+        name: col.name,
+        maxCharWidthCount: 0,
+        tpe: colType
       }
     })
 
@@ -292,6 +326,24 @@ export class Duckdb extends Datastore {
       count: numOfRows,
       isCsv: false
     }
+  }
+
+  private async execChangeColumnType (tableName: string, columnName: string, newColumnType: string, timestampFormat: string | null = null): Promise<void> {
+    let usingClause = ''
+
+    if (newColumnType === 'timestamp') {
+      usingClause = `USING strptime("${columnName}", '${timestampFormat}')`
+    }
+
+    await this.db.exec(`ALTER TABLE "${tableName}" ALTER COLUMN "${columnName}" SET DATA TYPE ${newColumnType} ${usingClause}`)
+  }
+
+  async changeColumnType (tableName: string, columnName: string, newColumnType: ColumnType, timestampFormat: string | null): Promise<Result> {
+    await this.execChangeColumnType(tableName, columnName, newColumnType, timestampFormat)
+
+    const result = await this.queryAllFromTable(tableName, `SELECT * FROM "${tableName}"`)
+    result.isCsv = false
+    return result
   }
 
   async getAllTables (): Promise<string[]> {

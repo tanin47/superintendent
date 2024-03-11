@@ -1,4 +1,4 @@
-import { type Sort } from '../../types'
+import { type ColumnType, type Sort } from '../../types'
 
 export const PresentationTypes = ['table', 'line', 'pie', 'bar'] as const
 export type PresentationType = typeof PresentationTypes[number]
@@ -6,6 +6,7 @@ export type PresentationType = typeof PresentationTypes[number]
 export interface Column {
   name: string
   maxCharWidthCount: number
+  tpe: ColumnType
 }
 
 export interface UserSelectTarget {

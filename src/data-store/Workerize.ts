@@ -1,7 +1,7 @@
 import { Datastore, type Result, type Row } from './Datastore'
 import path from 'path'
 import { spawn, Thread, Worker } from 'threads'
-import { type DatabaseEngine, type CopySelection, type Sort } from '../types'
+import { type DatabaseEngine, type CopySelection, type Sort, type ColumnType } from '../types'
 
 // Every method must be called through the worker because this runs on a different thread.
 export class Workerize extends Datastore {
@@ -63,6 +63,10 @@ export class Workerize extends Datastore {
 
   async rename (previousTableName: string, newTableName: string): Promise<void> {
     await this.worker.rename(previousTableName, newTableName)
+  }
+
+  async changeColumnType (tableName: string, columnName: string, newColumnType: ColumnType, timestampFormat: string | null): Promise<Result> {
+    return await this.worker.changeColumnType(tableName, columnName, newColumnType, timestampFormat)
   }
 
   async getAllTables (): Promise<string[]> {

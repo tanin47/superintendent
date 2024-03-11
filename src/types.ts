@@ -16,6 +16,9 @@ export const DatabaseEngineChannel = 'database-engine-changed'
 export type SortDirection = 'asc' | 'desc' | 'none'
 export interface Sort { name: string, direction: SortDirection }
 
+export const ColumnTypes = ['varchar', 'double', 'bigint', 'timestamp', 'boolean']
+export type ColumnType = typeof ColumnTypes[number]
+
 export interface CopySelection {
   columns: string[]
   startRow: number

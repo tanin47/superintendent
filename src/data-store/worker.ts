@@ -1,7 +1,7 @@
 import { expose } from 'threads/worker'
 import { Duckdb } from './Duckdb'
 import { type Datastore, type Result, type Row } from './Datastore'
-import { type DatabaseEngine, type CopySelection, type Sort } from '../types'
+import { type DatabaseEngine, type CopySelection, type Sort, type ColumnType } from '../types'
 import { Sqlite } from './Sqlite'
 
 export interface Env {
@@ -51,6 +51,9 @@ expose({
   },
   async rename (previousTableName: string, newTableName: string): Promise<void> {
     await sqlite!.rename(previousTableName, newTableName)
+  },
+  async changeColumnType (tableName: string, columnName: string, newColumnType: ColumnType, timestampFormat: string | null): Promise<Result> {
+    return await sqlite!.changeColumnType(tableName, columnName, newColumnType, timestampFormat)
   },
   async getAllTables (): Promise<string[]> {
     return await sqlite!.getAllTables()

@@ -1,0 +1,191 @@
+import React from 'react'
+import Modal from 'react-modal'
+import './ChangingColumnTypeDialog.scss'
+import { type Column, type Sheet } from './types'
+import { type ColumnType, ColumnTypes } from '../../types'
+import { changeColumnType } from '../api'
+import Button from './Button'
+
+export interface ChangingColumnInfo {
+  sheet: Sheet
+  column: Column
+}
+
+export function ChangingColumnTypeDialog ({
+  info,
+  onChangingColumnType,
+  onClosing
+}: {
+  info: ChangingColumnInfo | null
+  onChangingColumnType: (newSheet: Sheet) => void
+  onClosing: () => void
+}): JSX.Element {
+  const [isLoading, setIsLoading] = React.useState<boolean>(false)
+  const [tpe, setTpe] = React.useState<ColumnType | ''>('')
+  const [timestampFormat, setTimestampFormat] = React.useState<string>('')
+  const [error, setError] = React.useState<string | null>(null)
+
+  const close = React.useCallback(
+    () => {
+      setError('')
+      onClosing()
+    },
+    [onClosing]
+  )
+
+  const change = React.useCallback(
+    async () => {
+      setError('')
+
+      if (tpe === '') {
+        setError('You must select a new type.')
+        return
+      }
+
+      if (tpe === 'timestamp' && timestampFormat === '') {
+        setError('You must select a timestamp format.')
+        return
+      }
+
+      setIsLoading(true)
+
+      try {
+        const sheet = await changeColumnType(
+          info!.sheet.name,
+          info!.column.name,
+          tpe,
+          timestampFormat
+        )
+
+        onChangingColumnType(sheet)
+        close()
+      } catch (unknownError) {
+        const error = unknownError as any
+        let message = 'Unknown error occurred.'
+
+        if ('message' in error) {
+          message = error.message
+        } else {
+          console.log(error)
+        }
+
+        setError(message)
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [info, tpe, timestampFormat, onChangingColumnType, close]
+  )
+
+  React.useEffect(
+    () => {
+      if (!info) { return }
+      setTpe('')
+      setTimestampFormat('')
+    },
+    [info]
+  )
+
+  React.useEffect(() => {
+    const handler = (event): void => {
+      if (!info) { return }
+
+      if (event.code === 'Enter') {
+        event.stopPropagation()
+        void change()
+        return
+      }
+
+      if (event.code === 'Escape') {
+        event.stopPropagation()
+        close()
+      }
+    }
+    document.addEventListener('keyup', handler)
+
+    return () => {
+      document.removeEventListener('keyup', handler)
+    }
+  }, [close, info, change])
+
+  if (!info) { return <></> }
+
+  return (
+    <Modal
+      isOpen={true}
+      className="modal"
+      overlayClassName="modal-overlay"
+    >
+      <div className="changing-column-type-dialog">
+        <div className="header-panel">Change column type</div>
+        <div className="body">
+          <div className="current-name">
+            <span className="label">Name:</span> <span className="value">{info.column.name}</span>
+          </div>
+          <div className="current-type">
+            <span className="label">Type:</span> <span className="value">{info.column.tpe.toLocaleUpperCase()}</span>
+          </div>
+          <div className="new-column">
+            <span className="label">New type:</span>
+            <span className="value">
+              <div className="selector">
+                <div className="select" style={{ width: '150px' }}>
+                  <select data-testid="new-type-selectbox" value={tpe} onChange={(event) => { setTpe(event.target.value) }}>
+                    <option value="">Select the new type</option>
+                    {ColumnTypes.map((columnType) => {
+                      return (
+                        <option value={columnType} key={columnType}>{columnType.toLocaleUpperCase()}</option>
+                      )
+                    })}
+                  </select>
+                </div>
+              </div>
+              {tpe === 'timestamp' && (
+                <div className="selector">
+                  <div className="select" style={{ width: '200px' }}>
+                    <select data-testid="timestamp-format-selectbox" value={timestampFormat} onChange={(event) => { setTimestampFormat(event.target.value) }}>
+                      <option value="">Select the timestamp format</option>
+                      <option>%m/%d/%Y</option>
+                      <option>%m/%d/%Y %I:%M:%S %p</option>
+                      <option>%Y-%m-%d</option>
+                      <option>%Y-%m-%d %H:%M:%S</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+            </span>
+          </div>
+          {error && (
+            <div className="error" data-testid="error">
+              {error}
+            </div>
+          )}
+        </div>
+        <div className="cta-panel">
+          <div className="left">
+            <Button
+              className="main"
+              isLoading={isLoading}
+              onClick={() => { void change() }}
+              testId="change-button"
+            >
+              Change
+              <span className="short-key">⏎</span>
+            </Button>
+          </div>
+          <div className="right">
+            <button
+              className="cancel"
+              disabled={isLoading}
+              onClick={() => { close() }}
+              data-testId="cancel-button"
+            >
+              Cancel
+              <span className="short-key">ESC</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </Modal>
+  )
+}

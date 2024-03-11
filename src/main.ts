@@ -7,7 +7,7 @@ import {
   type EditorMode, EditorModeChannel,
   type ExportDelimiter,
   ExportDelimiters, type ExportedWorkflow, ExportWorkflowChannel,
-  type Format, ImportWorkflowChannel, type Sort, type DatabaseEngine, DatabaseEngineChannel
+  type Format, ImportWorkflowChannel, type Sort, type DatabaseEngine, DatabaseEngineChannel, type ColumnType
 } from './types'
 import fs from 'fs'
 import { getRandomBird } from './data-store/Birds'
@@ -516,6 +516,10 @@ export default class Main {
 
     ipcMain.handle('rename', async (event, previousTableName: string, newTableName: string) => {
       return await Main.wrapResponse(Main.getSpace(event).db.rename(previousTableName, newTableName))
+    })
+
+    ipcMain.handle('change-column-type', async (event, tableName: string, columnName: string, newColumnType: ColumnType, timestampFormat: string | null) => {
+      return await Main.wrapResponse(Main.getSpace(event).db.changeColumnType(tableName, columnName, newColumnType, timestampFormat))
     })
 
     ipcMain.handle('add-csv', async (event, path: string, withHeader: boolean, format: Format, replace: string) => {

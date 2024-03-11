@@ -1,6 +1,7 @@
 import React from 'react'
 
 export default function Button ({
+  className,
   onClick,
   isLoading,
   disabled,
@@ -8,6 +9,7 @@ export default function Button ({
   children,
   testId
 }: {
+  className?: string | null
   onClick?: (() => void) | null
   isLoading?: boolean
   disabled?: boolean
@@ -17,6 +19,7 @@ export default function Button ({
 }): JSX.Element {
   return (
     <button
+      className={className ?? ''}
       onClick={onClick ?? (() => {})}
       disabled={disabled ?? isLoading}
       data-testid={testId}

@@ -2,7 +2,7 @@ import React, { type ReactElement } from 'react'
 import './index.scss'
 import { downloadCsv, drop, getInitialEditorMode, query, sort } from '../api'
 import { type EditorMode, EditorModeChannel, type ExportedWorkflow, ImportWorkflowChannel } from '../../types'
-import { type PresentationType, type Sheet } from './types'
+import { type Column, type PresentationType, type Sheet } from './types'
 import SheetSection, { type Ref as SheetSectionRef } from './SheetSection'
 import Button from './Button'
 import Editor, { type Ref as EditorRef } from './Editor'
@@ -24,17 +24,41 @@ interface SheetInfo {
   name: string
   showCount: number
   totalRowCount: number
+  columns: Column[]
 }
 
 function areSheetInfosEqual (left: SheetInfo | null, right: SheetInfo | null): boolean {
   if (left === right) { return true }
   if (left === null || right === null) { return false }
 
-  return (
+  if (left.columns.length !== right.columns.length) { return false }
+
+  if (
     left.name === right.name &&
       left.showCount === right.showCount &&
       left.totalRowCount === right.totalRowCount
-  )
+  ) {
+    // do nothing
+  } else {
+    return false
+  }
+
+  for (let i = 0; i < left.columns.length; i++) {
+    const leftColumn = left.columns[i]
+    const rightColumn = right.columns[i]
+
+    if (
+      leftColumn.name === rightColumn.name &&
+      leftColumn.maxCharWidthCount === rightColumn.maxCharWidthCount &&
+      leftColumn.tpe === rightColumn.tpe
+    ) {
+      // do nothing
+    } else {
+      return false
+    }
+  }
+
+  return true
 }
 
 export default function Workspace (): ReactElement {
@@ -392,7 +416,8 @@ export default function Workspace (): ReactElement {
             info = {
               name: newSheet.name,
               showCount: newSheet.rows.length,
-              totalRowCount: newSheet.count
+              totalRowCount: newSheet.count,
+              columns: newSheet.columns
             }
           }
 
@@ -403,6 +428,8 @@ export default function Workspace (): ReactElement {
           if (!isChartEnabled(info?.showCount)) {
             setPresentationType('table')
           }
+
+          addNewSheetCallback(newSheet)
 
           setShownSheetInfo((prev) => {
             if (!!prev && !!info && prev.name === info.name && prev.totalRowCount !== info.totalRowCount) {

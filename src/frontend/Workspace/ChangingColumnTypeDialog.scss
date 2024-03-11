@@ -1,0 +1,126 @@
+.modal {
+  width: 600px;
+}
+
+.changing-column-type-dialog {
+  display: block;
+  position: relative;
+
+  .fas {
+    font-family: "Font Awesome 5 Free" !important;
+  }
+
+  .header-panel {
+    display: block;
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+
+  .body {
+    > div {
+      display: block;
+      margin: 10px 0px;
+
+      > .label {
+        font-size: 15px;
+        font-weight: bold;
+      }
+
+      > .value {
+        font-size: 13px;
+        text-decoration: underline;
+        font-family: 'JetBrains Mono', monospace !important;
+      }
+    }
+
+    > .error {
+      color: #B22222;
+      font-size: 15px;
+    }
+
+    .selector {
+      display: inline-block;
+      margin: 0px;
+      margin-left: 5px;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      line-height: 26px;
+
+      select {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        -ms-appearance: none;
+        appearance: none;
+        outline: 0;
+        box-shadow: none;
+        border: 0 !important;
+        background: #666;
+        background-image: none;
+        flex: 1;
+        padding: 0 8px;
+        color: #eee;
+        font-family: 'JetBrains Mono', monospace !important;
+        font-size: 10px;
+        cursor: pointer;
+
+        &:disabled {
+          cursor: default;
+          background-color: #666;
+          background-size: 5px 5px;
+          background-image: repeating-linear-gradient(45deg, #333 0, #333 1px, #666 0, #666 50%);
+          color: #ccc;
+        }
+
+        /* Remove IE arrow */
+        &::-ms-expand {
+          display: none;
+        }
+      }
+
+      .select {
+        position: relative;
+        display: flex;
+        width: 100px;
+        height: 22px;
+        line-height: 22px;
+        background: #666;
+        overflow: hidden;
+        border-radius: 5px;
+
+        &.disabled {
+          &::after {
+            color: #ccc;
+          }
+        }
+
+        &::after {
+          content: '\25BC';
+          position: absolute;
+          font-size: 10px;
+          top: 0;
+          right: 0;
+          padding: 0 5px;
+          background: #888;
+          cursor: pointer;
+          color: #fefefe;
+          pointer-events: none;
+          -webkit-transition: .25s all ease;
+          -o-transition: .25s all ease;
+          transition: .25s all ease;
+        }
+
+        &:hover::after {
+          color: #ccc;
+        }
+      }
+    }
+  }
+
+  .cta-panel {
+    display: flex;
+    margin-top: 15px;
+    justify-content: space-between;
+  }
+}

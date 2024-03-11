@@ -3,7 +3,7 @@ import sqlite, { type Database } from 'better-sqlite3'
 import path from 'path'
 import fs from 'fs'
 import { Parser } from 'csv-parse'
-import { type CopySelection, type Sort } from '../types'
+import { type ColumnType, type CopySelection, type Sort } from '../types'
 import { getRandomBird } from './Birds'
 import { type Env } from './worker'
 
@@ -326,7 +326,8 @@ export class Sqlite extends Datastore {
     const columns: Column[] = columnNames.map((col) => {
       return {
         name: col,
-        maxCharWidthCount: 0
+        maxCharWidthCount: 0,
+        tpe: 'VARCHAR'
       }
     })
 
@@ -351,6 +352,10 @@ export class Sqlite extends Datastore {
       count: numOfRows,
       isCsv: false
     }
+  }
+
+  async changeColumnType (tableName: string, columnName: string, newColumnType: ColumnType, timestampFormat: string | null): Promise<Result> {
+    throw new Error('Not implemented yet')
   }
 
   async getAllTables (): Promise<string[]> {

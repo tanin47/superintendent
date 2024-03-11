@@ -475,22 +475,22 @@
   font-size: 13px;
   background-color: #333;
   color: #fff;
-  border: 2px solid #333;
   border-radius: 4px;
   line-height: 1.4;
   white-space: normal;
   outline: 0;
+  overflow: hidden;
 
   .context-menu-header {
     padding: 2px 4px;
-    border-radius: 4px;
+    border-radius: 4px 4px 0px 0px;
     text-align: center;
-    background-color: #666;
+    background-color: #555;
   }
-  
 
   .context-menu-item {
     cursor: pointer;
+    margin: 3px;
     padding: 2px 4px;
     border-radius: 4px;
 
