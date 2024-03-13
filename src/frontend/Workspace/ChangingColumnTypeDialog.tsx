@@ -63,7 +63,9 @@ export function ChangingColumnTypeDialog ({
         const error = unknownError as any
         let message = 'Unknown error occurred.'
 
-        if ('message' in error) {
+        if (typeof error === 'string') {
+          message = error
+        } else if (error instanceof Object && 'message' in error) {
           message = error.message
         } else {
           console.log(error)
