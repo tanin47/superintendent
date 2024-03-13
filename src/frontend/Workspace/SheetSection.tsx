@@ -269,7 +269,7 @@ export default React.forwardRef<Ref, Props>(function SheetSection ({
                   <div className="overlay" style={{ cursor: 'pointer' }}/>
                 )}
                 {icon}
-                <span className="label">{tab.sheet.name === DraftSheetName ? 'DRAFT' : tab.sheet.name}</span>
+                <span className="label">{tab.sheet.name === DraftSheetName ? 'draft' : tab.sheet.name}</span>
                 <i
                   className="fas fa-times"
                   onClick={(event) => {

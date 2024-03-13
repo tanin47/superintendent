@@ -60,17 +60,6 @@
       "!out{/*}",
       "!src{/*}"
     ],
-    "extraResources": [
-      "./deps/csv_writer/csv_writer.dylib",
-      "./deps/csv/csv.dylib",
-      "./deps/ext/ext.dylib",
-      "./deps/csv_writer/csv_writer.dll",
-      "./deps/csv/csv.dll",
-      "./deps/ext/ext.dll",
-      "./deps/csv_writer/csv_writer.so",
-      "./deps/csv/csv.so",
-      "./deps/ext/ext.so"
-    ],
     "asarUnpack": [
       "dist/prod",
       "node_modules"
@@ -80,7 +69,6 @@
   "author": "Tanin Na Nakorn",
   "devDependencies": {
     "@electron/notarize": "2.1.0",
-    "@types/better-sqlite3": "^5.4.1",
     "@types/chart.js": "^2.9.32",
     "@types/codemirror": "^5.60.0",
     "@types/electron": "^1.6.10",
@@ -128,7 +116,6 @@
   },
   "dependencies": {
     "@floating-ui/react": "^0.26.9",
-    "better-sqlite3": "tanin47/better-sqlite3#54c74c5be05988766826f27ee124d2c6fe4d7730",
     "chart.js": "^3.3.2",
     "codemirror": "^5.61.1",
     "csv-parse": "4.15.4",
