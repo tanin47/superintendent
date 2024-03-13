@@ -11,12 +11,13 @@ import 'codemirror/addon/comment/comment'
 import 'codemirror/keymap/vim.js'
 import './Editor.scss'
 import { DatabaseEngineChannel, type DatabaseEngine, type EditorMode } from '../../types'
-import { type Sheet } from './types'
+import { DraftSheetName, type RunSqlMode, type Sheet } from './types'
 import { format } from 'sql-formatter'
 import Button from './Button'
 import { altOptionChar, ctrlCmdChar } from './constants'
 import * as dialog from './dialog'
 import { getInitialDatabaseEngine } from '../api'
+import { useFloating, useClientPoint, useInteractions, useDismiss, useTransitionStyles, shift } from '@floating-ui/react'
 
 export interface Ref {
   getValue: () => string
@@ -30,7 +31,7 @@ interface Props {
   mode: EditorMode
   sheets: Sheet[]
   selectedSheet: Sheet | null
-  onRunningSql: (sql: string, sheetName: string | null) => Promise<Sheet>
+  onRunningSql: (sql: string, sheetName: string | null, mode: RunSqlMode) => Promise<Sheet>
   onMakingNewQuery: () => void
 }
 
@@ -40,6 +41,100 @@ function getAutocompleteWord (s: string): string {
   } else {
     return s
   }
+}
+
+function ContextMenu ({
+  open,
+  onRunDraft,
+  onRunNewSql,
+  onClosing,
+  selectedText,
+  x,
+  y
+}: {
+  open: boolean
+  onRunDraft: () => void
+  onRunNewSql: () => void
+  onClosing: () => void
+  selectedText: string | null
+  x: number | null
+  y: number | null
+}): JSX.Element {
+  const [point, setPoint] = React.useState<{ x: number | null, y: number | null }>({ x, y })
+
+  React.useEffect(
+    () => {
+      setPoint(({ x: prevX, y: prevY }) => {
+        return { x: x ?? prevX, y: y ?? prevY }
+      })
+    },
+    [x, y]
+  )
+
+  const { refs, floatingStyles, context } = useFloating({
+    open,
+    onOpenChange: (open) => {
+      if (!open) {
+        onClosing()
+      } else {
+        // do nothing
+      }
+    },
+    middleware: [shift()],
+    placement: 'bottom-start'
+  })
+
+  const { isMounted, styles } = useTransitionStyles(context)
+  const clientPoint = useClientPoint(context, { x: point.x, y: point.y })
+  const dismiss = useDismiss(context)
+  const { getFloatingProps } = useInteractions([clientPoint, dismiss])
+
+  if (!isMounted || !open) { return <></> }
+
+  return (
+    <div
+      ref={refs.setFloating}
+      style={{
+        ...floatingStyles,
+        zIndex: 1000
+      }}
+      {...getFloatingProps()}
+    >
+      <div
+        className="context-menu"
+        style={{ ...styles }}
+      >
+        <div
+          className="context-menu-item"
+          onClick={() => {
+            onClosing()
+            onRunDraft()
+          }}
+          data-testid="editor-context-menu-run-draft"
+        >
+          <span className="label">{selectedText ? 'Run the selection in the draft mode' : 'Run in the draft mode'}</span>
+          <span className="short-key">{ctrlCmdChar()} T</span>
+        </div>
+        <div
+          className="context-menu-item"
+          onClick={() => {
+            onClosing()
+            onRunNewSql()
+          }}
+          data-testid="editor-context-menu-run-new"
+        >
+          <span className="label">{selectedText ? 'Run the selection as a new query' : 'Run as a new query'}</span>
+          <span className="short-key">{ctrlCmdChar()} ⇧ T</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+interface ContextMenuOpenInfo {
+  selectedText: string
+  clientX: number
+  clientY: number
 }
 
 export default React.forwardRef<Ref, Props>(function Editor ({
@@ -56,6 +151,7 @@ export default React.forwardRef<Ref, Props>(function Editor ({
   const [shownSheet, setShownSheet] = React.useState<Sheet | null>(null)
   const [shouldShowDraftNotice, setShouldShowDraftNotice] = React.useState<boolean>(false)
   const [shouldShowCsvNotice, setShouldShowCsvNotice] = React.useState<boolean>(false)
+  const [contextMenuOpenInfo, setContextMenuOpenInfo] = React.useState<ContextMenuOpenInfo | null>(null)
 
   React.useEffect(
     () => {
@@ -153,18 +249,40 @@ export default React.forwardRef<Ref, Props>(function Editor ({
   )
 
   const runSql = React.useCallback(
-    () => {
+    (mode: RunSqlMode = 'default') => {
       if (isQueryLoading) { return }
       codeMirrorInstance.current.save()
-      const value = textareaRef.current!.value
+
+      let value: string
+
+      switch (mode) {
+        case 'partial-new':
+        case 'partial-draft': {
+          const selection = codeMirrorInstance.current.getSelection() as string
+          console.log(selection)
+
+          if (selection) {
+            value = selection
+          } else {
+            value = textareaRef.current!.value.trim()
+          }
+          break
+        }
+        case 'default':
+          value = textareaRef.current!.value.trim()
+          break
+        default:
+          throw new Error()
+      }
+
+      if (value === '') { return }
 
       setIsQueryLoading(true)
-      onRunningSql(
-        value,
-        selectedSheet?.name ?? null
-      )
+      onRunningSql(value, selectedSheet?.name ?? null, mode)
         .then((sheet) => {
-          setShouldShowDraftNotice(false)
+          if (mode === 'default') {
+            setShouldShowDraftNotice(false)
+          }
         })
         .catch((err) => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
@@ -228,6 +346,16 @@ export default React.forwardRef<Ref, Props>(function Editor ({
         firstCharRecorded = false
       }
     })
+
+    codeMirrorInstance.current.on('contextmenu', (cm, event: Event) => {
+      if (!(event instanceof PointerEvent)) { return }
+      setContextMenuOpenInfo({
+        selectedText: cm.getSelection() as string,
+        clientX: event.clientX,
+        clientY: event.clientY
+      })
+      event.preventDefault()
+    })
   }, [initialValue, mode])
 
   React.useEffect(() => {
@@ -238,26 +366,28 @@ export default React.forwardRef<Ref, Props>(function Editor ({
   React.useEffect(() => {
     if (!codeMirrorInstance.current) { return }
 
+    const relevantSheets = sheets.filter((s) => s.name !== DraftSheetName)
+
     const tables = {}
     const allColumns = new Set<string>()
 
-    for (const sheet of sheets) {
+    for (const sheet of relevantSheets) {
       for (const column of sheet.columns) {
         allColumns.add(getAutocompleteWord(column.name))
       }
     }
 
-    for (const sheet of sheets) {
+    for (const sheet of relevantSheets) {
       tables[getAutocompleteWord(sheet.name)] = []
     }
 
-    if (sheets.length > 0) {
-      tables[getAutocompleteWord(sheets[0].name)] = Array.from(allColumns)
+    if (relevantSheets.length > 0) {
+      tables[getAutocompleteWord(relevantSheets[0].name)] = Array.from(allColumns)
     }
 
     codeMirrorInstance.current.setOption('hintOptions', {
       tables,
-      defaultTable: sheets[0] ? getAutocompleteWord(sheets[0].name) : null,
+      defaultTable: relevantSheets[0] ? getAutocompleteWord(relevantSheets[0].name) : null,
       closeOnUnfocus: true
     })
   }, [sheets])
@@ -265,6 +395,8 @@ export default React.forwardRef<Ref, Props>(function Editor ({
   React.useEffect(
     () => {
       const handler = (event): boolean => {
+        if (!(event instanceof KeyboardEvent)) { return true }
+
         if (event.code === 'Enter' && (event.metaKey || event.ctrlKey)) {
           runSql()
           return false
@@ -272,6 +404,16 @@ export default React.forwardRef<Ref, Props>(function Editor ({
 
         if (event.code === 'Enter' && event.altKey) {
           formatSql()
+          return false
+        }
+
+        if (event.code === 'KeyT' && event.shiftKey && (event.metaKey || event.ctrlKey)) {
+          runSql('partial-new')
+          return false
+        }
+
+        if (event.code === 'KeyT' && (event.metaKey || event.ctrlKey)) {
+          runSql('partial-draft')
           return false
         }
 
@@ -327,6 +469,15 @@ export default React.forwardRef<Ref, Props>(function Editor ({
 
   return (
     <>
+      <ContextMenu
+        open={contextMenuOpenInfo !== null}
+        selectedText={contextMenuOpenInfo?.selectedText ?? null}
+        x={contextMenuOpenInfo?.clientX ?? null}
+        y={contextMenuOpenInfo?.clientY ?? null}
+        onClosing={() => { setContextMenuOpenInfo(null) }}
+        onRunNewSql={() => { runSql('partial-new') }}
+        onRunDraft={() => { runSql('partial-draft') }}
+      />
       <div className="toolbarSection top" style={{ borderLeft: '1px solid #666' }}>
         <div className="inner">
           <div className="left">

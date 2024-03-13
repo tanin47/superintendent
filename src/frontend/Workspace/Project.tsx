@@ -4,7 +4,7 @@ import Button from './Button'
 import { ctrlCmdChar } from './constants'
 import AddCsv, { type Ref as AddCsvRef } from './AddCsvModal'
 import { convertFileList, exportWorkflow, getInitialFile } from '../api'
-import { type Sheet } from './types'
+import { DraftSheetName, type Sheet } from './types'
 import { type ExportedWorkflow, ExportWorkflowChannel } from '../../types'
 import { useFloating, useClientPoint, useInteractions, useDismiss, useTransitionStyles, shift } from '@floating-ui/react'
 
@@ -241,7 +241,7 @@ export default function Project ({
     [addFiles]
   )
 
-  const sortedSheet = sheets.sort((left, right) => {
+  const sortedSheet = sheets.filter((s) => s.name !== DraftSheetName).sort((left, right) => {
     if (left.isCsv !== right.isCsv) {
       if (left.isCsv) { return -1 } else { return 1 }
     } else {

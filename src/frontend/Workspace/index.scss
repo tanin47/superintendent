@@ -369,21 +369,32 @@
         display: inline-block;
         font-size: 14px;
         line-height: 32px;
+        height: 32px;
         padding: 0 12px;
         color: #666;
         background-color: #ddd;
         border-right: 1px solid #fefefe;
         cursor: pointer;
 
+        &.draft {
+          color: #186A3B !important;
+
+          .label {
+            font-size: 11px;
+            font-family: 'JetBrains Mono';
+            text-decoration: underline;
+          }
+
+          i.icon {
+            font-size: 11px;
+          }
+        }
+
         &.selected {
           z-index: 3;
           color: #333;
           background-color: #fefefe;
           box-shadow: rgba(60, 64, 67, 0.3) 0 1px 2px 0;
-        }
-
-        .editor-selected {
-          text-decoration: underline;
         }
 
         i.icon {
@@ -493,9 +504,21 @@
     margin: 3px;
     padding: 2px 4px;
     border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 
     &:hover {
       background-color: #1865BB;
+    }
+
+    .short-key {
+      margin-left: 10px;
+      padding: 1px 2px 1px 1px;
+      border-radius: 2px;
+      font-size: 10px;
+      background-color: #bbb;
+      color: #333;
     }
   }
 }

@@ -1,5 +1,5 @@
 import React, { type ReactElement } from 'react'
-import { type PresentationType, type Sheet as SheetType } from './types'
+import { DraftSheetName, type PresentationType, type Sheet as SheetType } from './types'
 import Sheet from './Sheet'
 import './SheetSection.scss'
 import { type SortDirection } from '../../types'
@@ -220,23 +220,22 @@ export default React.forwardRef<Ref, Props>(function SheetSection ({
             />
           </div>
           {tabs.map((tab, index) => {
-            let icon = tab.sheet.isCsv
-              ? (
-              <i className="fas fa-file-csv icon"></i>
-                )
-              : (
-              <i className="fas fa-caret-square-right icon"></i>
-                )
-
+            let icon: JSX.Element
             if (tab.sheet.isLoading) {
               icon = <span className="spinner" />
+            } else if (tab.sheet.name === DraftSheetName) {
+              icon = (<i className="fas fa-pencil-ruler icon"></i>)
+            } else if (tab.sheet.isCsv) {
+              icon = (<i className="fas fa-file-csv icon"></i>)
+            } else {
+              icon = (<i className="fas fa-caret-square-right icon"></i>)
             }
 
             return (
               <div
                 key={tab.sheet.name}
                 data-testid={`sheet-section-item-${tab.sheet.name}`}
-                className={`tab ${selectedTabIndex === index ? 'selected' : ''}`}
+                className={`tab ${selectedTabIndex === index ? 'selected' : ''} ${tab.sheet.name === DraftSheetName ? 'draft' : ''}`}
                 onClick={(event) => {
                   setSelectedTabIndex(index)
                 }}
@@ -270,7 +269,7 @@ export default React.forwardRef<Ref, Props>(function SheetSection ({
                   <div className="overlay" style={{ cursor: 'pointer' }}/>
                 )}
                 {icon}
-                <span>{tab.sheet.name}</span>
+                <span className="label">{tab.sheet.name === DraftSheetName ? 'DRAFT' : tab.sheet.name}</span>
                 <i
                   className="fas fa-times"
                   onClick={(event) => {

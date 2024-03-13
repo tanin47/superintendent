@@ -2,7 +2,7 @@ import React, { type ReactElement } from 'react'
 import './index.scss'
 import { downloadCsv, drop, getInitialEditorMode, query, sort } from '../api'
 import { type EditorMode, EditorModeChannel, type ExportedWorkflow, ImportWorkflowChannel } from '../../types'
-import { type Column, type PresentationType, type Sheet } from './types'
+import { type RunSqlMode, type Column, type PresentationType, type Sheet, DraftSheetName } from './types'
 import SheetSection, { type Ref as SheetSectionRef } from './SheetSection'
 import Button from './Button'
 import Editor, { type Ref as EditorRef } from './Editor'
@@ -124,7 +124,7 @@ export default function Workspace (): ReactElement {
   const [projectWidth, setProjectWidth] = React.useState<number>(250)
 
   const addNewSheetCallback = React.useCallback(
-    (newSheet: Sheet | null): void => {
+    (newSheet: Sheet | null, shouldSwitchEditor: boolean = true): void => {
       if (!newSheet) { return }
 
       setSheets((sheets) => {
@@ -136,7 +136,7 @@ export default function Workspace (): ReactElement {
         } else {
           sheets.push(newSheet)
 
-          if (!newSheet.isCsv) {
+          if (!newSheet.isCsv && shouldSwitchEditor) {
             setEditorSelectedSheet(sheets[sheets.length - 1])
           }
         }
@@ -167,7 +167,24 @@ export default function Workspace (): ReactElement {
   )
 
   const runSql = React.useCallback(
-    async (sql: string, sheetName: string | null) => {
+    async (sql: string, selectedSheetName: string | null, mode: RunSqlMode) => {
+      let shouldSwitchEditor = false
+      let sheetName: string | null
+      switch (mode) {
+        case 'partial-new':
+          sheetName = null
+          break
+        case 'partial-draft':
+          sheetName = DraftSheetName
+          break
+        case 'default':
+          sheetName = selectedSheetName
+          shouldSwitchEditor = true
+          break
+        default:
+          throw new Error()
+      }
+
       const found = sheets.find((s) => s.name === sheetName)
 
       if (found) {
@@ -176,16 +193,13 @@ export default function Workspace (): ReactElement {
       }
 
       try {
-        const sheet = await query(
-          sql,
-          sheetName
-        )
+        const sheet = await query(sql, sheetName)
 
         if (found) {
           found.isLoading = false
         }
 
-        addNewSheetCallback(sheet)
+        addNewSheetCallback(sheet, shouldSwitchEditor)
         return sheet
       } catch (e) {
         if (found) {

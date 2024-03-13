@@ -1,5 +1,9 @@
 import { type ColumnType, type Sort } from '../../types'
 
+export const DraftSheetName = '_T_DRAFT_T_'
+
+export type RunSqlMode = 'default' | 'partial-new' | 'partial-draft'
+
 export const PresentationTypes = ['table', 'line', 'pie', 'bar'] as const
 export type PresentationType = typeof PresentationTypes[number]
 
