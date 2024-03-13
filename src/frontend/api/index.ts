@@ -152,7 +152,7 @@ export async function query (q: string, table: string | null): Promise<Sheet> {
           ...result.data
         }
       } else {
-        throw result
+        throw result.message
       }
     })
 }
@@ -177,7 +177,7 @@ export async function sort (sheet: Sheet, column: string, direction: SortDirecti
           isCsv: sheet.isCsv
         }
       } else {
-        throw result
+        throw result.message
       }
     })
 }
@@ -189,7 +189,7 @@ export async function loadMore (table: string, offset: number): Promise<string[]
       if (result.success === true) {
         return result.data
       } else {
-        throw result
+        throw result.message
       }
     })
 }
@@ -201,7 +201,7 @@ export async function copy (table: string, selection: CopySelection): Promise<bo
       if (result.success === true) {
         return true
       } else {
-        throw result
+        throw result.message
       }
     })
 }
@@ -222,7 +222,7 @@ export async function addCsv (path: string, withHeader: boolean, format: string,
           })
         }
       } else {
-        throw result
+        throw result.message
       }
     })
 }
@@ -234,7 +234,7 @@ export async function exportWorkflow (workflow: ExportedWorkflow): Promise<void>
       if (result.success) {
         // do nothing
       } else {
-        throw result
+        throw result.message
       }
     })
 }
@@ -246,7 +246,7 @@ export async function downloadCsv (table: string): Promise<string> {
       if (result.success) {
         return result.data
       } else {
-        throw result
+        throw result.message
       }
     })
 }
@@ -266,7 +266,7 @@ export async function rename (previousTableName: string, newTableName: string): 
       if (result.success === true) {
         // Succeed.
       } else {
-        throw result
+        throw result.message
       }
     })
 }
@@ -280,7 +280,7 @@ export async function changeColumnType (tableName: string, columnName: string, n
           ...result.data
         }
       } else {
-        throw result
+        throw result.message
       }
     })
 }

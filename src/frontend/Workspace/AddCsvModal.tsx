@@ -206,6 +206,8 @@ export default React.forwardRef(function AddCsv ({
       } catch (e) {
         if (e instanceof Error) {
           alert(e.message)
+        } else if (e instanceof String) {
+          alert(e)
         } else {
           // @ts-expect-error unknown type
           alert(`Unknown error: ${e.toString()}`)

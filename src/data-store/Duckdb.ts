@@ -277,13 +277,7 @@ export class Duckdb extends Datastore {
 
     const allRows = (await statement.all()).map((r) => columnInfos.map((c) => r[c.name]))
 
-    let previewedNumOfRows = Math.min(numOfRows, Datastore.MAX_ROW)
-
-    if (previewedNumOfRows < 100) {
-      previewedNumOfRows = 100
-    }
-
-    const sampleSql = `SELECT * FROM (SELECT rowid, * FROM "${table}" LIMIT ${Datastore.MAX_ROW}) WHERE ((rowid - 1) % ${Math.ceil(previewedNumOfRows / 100)}) = 0 OR rowid = ${previewedNumOfRows}`
+    const sampleSql = `SELECT * FROM "${table}" USING SAMPLE 100`
     const metdataSql = `SELECT ${columnInfos.map((col) => { return `MAX(COALESCE(NULLIF(INSTR(CAST("${col.name}" AS text), x'0a'), 0), LENGTH(CAST("${col.name}" AS text)))) AS "${col.name}"` }).join(',')} FROM (${sampleSql})`
 
     const metadataResult = await this.db.all(metdataSql)
