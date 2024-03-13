@@ -26,7 +26,6 @@ export abstract class Datastore {
   abstract open (): Promise<void>
   abstract close (): Promise<void>
 
-  abstract addSqlite (filePath: string): Promise<Result[]>
   abstract addCsv (filePath: string, withHeader: boolean, separator: string, replace: string): Promise<Result[]>
   abstract exportCsv (table: string, filePath: string, delimiter: string): Promise<void>
 

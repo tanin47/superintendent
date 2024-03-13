@@ -10,13 +10,12 @@ import 'codemirror/addon/hint/anyword-hint'
 import 'codemirror/addon/comment/comment'
 import 'codemirror/keymap/vim.js'
 import './Editor.scss'
-import { DatabaseEngineChannel, type DatabaseEngine, type EditorMode } from '../../types'
+import { type EditorMode } from '../../types'
 import { DraftSheetName, type RunSqlMode, type Sheet } from './types'
 import { format } from 'sql-formatter'
 import Button from './Button'
 import { altOptionChar, ctrlCmdChar } from './constants'
 import * as dialog from './dialog'
-import { getInitialDatabaseEngine } from '../api'
 import { useFloating, useClientPoint, useInteractions, useDismiss, useTransitionStyles, shift } from '@floating-ui/react'
 
 export interface Ref {
@@ -457,16 +456,6 @@ export default React.forwardRef<Ref, Props>(function Editor ({
     )
   }
 
-  const [databaseEngine, setDatabaseEngine] = React.useState<DatabaseEngine>(getInitialDatabaseEngine())
-  React.useEffect(() => {
-    const callback = (event, engine: any): void => { setDatabaseEngine(engine as DatabaseEngine) }
-    const removeListener = window.ipcRenderer.on(DatabaseEngineChannel, callback)
-
-    return () => {
-      removeListener()
-    }
-  })
-
   return (
     <>
       <ContextMenu
@@ -502,9 +491,6 @@ export default React.forwardRef<Ref, Props>(function Editor ({
             </Button>
           </div>
           <div className="right">
-            <span className="databaseEngine">
-              {databaseEngine === 'duckdb' ? 'DuckDB' : 'SQLite'}
-            </span>
           </div>
         </div>
       </div>

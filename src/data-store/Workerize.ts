@@ -1,7 +1,7 @@
 import { Datastore, type Result, type Row } from './Datastore'
 import path from 'path'
 import { spawn, Thread, Worker } from 'threads'
-import { type DatabaseEngine, type CopySelection, type Sort, type ColumnType } from '../types'
+import { type CopySelection, type Sort, type ColumnType } from '../types'
 
 // Every method must be called through the worker because this runs on a different thread.
 export class Workerize extends Datastore {
@@ -12,11 +12,11 @@ export class Workerize extends Datastore {
     this.worker = worker
   }
 
-  static async create (databaseEngine: DatabaseEngine): Promise<Datastore> {
+  static async create (): Promise<Datastore> {
     const prefix = process.env.SUPERINTENDENT_IS_PROD ? path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'prod') : '.'
 
     const worker = (await spawn(new Worker(path.join(prefix, 'worker')))) as any
-    await worker.init({ resourcePath: process.resourcesPath, platform: process.platform, databaseEngine })
+    await worker.init({ resourcePath: process.resourcesPath, platform: process.platform })
     return await Promise.resolve(new Workerize(worker as Datastore))
   }
 
@@ -27,10 +27,6 @@ export class Workerize extends Datastore {
   async close (): Promise<void> {
     await this.worker.close()
     await Thread.terminate(this.worker as any)
-  }
-
-  async addSqlite (filePath: string): Promise<Result[]> {
-    return await this.worker.addSqlite(filePath)
   }
 
   async addCsv (filePath: string, withHeader: boolean, separator: string, replace: string): Promise<Result[]> {

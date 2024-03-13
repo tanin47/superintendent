@@ -1,5 +1,5 @@
 import { type Sheet } from '../Workspace/types'
-import { type CopySelection, type EditorMode, type ExportedWorkflow, ExportWorkflowChannel, type SortDirection, type DatabaseEngine, type ColumnType } from '../../types'
+import { type CopySelection, type EditorMode, type ExportedWorkflow, ExportWorkflowChannel, type SortDirection, type ColumnType } from '../../types'
 
 const urlParams = new URLSearchParams(window.location.search)
 
@@ -14,19 +14,6 @@ export function getInitialEditorMode (): EditorMode {
   }
 
   return 'default'
-}
-
-export function getInitialDatabaseEngine (): DatabaseEngine {
-  const engine = urlParams.get('databaseEngine')
-
-  switch (engine) {
-    case 'sqlite':
-      return 'sqlite'
-    case 'duckdb':
-      return 'duckdb'
-  }
-
-  return 'sqlite'
 }
 
 export function getInitialFile (): string | null {

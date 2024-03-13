@@ -1,6 +1,6 @@
 {
   "name": "superintendent",
-  "version": "5.0.0",
+  "version": "5.1.0",
   "description": "Write SQLs on CSVs",
   "license": "UNLICENSED",
   "main": "dist/prod/main.js",
@@ -19,8 +19,6 @@
     },
     "appImage": {
       "mimeTypes": [
-        "application/x-sqlite3",
-        "application/vnd.sqlite3",
         "text/csv",
         "text/tab-separated-values"
       ]

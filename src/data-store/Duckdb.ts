@@ -25,10 +25,6 @@ export class Duckdb extends Datastore {
     await this.db.close()
   }
 
-  async addSqlite (filePath: string): Promise<Result[]> {
-    throw new Error('not supported')
-  }
-
   async addCsv (filePath: string, withHeader: boolean, separator: string, replace: string): Promise<Result[]> {
     let table = this.getTableName(path.parse(filePath).name)
 
