@@ -64,7 +64,8 @@
       "dist/prod",
       "node_modules"
     ],
-    "afterSign": "scripts/notarize.js"
+    "afterSign": "scripts/notarize.js",
+    "npmRebuild": false
   },
   "author": "Tanin Na Nakorn",
   "devDependencies": {
