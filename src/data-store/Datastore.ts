@@ -50,12 +50,12 @@ export abstract class Datastore {
     await Promise.resolve()
   }
 
-  protected sanitizeName (name: string): string {
-    return name.replace(/[^a-zA-Z0-9_]/g, '_')
+  static sanitizeName (name: string): string {
+    return name.replace(/[^a-zA-Z0-9_]/g, '_').replace(/^_+/g, '').replace(/_+$/g, '')
   }
 
   protected getTableName (name: string, number: number | null = null): string {
-    return this.getUniqueTableName(this.sanitizeName(name), number)
+    return this.getUniqueTableName(Datastore.sanitizeName(name), number)
   }
 
   protected getUniqueTableName (base: string, number: number | null = null): string {

@@ -22,7 +22,7 @@
         "react-hooks/rules-of-hooks": "error",
         "react-hooks/exhaustive-deps": "error"
     },
-    "ignorePatterns": ["node_modules", "dist", "test"],
+    "ignorePatterns": ["node_modules", "dist"],
     "settings": {
         "react": {
             "version": "detect"

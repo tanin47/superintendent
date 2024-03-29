@@ -57,7 +57,7 @@ export class Duckdb extends Datastore {
           candidate = getRandomBird()
         }
 
-        const newName = getColumnName(this.sanitizeName(candidate))
+        const newName = getColumnName(Datastore.sanitizeName(candidate))
 
         columns.push(newName)
         sanitizedColumnNames.add(newName.toLowerCase())

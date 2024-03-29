@@ -1,149 +1,143 @@
-import fs from 'fs';
-import path from "path";
-import os from "os";
-import {Workerize} from "../../src/data-store/Workerize";
-
+import fs from 'fs'
+import path from 'path'
+import os from 'os'
+import { Workerize } from '../../src/data-store/Workerize'
 
 describe('Workerize', () => {
-  let workerize: Workerize;
-  let exportedPath: string;
+  let workerize: Workerize
+  let exportedPath: string
 
   beforeEach(async () => {
-    exportedPath = path.join(os.tmpdir(), `exported.${new Date().getTime()}-${Math.random()}.csv`);
-    workerize = (await Workerize.create()) as Workerize;
-    await workerize.open();
-  });
+    exportedPath = path.join(os.tmpdir(), `exported.${new Date().getTime()}-${Math.random()}.csv`)
+    workerize = (await Workerize.create()) as Workerize
+    await workerize.open()
+  })
 
-  afterEach(async () =>{
-    await workerize.close();
+  afterEach(async () => {
+    await workerize.close()
     if (fs.existsSync(exportedPath)) {
-      fs.unlinkSync(exportedPath);
+      fs.unlinkSync(exportedPath)
     }
-  });
+  })
 
   describe('different formats', () => {
     const formats = [
-      {filename: 'csv.csv', separator: ','},
-      {filename: 'colon.csv', separator: ':'},
-      {filename: 'semicolon.csv', separator: ';'},
-      {filename: 'pipe.psv', separator: '|'},
-      {filename: 'tab.tsv', separator: '\t'},
-    ];
+      { filename: 'csv.csv', separator: ',' },
+      { filename: 'colon.csv', separator: ':' },
+      { filename: 'semicolon.csv', separator: ';' },
+      { filename: 'pipe.psv', separator: '|' },
+      { filename: 'tab.tsv', separator: '\t' }
+    ]
 
     for (const format of formats) {
       it(`Import ${format.filename}`, async () => {
-        await workerize.addCsv(`./test/data-store/csv-samples/${format.filename}`, true, format.separator, '');
+        await workerize.addCsv(`./test/data-store/csv-samples/${format.filename}`, true, format.separator, '')
 
-        const table = format.filename.split('.')[0];
-        const sql = `SELECT * FROM ${table}`;
-        const result = await workerize.query(sql, null);
+        const table = format.filename.split('.')[0]
+        const sql = `SELECT * FROM ${table}`
+        const result = await workerize.query(sql, null)
 
-        expect(result).toEqual(
+        await expect(result).toEqual(
           {
             count: 2,
-            columns: [{name: 'firstname', maxCharWidthCount: 8}, {name: 'last_quote_name', maxCharWidthCount: 17}, {name: 'email', maxCharWidthCount: 33}],
+            columns: [{ name: 'firstname', maxCharWidthCount: 8 }, { name: 'last_quote_name', maxCharWidthCount: 17 }, { name: 'email', maxCharWidthCount: 33 }],
             name: expect.any(String),
             sql,
             rows: [
               ['Harmonia', 'Waite', 'Har"quote"monia.Waite@yopmail.com'],
               ['Joy', `something${format.separator}another`, 'Joy.Haerr@yopmail.com']
             ],
-            isCsv: false,
+            isCsv: false
           }
-        );
-      });
+        )
+      })
     }
-  });
+  })
 
   describe('import/export', () => {
     it('import bom', async () => {
-      await workerize.addCsv('./test/data-store/csv-samples/bom.csv', true, ',', '');
-      const result = await workerize.query("SELECT * FROM bom", null);
+      await workerize.addCsv('./test/data-store/csv-samples/bom.csv', true, ',', '')
+      const result = await workerize.query('SELECT * FROM bom', null)
 
-      expect(result).toEqual(
+      await expect(result).toEqual(
         {
           count: 1,
-          columns: [{name: 'bom_column_1', maxCharWidthCount: 6}, {name: 'bom_column_2', maxCharWidthCount: 6}],
+          columns: [{ name: 'bom_column_1', maxCharWidthCount: 6 }, { name: 'bom_column_2', maxCharWidthCount: 6 }],
           name: expect.any(String),
-          sql: "SELECT * FROM bom",
+          sql: 'SELECT * FROM bom',
           rows: [['value1', 'value2']],
-          isCsv: false,
+          isCsv: false
         }
-      );
+      )
 
-      await workerize.exportCsv('bom', exportedPath, ',');
-      expect(fs.readFileSync(exportedPath, {encoding: 'utf8'})).toEqual(
+      await workerize.exportCsv('bom', exportedPath, ',')
+      await expect(fs.readFileSync(exportedPath, { encoding: 'utf8' })).toEqual(
         'bom_column_1,bom_column_2\nvalue1,value2\n'
-      );
-    });
+      )
+    })
 
     it('import dup column names', async () => {
-      await workerize.addCsv('./test/data-store/csv-samples/dup_column.csv', true, ',', '');
-      const result = await workerize.query("SELECT * FROM dup_column", null);
+      await workerize.addCsv('./test/data-store/csv-samples/dup_column.csv', true, ',', '')
+      const result = await workerize.query('SELECT * FROM dup_column', null)
 
-      expect(result).toEqual(
+      await expect(result).toEqual(
         {
           count: 1,
-          columns: [{name: 'name', maxCharWidthCount: 4}, {name: 'Name_dup', maxCharWidthCount: 7}],
+          columns: [{ name: 'name', maxCharWidthCount: 4 }, { name: 'Name_dup', maxCharWidthCount: 7 }],
           name: expect.any(String),
-          sql: "SELECT * FROM dup_column",
+          sql: 'SELECT * FROM dup_column',
           rows: [['john', 'doe, do']],
-          isCsv: false,
+          isCsv: false
         }
-      );
-      await workerize.exportCsv('dup_column', exportedPath, ',');
-      expect(fs.readFileSync(exportedPath, {encoding: 'utf8'})).toEqual(
+      )
+      await workerize.exportCsv('dup_column', exportedPath, ',')
+      await expect(fs.readFileSync(exportedPath, { encoding: 'utf8' })).toEqual(
         'name,Name_dup\njohn,"doe, do"\n'
-      );
-    });
+      )
+    })
 
     it('import unicode', async () => {
-      await workerize.addCsv('./test/data-store/csv-samples/unicode.csv', true, ',', '');
-      const result = await workerize.query("SELECT * FROM unicode", null);
+      await workerize.addCsv('./test/data-store/csv-samples/unicode.csv', true, ',', '')
+      const result = await workerize.query('SELECT * FROM unicode', null)
 
-      expect(result).toEqual(
+      await expect(result).toEqual(
         {
           count: 1,
-          columns: [{name: 'something', maxCharWidthCount: 5}, {name: 'another', maxCharWidthCount: 5}],
+          columns: [{ name: 'something', maxCharWidthCount: 5 }, { name: 'another', maxCharWidthCount: 5 }],
           name: expect.any(String),
-          sql: "SELECT * FROM unicode",
+          sql: 'SELECT * FROM unicode',
           rows: [['ก ไก่', 'ข ไข่']],
-          isCsv: false,
+          isCsv: false
         }
-      );
-      await workerize.exportCsv('unicode', exportedPath, ',');
+      )
+      await workerize.exportCsv('unicode', exportedPath, ',')
 
-      let expectedContent: string;
+      const expectedContent = 'something,another\nก ไก่,ข ไข่\n'
 
-      expectedContent = 'something,another\nก ไก่,ข ไข่\n'
-
-      expect(fs.readFileSync(exportedPath, {encoding: 'utf8'})).toEqual(expectedContent);
-    });
+      await expect(fs.readFileSync(exportedPath, { encoding: 'utf8' })).toEqual(expectedContent)
+    })
 
     it('import quote', async () => {
-      await workerize.addCsv('./test/data-store/csv-samples/quote.csv', true, ',', '');
-      const result = await workerize.query("SELECT * FROM quote", null);
+      await workerize.addCsv('./test/data-store/csv-samples/quote.csv', true, ',', '')
+      const result = await workerize.query('SELECT * FROM quote', null)
 
-      let expectedResult: any;
-      let expectedContent: string;
-
-      expectedResult = {
+      const expectedResult = {
         count: 2,
-        columns: [{name: 'first_name', maxCharWidthCount: 17}, {name: 'last_name', maxCharWidthCount: 10}, {name: 'email', maxCharWidthCount: 12}],
+        columns: [{ name: 'first_name', maxCharWidthCount: 17 }, { name: 'last_name', maxCharWidthCount: 10 }, { name: 'email', maxCharWidthCount: 12 }],
         name: expect.any(String),
-        sql: "SELECT * FROM quote",
+        sql: 'SELECT * FROM quote',
         rows: [
           ['john', 'doe, do', 'test@doe.com'],
-          ['nanakorn, " tanin', ' somename ', 'some email'],
+          ['nanakorn, " tanin', ' somename ', 'some email']
         ],
-        isCsv: false,
+        isCsv: false
       }
-      expectedContent = 'first_name,last_name,email\njohn,"doe, do",test@doe.com\n"nanakorn, "" tanin", somename ,some email\n'
+      const expectedContent = 'first_name,last_name,email\njohn,"doe, do",test@doe.com\n"nanakorn, "" tanin", somename ,some email\n'
 
-      expect(result).toEqual(expectedResult);
+      await expect(result).toEqual(expectedResult)
 
-      await workerize.exportCsv('quote', exportedPath, ',');
-      expect(fs.readFileSync(exportedPath, {encoding: 'utf8'})).toEqual(expectedContent);
-    });
-  });
-});
+      await workerize.exportCsv('quote', exportedPath, ',')
+      await expect(fs.readFileSync(exportedPath, { encoding: 'utf8' })).toEqual(expectedContent)
+    })
+  })
+})

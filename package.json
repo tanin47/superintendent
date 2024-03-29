@@ -9,7 +9,7 @@
     "start": "electron --app=dist/dev/main.js",
     "test": "jest --useStderr",
     "wdio": "ENABLE_WDIO=yes wdio run ./wdio.conf.ts",
-    "lint": "eslint --ext ts,tsx src"
+    "lint:fix": "eslint --ext ts,tsx --fix src test"
   },
   "build": {
     "appId": "tanin.superintendent",

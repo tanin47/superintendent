@@ -1,7 +1,5 @@
 import { $, expect } from '@wdio/globals'
-import { Key } from 'webdriverio'
-import {clearEditor, expectDefaultEditorText, fillEditor} from './helpers'
-import stringMatching = jasmine.stringMatching
+import { expectDefaultEditorText, fillEditor } from './helpers'
 
 describe('Sort', () => {
   beforeAll(async () => {
@@ -93,7 +91,7 @@ describe('Sort', () => {
   })
 
   it('BUG: ensure SQL is not changed', async () => {
-    await fillEditor('select * from "456sort"');
+    await fillEditor('select * from "456sort"')
     await $('[data-testid="run-sql"] span').click()
     await expect($('[data-testid="cell-1-1"]')).toHaveText('c')
     await expect($('[data-testid="cell-2-1"]')).toHaveText('b')
@@ -109,7 +107,7 @@ describe('Sort', () => {
     await expect($('[data-testid="cell-4-1"]')).toHaveText('c')
 
     await $('[data-testid="project-item-456sort"] span').click()
-    await expectDefaultEditorText();
+    await expectDefaultEditorText()
 
     await $('[data-testid="project-item-albatross"] span').click()
     await expect($('.CodeMirror')).toHaveText('1\nselect * from "456sort"') // The SQL is not changed when sorted.
