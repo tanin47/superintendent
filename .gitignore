@@ -16,5 +16,6 @@ out
 yarn.lock
 yarn-error.log
 .yarn
+chromedriver
 
 out/

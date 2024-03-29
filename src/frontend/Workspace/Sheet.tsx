@@ -380,6 +380,8 @@ interface ColumnContextMenuOpenInfo {
   clientY: number
 }
 
+const DOUBLE_FORMATTER = new Intl.NumberFormat('en-US', { maximumFractionDigits: 18 })
+
 function Table ({
   sheet,
   onSelectedSheetUpdated,
@@ -795,6 +797,13 @@ function Table ({
           fontStyle: 'italic',
           color: '#666',
           fontSize: '8px'
+        }
+      } else if (columnIndex >= 1) {
+        const columnType = sheet.columns[columnIndex - 1].tpe
+        if (columnType === 'timestamp') {
+          renderedValue = new Date(value).toISOString()
+        } else if (columnType === 'double') {
+          renderedValue = DOUBLE_FORMATTER.format(value as number)
         }
       }
 

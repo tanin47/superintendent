@@ -8,6 +8,12 @@ import { ColumnTypes, type ColumnType, type CopySelection, type Sort } from '../
 import { getRandomBird } from './Birds'
 import { type Env } from './worker'
 
+interface ColumnDetectionResult {
+  columns: Column[]
+  dateFormat: string
+  timestampFormat: string
+}
+
 export class Duckdb extends Datastore {
   private readonly env!: Env
   private db!: Database
@@ -25,9 +31,7 @@ export class Duckdb extends Datastore {
     await this.db.close()
   }
 
-  async addCsv (filePath: string, withHeader: boolean, separator: string, replace: string): Promise<Result[]> {
-    let table = this.getTableName(path.parse(filePath).name)
-
+  private async detectColumns (filePath: string, withHeader: boolean, separator: string): Promise<ColumnDetectionResult> {
     const stream = fs
       .createReadStream(filePath)
       .pipe(new Parser({
@@ -39,7 +43,7 @@ export class Duckdb extends Datastore {
         relax_column_count: true
       }))
 
-    const columns: string[] = []
+    const columnNames: string[] = []
 
     const sanitizedColumnNames = new Set<string>()
     const getColumnName = (candidate: string): string => {
@@ -59,15 +63,50 @@ export class Duckdb extends Datastore {
 
         const newName = getColumnName(Datastore.sanitizeName(candidate))
 
-        columns.push(newName)
+        columnNames.push(newName)
         sanitizedColumnNames.add(newName.toLowerCase())
       })
       break
     }
 
-    const columnsParam = `{${columns.map((c) => `'${c}': 'TEXT'`).join(', ')}}`
+    const sniffedRows = await this.db.all(`SELECT Columns, DateFormat, TimestampFormat FROM sniff_csv('${filePath}')`)
+    const types = sniffedRows[0].Columns.match(/(: '([a-zA-Z]+)')/g).map((matched: string) => matched.substring(3, matched.length - 1))
+    const dateFormat = sniffedRows[0].DateFormat ?? ''
+    const timestampFormat = sniffedRows[0].TimestampFormat ?? ''
 
-    await this.db.exec(`CREATE TABLE "${table}" AS FROM read_csv('${filePath}', delim = '${separator}', header = ${withHeader}, columns = ${columnsParam}, all_varchar = true, null_padding = true)`)
+    return {
+      columns: columnNames.map((name, index) => {
+        return {
+          name,
+          maxCharWidthCount: 0,
+          tpe: types[index]
+        }
+      }),
+      dateFormat,
+      timestampFormat
+    }
+  }
+
+  async addCsv (filePath: string, withHeader: boolean, separator: string, replace: string): Promise<Result[]> {
+    let table = this.getTableName(path.parse(filePath).name)
+    const detectionResult = await this.detectColumns(filePath, withHeader, separator)
+    const columnsParam = `{${detectionResult.columns.map((c) => `'${c.name}': '${c.tpe}'`).join(', ')}}`
+
+    const readCsvOptions = [
+      `'${filePath}'`,
+      `delim = '${separator}'`,
+      `header = ${withHeader}`,
+      `columns = ${columnsParam}`,
+      'all_varchar = true',
+      'null_padding = true'
+    ]
+    if (detectionResult.dateFormat) {
+      readCsvOptions.push(`dateformat = '${detectionResult.dateFormat}'`)
+    }
+    if (detectionResult.timestampFormat) {
+      readCsvOptions.push(`timestampformat = '${detectionResult.timestampFormat}'`)
+    }
+    await this.db.exec(`CREATE TABLE "${table}" AS FROM read_csv(${readCsvOptions.join(', ')})`)
 
     if (replace && replace !== '' && table !== replace) {
       await this.drop(replace)
@@ -171,7 +210,9 @@ export class Duckdb extends Datastore {
 
   async copy (table: string, selection: CopySelection): Promise<{ text: string, html: string }> {
     const sql = `select ${selection.columns.map((c) => `"${c}"`).join(',')} from "${table}" limit ${selection.endRow - selection.startRow + 1} offset ${selection.startRow}`
-    const rows = await this.db.all(sql)
+    const statement = await this.db.prepare(sql)
+    const columnInfos = statement.columns()
+    const rows = await statement.all()
 
     let html = ''
     let text = ''
@@ -218,8 +259,16 @@ export class Duckdb extends Datastore {
       for (let i = 0; i < selection.columns.length; i++) {
         htmlItems.push('<td style="border: 1px solid #ccc;">')
 
-        textItems.push(row[selection.columns[i]] as string)
-        htmlItems.push(row[selection.columns[i]] as string)
+        let value: string
+
+        if (columnInfos[i].type.id.toLocaleLowerCase() === 'timestamp') {
+          value = (row[selection.columns[i]] as Date).toISOString()
+        } else {
+          value = row[selection.columns[i]] as string
+        }
+
+        textItems.push(value)
+        htmlItems.push(value)
 
         htmlItems.push('</td>')
       }
@@ -275,10 +324,16 @@ export class Duckdb extends Datastore {
       return await this.queryAllFromTable(table, sql)
     }
 
-    const allRows = (await statement.all()).map((r) => columnInfos.map((c) => r[c.name]))
-
     const sampleSql = `SELECT * FROM "${table}" USING SAMPLE 100`
-    const metdataSql = `SELECT ${columnInfos.map((col) => { return `MAX(COALESCE(NULLIF(INSTR(CAST("${col.name}" AS text), x'0a'), 0), LENGTH(CAST("${col.name}" AS text)))) AS "${col.name}"` }).join(',')} FROM (${sampleSql})`
+    const lengthClauses = columnInfos.map((col) => {
+      if (col.type.id.toLocaleLowerCase() === 'timestamp') {
+        // Example: Mon Mar 18 2024 10:59:00 GMT-0700 (Pacific Daylight Time)
+        return `25 as "${col.name}"`
+      } else {
+        return `MAX(COALESCE(NULLIF(INSTR(CAST("${col.name}" AS text), x'0a'), 0), LENGTH(CAST("${col.name}" AS text)))) AS "${col.name}"`
+      }
+    })
+    const metdataSql = `SELECT ${lengthClauses.join(',')} FROM (${sampleSql})`
 
     const metadataResult = await this.db.all(metdataSql)
 
@@ -294,6 +349,17 @@ export class Duckdb extends Datastore {
         tpe: colType
       }
     })
+
+    const allRows = (await statement.all())
+      .map((r) => {
+        return columns.map((c) => {
+          if (c.tpe === 'timestamp') {
+            return r[c.name].getTime()
+          } else {
+            return r[c.name]
+          }
+        })
+      })
 
     if (metadataResult.length > 0) {
       const columnMap = {}

@@ -148,8 +148,10 @@ export function ChangingColumnTypeDialog ({
                     <select data-testid="timestamp-format-selectbox" value={timestampFormat} onChange={(event) => { setTimestampFormat(event.target.value) }}>
                       <option value="">Select the timestamp format</option>
                       <option>%m/%d/%Y</option>
+                      <option>%m/%d/%Y %I:%M %p</option>
                       <option>%m/%d/%Y %I:%M:%S %p</option>
                       <option>%Y-%m-%d</option>
+                      <option>%Y-%m-%d %H:%M</option>
                       <option>%Y-%m-%d %H:%M:%S</option>
                     </select>
                   </div>

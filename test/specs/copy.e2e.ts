@@ -24,8 +24,8 @@ describe('A simple scenario', () => {
   })
 
   it('copy row', async () => {
-    const sql = "select 'test', 'yo'\n" +
-          "union all select 'aaa', 'bbb'"
+    const sql = "select 'test', 'yo', timestamp '2010-12-01'\n" +
+          "union all select 'aaa', 'bbb', timestamp '2012-02-24'"
 
     await clearEditor()
     await $('.CodeMirror').click()
@@ -38,7 +38,7 @@ describe('A simple scenario', () => {
     await clearEditor()
     await browser.keys([Key.Ctrl, 'v'])
 
-    await expect($('.CodeMirror')).toHaveText('1\naaa,bbb')
+    await expect($('.CodeMirror')).toHaveText('1\naaa,bbb,2012-02-24T00:00:00.000Z')
   })
 
   it('copy column', async () => {
@@ -58,6 +58,6 @@ describe('A simple scenario', () => {
     await clearEditor()
     await browser.keys([Key.Ctrl, 'v'])
 
-    await expect($('.CodeMirror')).toHaveText("1\n'test','yo'\n2\ntest,yo\n3\naaa,bbb")
+    await expect($('.CodeMirror')).toHaveText("1\n'test','yo',CAST('2010-12-01' AS TIMESTAMP)\n2\ntest,yo,2010-12-01T00:00:00.000Z\n3\naaa,bbb,2012-02-24T00:00:00.000Z")
   })
 })
