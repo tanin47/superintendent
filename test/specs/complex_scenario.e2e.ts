@@ -80,11 +80,9 @@ describe('A simple scenario', () => {
   })
 
   it('deletes', async () => {
-    await expect($('[data-testid="new-sql"]')).toExist()
     await $('[data-testid="project-item-bird"]').click({ button: 'right' })
     await $('[data-testid="project-context-menu-delete"]').click()
     await expect($('[data-testid="project-item-bird"]')).not.toExist()
-    await expect($('[data-testid="new-sql"]')).not.toExist()
   })
 
   it('switches sql and sheet, and format SQL', async () => {

@@ -1,21 +1,5 @@
-import { type ColumnType, type CopySelection, type Sort } from '../types'
+import { type QueryResult, type ColumnType, type CopySelection, type Sort, type QueryRow } from '../types'
 import { getRandomBird } from './Birds'
-
-export interface Column {
-  name: string
-  maxCharWidthCount: number
-  tpe: ColumnType
-}
-export type Row = string[]
-
-export interface Result {
-  name: string
-  sql: string
-  columns: Column[]
-  rows: Row[]
-  count: number
-  isCsv: boolean
-}
 
 export abstract class Datastore {
   static MAX_ROW = 1000
@@ -26,16 +10,16 @@ export abstract class Datastore {
   abstract open (): Promise<void>
   abstract close (): Promise<void>
 
-  abstract addCsv (filePath: string, withHeader: boolean, separator: string, replace: string): Promise<Result[]>
+  abstract addCsv (filePath: string, withHeader: boolean, separator: string, replace: string): Promise<QueryResult>
   abstract exportCsv (table: string, filePath: string, delimiter: string): Promise<void>
 
-  abstract query (sql: string, table: string | null): Promise<Result>
-  abstract sort (table: string, sorts: Sort[]): Promise<Result>
+  abstract query (sql: string, table: string | null): Promise<QueryResult>
+  abstract sort (table: string, sorts: Sort[]): Promise<QueryResult>
   abstract copy (table: string, selection: CopySelection): Promise<{ text: string, html: string }>
-  abstract loadMore (table: string, offset: number): Promise<Row[]>
+  abstract loadMore (table: string, offset: number): Promise<QueryRow[]>
   abstract drop (table: string): Promise<void>
   abstract rename (previousTableName: string, newTableName: string): Promise<void>
-  abstract changeColumnType (tableName: string, columnName: string, newColumnType: ColumnType, timestampFormat: string | null): Promise<Result>
+  abstract changeColumnType (tableName: string, columnName: string, newColumnType: ColumnType, timestampFormat: string | null): Promise<QueryResult>
   abstract getAllTables (): Promise<string[]>
   abstract reserveTableName (name: string): Promise<void>
 

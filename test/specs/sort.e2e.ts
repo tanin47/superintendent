@@ -47,6 +47,8 @@ describe('Sort', () => {
     await expect($('[data-testid="cell-2-2"]')).toHaveText('30')
     await expect($('[data-testid="cell-3-2"]')).toHaveText('20')
     await expect($('[data-testid="cell-4-2"]')).toHaveText('10')
+
+    await expect($('[data-testid="project-item-456sort"] .fa-file-csv')).toExist() // The isCsv marker is not replaced.
   })
 
   it('sort multiple columns', async () => {
@@ -111,5 +113,7 @@ describe('Sort', () => {
 
     await $('[data-testid="project-item-albatross"] span').click()
     await expect($('.CodeMirror')).toHaveText('1\nselect * from "456sort"') // The SQL is not changed when sorted.
+
+    await expect($('[data-testid="project-item-albatross"] .fa-caret-square-right')).toExist() // The isCsv marker is not replaced.
   })
 })

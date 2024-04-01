@@ -4,12 +4,13 @@ import Button from './Button'
 import { ctrlCmdChar } from './constants'
 import AddCsv, { type Ref as AddCsvRef } from './AddCsvModal'
 import { convertFileList, exportWorkflow, getInitialFile } from '../api'
-import { DraftSheetName, type Sheet } from './types'
+import { Sheet, DraftSql, type WorkspaceItem } from './types'
 import { type ExportedWorkflow, ExportWorkflowChannel } from '../../types'
 import { useFloating, useClientPoint, useInteractions, useDismiss, useTransitionStyles, shift } from '@floating-ui/react'
+import { StateChangeApi, useDispatch, useWorkspaceContext } from './WorkspaceContext'
 
 interface ContextMenuOpenInfo {
-  sheet: Sheet
+  item: WorkspaceItem
   clientX: number
   clientY: number
 }
@@ -20,6 +21,7 @@ function ContextMenu ({
   onRenaming,
   onDeleting,
   onClosing,
+  item,
   x,
   y
 }: {
@@ -28,6 +30,7 @@ function ContextMenu ({
   onRenaming: () => void
   onDeleting: () => void
   onClosing: () => void
+  item: WorkspaceItem | null
   x: number | null
   y: number | null
 }): JSX.Element {
@@ -60,7 +63,7 @@ function ContextMenu ({
   const dismiss = useDismiss(context)
   const { getFloatingProps } = useInteractions([clientPoint, dismiss])
 
-  if (!isMounted) { return <></> }
+  if (!isMounted || !item) { return <></> }
 
   return (
     <div
@@ -75,26 +78,30 @@ function ContextMenu ({
         className="context-menu"
         style={{ ...styles }}
       >
-        <div
-          className="context-menu-item"
-          onClick={() => {
-            onViewing()
-            onClosing()
-          }}
-          data-testid="project-context-menu-view"
-        >
-          View
-        </div>
-        <div
-          className="context-menu-item"
-          onClick={() => {
-            onRenaming()
-            onClosing()
-          }}
-          data-testid="project-context-menu-rename"
-        >
-          Rename
-        </div>
+        {item instanceof Sheet && (
+          <>
+            <div
+              className="context-menu-item"
+              onClick={() => {
+                onViewing()
+                onClosing()
+              }}
+              data-testid="project-context-menu-view"
+            >
+              View
+            </div>
+            <div
+              className="context-menu-item"
+              onClick={() => {
+                onRenaming()
+                onClosing()
+              }}
+              data-testid="project-context-menu-rename"
+            >
+              Rename
+            </div>
+          </>
+        )}
         <div
           className="context-menu-item"
           onClick={() => {
@@ -111,26 +118,24 @@ function ContextMenu ({
 }
 
 export default function Project ({
-  sheets,
-  selectedSheetName,
-  onSheetAdded,
-  onOpeningResult,
-  onOpeningEditor,
-  onAddingName,
-  onRenamingSheet,
-  onDeletingSheet
+  onRenamingSheet
 }: {
-  sheets: Sheet[]
-  selectedSheetName: string | null
-  onSheetAdded: (sheet: Sheet) => void
-  onOpeningResult: (sheet: Sheet) => void
-  onOpeningEditor: (sheet: Sheet) => void
-  onAddingName: (sheet: Sheet) => void
-  onRenamingSheet: (name: string) => void
-  onDeletingSheet: (name: string) => void
+  onRenamingSheet: (sheet: Sheet) => void
 }): JSX.Element {
-  const [shouldOpenAddCsv, setShouldOpenAddCsv] = React.useState<boolean>(false)
+  const workspaceState = useWorkspaceContext()
+  const dispatch = useDispatch()
+  const stateChangeApi = React.useMemo(() => new StateChangeApi(dispatch), [dispatch])
 
+  const [composableItems, setComposableItems] = React.useState<WorkspaceItem[]>([])
+
+  React.useEffect(
+    () => {
+      setComposableItems(workspaceState.items.filter((i) => i.isComposable()))
+    },
+    [workspaceState.items]
+  )
+
+  const [shouldOpenAddCsv, setShouldOpenAddCsv] = React.useState<boolean>(false)
   const [openContextMenu, setOpenContextMenu] = React.useState<ContextMenuOpenInfo | null>(null)
 
   const addCsvRef = React.useRef<AddCsvRef>(null)
@@ -149,11 +154,11 @@ export default function Project ({
     const callback = (): void => {
       const workflow: ExportedWorkflow = { sheets: [] }
 
-      sheets.forEach((sheet) => {
+      composableItems.forEach((sheet) => {
         workflow.sheets.push({
           name: sheet.name,
           sql: sheet.sql,
-          isCsv: sheet.isCsv
+          isCsv: sheet.getIsCsv()
         })
       })
 
@@ -165,7 +170,7 @@ export default function Project ({
     return () => {
       removeListener()
     }
-  }, [sheets])
+  }, [composableItems])
 
   React.useEffect(() => {
     const handler = (event): boolean => {
@@ -241,9 +246,9 @@ export default function Project ({
     [addFiles]
   )
 
-  const sortedSheet = sheets.filter((s) => s.name !== DraftSheetName).sort((left, right) => {
-    if (left.isCsv !== right.isCsv) {
-      if (left.isCsv) { return -1 } else { return 1 }
+  const sortedItems = composableItems.sort((left, right) => {
+    if (left.getRank() !== right.getRank()) {
+      return left.getRank() - right.getRank()
     } else {
       return left.name.toLowerCase().localeCompare(right.name.toLowerCase())
     }
@@ -254,18 +259,18 @@ export default function Project ({
       <AddCsv
         ref={addCsvRef}
         isOpen={shouldOpenAddCsv}
-        sheets={sheets}
+        csvs={composableItems.filter((i) => i.getIsCsv()) as Sheet[]}
         onClose={() => { setShouldOpenAddCsv(false) }}
-        onAdded={(sheet) => { onSheetAdded(sheet) }}
       />
       <ContextMenu
         open={openContextMenu !== null}
+        item={openContextMenu?.item ?? null}
         x={openContextMenu?.clientX ?? null}
         y={openContextMenu?.clientY ?? null}
         onClosing={() => { setOpenContextMenu(null) }}
-        onRenaming={() => { onRenamingSheet(openContextMenu!.sheet.name) }}
-        onViewing={() => { onOpeningResult(openContextMenu!.sheet) }}
-        onDeleting={() => { onDeletingSheet(openContextMenu!.sheet.name) }}
+        onRenaming={() => { onRenamingSheet(openContextMenu!.item as Sheet) }}
+        onViewing={() => { stateChangeApi.setSelectedResult(openContextMenu!.item as Sheet) }}
+        onDeleting={() => { stateChangeApi.deleteComposableItem(openContextMenu!.item) }}
       />
       <div className="toolbarSection top">
         <div className="inner">
@@ -283,33 +288,44 @@ export default function Project ({
       </div>
       <div className="project-panel">
         <div className="body">
-          {sortedSheet.map((sheet) => {
-            const icon = sheet.isCsv
-              ? (
+          {sortedItems.map((item, index) => {
+            const shouldAddTopBorder = index >= 1 && item.getRank() !== sortedItems[index - 1].getRank()
+
+            let icon = <i className="fas fa-question-circle"></i>
+
+            if (item instanceof DraftSql) {
+              icon = <i className="fas fa-pen-square"></i>
+            } else if (item instanceof Sheet) {
+              icon = item.isCsv
+                ? (
               <i className="fas fa-file-csv"></i>
-                )
-              : (
+                  )
+                : (
               <i className="fas fa-caret-square-right"></i>
-                )
+                  )
+            }
 
             return (
               <div
-                key={sheet.name}
-                className={`item ${sheet.name === selectedSheetName ? 'selected' : sheet.name === openContextMenu?.sheet.name ? 'contextMenuOpened' : ''}`}
-                data-testid={`project-item-${sheet.name}`}
-                onClick={(event) => {
-                  onOpeningEditor(sheet)
+                key={item.id}
+                className={`item ${item === workspaceState.selectedComposableItem ? 'selected' : item === openContextMenu?.item ? 'contextMenuOpened' : ''} ${shouldAddTopBorder ? 'top-separator' : ''} ${item instanceof DraftSql ? 'draft' : ''}`}
+                data-testid={`project-item-${item.name}`}
+                onClick={(event) => { stateChangeApi.setSelectedComposableItem(item) }}
+                onDoubleClick={() => {
+                  if (item instanceof Sheet) {
+                    stateChangeApi.setSelectedResult(item)
+                  }
                 }}
                 onContextMenu={(event) => {
                   setOpenContextMenu({
-                    sheet,
+                    item,
                     clientX: event.clientX,
                     clientY: event.clientY
                   })
                 }}
               >
                 {icon}
-                <span className="name">{sheet.name}</span>
+                <span className="name">{item.name}</span>
               </div>
             )
           })}

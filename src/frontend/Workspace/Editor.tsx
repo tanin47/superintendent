@@ -1,5 +1,5 @@
 import CodeMirror from 'codemirror'
-import React, { Fragment } from 'react'
+import React from 'react'
 import 'codemirror/lib/codemirror.css'
 import 'codemirror/addon/display/placeholder'
 import 'codemirror/addon/edit/matchbrackets'
@@ -10,13 +10,15 @@ import 'codemirror/addon/hint/anyword-hint'
 import 'codemirror/addon/comment/comment'
 import 'codemirror/keymap/vim.js'
 import './Editor.scss'
-import { type EditorMode } from '../../types'
-import { DraftSheetName, type RunSqlMode, type Sheet } from './types'
+import { EditorModeChannel, type EditorMode } from '../../types'
+import { type RunSqlMode, type Result, DraftSheetName, DraftSql, Sheet, DraftResult, generateWorkspaceItemId, type WorkspaceItem } from './types'
 import { format } from 'sql-formatter'
 import Button from './Button'
 import { altOptionChar, ctrlCmdChar } from './constants'
 import * as dialog from './dialog'
 import { useFloating, useClientPoint, useInteractions, useDismiss, useTransitionStyles, shift } from '@floating-ui/react'
+import { getInitialEditorMode, query } from '../api'
+import { StateChangeApi, useDispatch, useWorkspaceContext } from './WorkspaceContext'
 
 export interface Ref {
   getValue: () => string
@@ -27,11 +29,6 @@ export interface Ref {
 
 interface Props {
   initialValue?: string | null
-  mode: EditorMode
-  sheets: Sheet[]
-  selectedSheet: Sheet | null
-  onRunningSql: (sql: string, sheetName: string | null, mode: RunSqlMode) => Promise<Sheet>
-  onMakingNewQuery: () => void
 }
 
 function getAutocompleteWord (s: string): string {
@@ -137,69 +134,82 @@ interface ContextMenuOpenInfo {
 }
 
 export default React.forwardRef<Ref, Props>(function Editor ({
-  initialValue,
-  mode,
-  sheets,
-  selectedSheet,
-  onRunningSql,
-  onMakingNewQuery
+  initialValue
 }: Props, ref): JSX.Element {
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
   const codeMirrorInstance = React.useRef<any>(null)
   const [isQueryLoading, setIsQueryLoading] = React.useState<boolean>(false)
-  const [shownSheet, setShownSheet] = React.useState<Sheet | null>(null)
+  const [shownComposableItem, setShownComposableItem] = React.useState<WorkspaceItem | null>(null)
   const [shouldShowDraftNotice, setShouldShowDraftNotice] = React.useState<boolean>(false)
   const [shouldShowCsvNotice, setShouldShowCsvNotice] = React.useState<boolean>(false)
   const [contextMenuOpenInfo, setContextMenuOpenInfo] = React.useState<ContextMenuOpenInfo | null>(null)
+  const [editorMode, setEditorMode] = React.useState<EditorMode>(getInitialEditorMode())
+
+  const workspaceState = useWorkspaceContext()
+  const dispatch = useDispatch()
+  const stateChangeApi = React.useMemo(() => new StateChangeApi(dispatch), [dispatch])
+
+  React.useEffect(() => {
+    const callback = (event, mode: any): void => { setEditorMode(mode as EditorMode) }
+    const removeListener = window.ipcRenderer.on(EditorModeChannel, callback)
+
+    return () => {
+      removeListener()
+    }
+  }, [setEditorMode])
 
   React.useEffect(
     () => {
-      if (selectedSheet === null) {
+      if (workspaceState.selectedComposableItem === null) {
         codeMirrorInstance.current?.setOption('readOnly', false)
         setShouldShowDraftNotice(false)
         setShouldShowCsvNotice(false)
-        setShownSheet(null)
+        setShownComposableItem(null)
+        setTimeout(() => { codeMirrorInstance.current.focus() }, 10)
         return
       }
 
-      if (!selectedSheet || shownSheet === selectedSheet) { return }
+      if (!workspaceState.selectedComposableItem || shownComposableItem === workspaceState.selectedComposableItem) { return }
 
       codeMirrorInstance.current.save()
 
       const cursor = codeMirrorInstance.current.getCursor()
       const selections = codeMirrorInstance.current.listSelections()
 
-      if (shownSheet) {
-        shownSheet.editorState = {
+      if (shownComposableItem) {
+        shownComposableItem.editorState = {
           cursor,
           selections,
           draft: textareaRef.current!.value.trim()
         }
       }
 
-      if (selectedSheet?.editorState?.draft && selectedSheet?.editorState?.draft.trim() !== selectedSheet.sql.trim()) {
-        codeMirrorInstance.current.setValue(selectedSheet?.editorState?.draft)
-        setShouldShowDraftNotice(true)
+      if (workspaceState.selectedComposableItem?.editorState?.draft && workspaceState.selectedComposableItem?.editorState?.draft.trim() !== workspaceState.selectedComposableItem.sql.trim()) {
+        codeMirrorInstance.current.setValue(workspaceState.selectedComposableItem?.editorState?.draft)
+
+        if (!(workspaceState.selectedComposableItem instanceof DraftSql)) {
+          setShouldShowDraftNotice(true)
+        }
       } else {
-        codeMirrorInstance.current.setValue(selectedSheet.sql)
+        codeMirrorInstance.current.setValue(workspaceState.selectedComposableItem?.getIsCsv() ? '' : workspaceState.selectedComposableItem.sql)
         setShouldShowDraftNotice(false)
       }
 
-      if (selectedSheet.editorState?.cursor && selectedSheet.editorState?.selections) {
-        codeMirrorInstance.current.setCursor(selectedSheet.editorState.cursor)
-        codeMirrorInstance.current.setSelections(selectedSheet.editorState.selections)
+      if (workspaceState.selectedComposableItem.editorState?.cursor && workspaceState.selectedComposableItem.editorState?.selections) {
+        codeMirrorInstance.current.setCursor(workspaceState.selectedComposableItem.editorState.cursor)
+        codeMirrorInstance.current.setSelections(workspaceState.selectedComposableItem.editorState.selections)
       } else {
         codeMirrorInstance.current.setCursor(cursor)
         codeMirrorInstance.current.setSelections(selections)
       }
 
       codeMirrorInstance.current.focus()
-      setShownSheet(selectedSheet)
+      setShownComposableItem(workspaceState.selectedComposableItem)
 
-      codeMirrorInstance.current.setOption('readOnly', selectedSheet.isCsv ? 'nocursor' : false)
-      setShouldShowCsvNotice(selectedSheet.isCsv)
+      codeMirrorInstance.current.setOption('readOnly', workspaceState.selectedComposableItem?.getIsCsv() ? 'nocursor' : false)
+      setShouldShowCsvNotice(workspaceState.selectedComposableItem?.getIsCsv())
     },
-    [selectedSheet, shownSheet]
+    [workspaceState.selectedComposableItem, shownComposableItem]
   )
 
   React.useImperativeHandle(ref, () => ({
@@ -226,8 +236,6 @@ export default React.forwardRef<Ref, Props>(function Editor ({
           codeMirrorInstance.current.getValue(),
           {
             language: 'sql',
-            indent: '  ',
-            uppercase: false,
             linesBetweenQueries: 2
           }
         )
@@ -238,60 +246,104 @@ export default React.forwardRef<Ref, Props>(function Editor ({
 
   const revertSql = React.useCallback(
     () => {
-      if (!shownSheet) { return }
-      codeMirrorInstance.current.setValue(shownSheet.sql)
-      shownSheet.editorState = {}
+      if (!shownComposableItem) { return }
+      codeMirrorInstance.current.setValue(shownComposableItem.sql)
+      shownComposableItem.editorState = {}
       setShouldShowDraftNotice(false)
       codeMirrorInstance.current.focus()
     },
-    [shownSheet]
+    [shownComposableItem]
   )
 
   const runSql = React.useCallback(
-    (mode: RunSqlMode = 'default') => {
+    async (mode: RunSqlMode = 'default') => {
       if (isQueryLoading) { return }
       codeMirrorInstance.current.save()
 
-      let value: string
-
+      let sql: string
       switch (mode) {
         case 'partial-new':
         case 'partial-draft': {
           const selection = codeMirrorInstance.current.getSelection() as string
-          console.log(selection)
 
           if (selection) {
-            value = selection
+            sql = selection
           } else {
-            value = textareaRef.current!.value.trim()
+            sql = textareaRef.current!.value.trim()
           }
           break
         }
         case 'default':
-          value = textareaRef.current!.value.trim()
+          sql = textareaRef.current!.value.trim()
           break
         default:
           throw new Error()
       }
 
-      if (value === '') { return }
+      if (sql === '') { return }
+
+      let shouldSwitchEditor = workspaceState.selectedComposableItem instanceof DraftSql
+      let replace: Result | null = null
+      switch (mode) {
+        case 'partial-new':
+          break
+        case 'partial-draft':
+          replace = (workspaceState.items.find((i) => i instanceof DraftResult) as DraftResult) ?? new DraftResult({
+            id: generateWorkspaceItemId(),
+            name: DraftSheetName,
+            sql,
+            isCsv: false,
+            count: 0,
+            columns: [],
+            rows: [],
+            presentationType: 'table'
+          })
+          stateChangeApi.startLoadingDraftResult()
+          break
+        case 'default':
+          replace = workspaceState.selectedComposableItem instanceof DraftSql ? null : (workspaceState.selectedComposableItem as Result) ?? null
+          stateChangeApi.startLoading(workspaceState.selectedComposableItem)
+          shouldSwitchEditor = true
+          break
+        default:
+          throw new Error()
+      }
 
       setIsQueryLoading(true)
-      onRunningSql(value, selectedSheet?.name ?? null, mode)
-        .then((sheet) => {
-          if (mode === 'default') {
-            setShouldShowDraftNotice(false)
+      try {
+        const sheet = await query(sql, replace)
+
+        if (mode === 'default') {
+          setShouldShowDraftNotice(false)
+
+          if (workspaceState.selectedComposableItem instanceof DraftSql) {
+            stateChangeApi.discardDraftSql(workspaceState.selectedComposableItem)
           }
-        })
-        .catch((err) => {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-          dialog.showError('Found an error!', err.message)
-        })
-        .finally(() => {
-          setIsQueryLoading(false)
-        })
+        }
+
+        stateChangeApi.setSelectedResult(sheet)
+        stateChangeApi.addOrReplaceResult(sheet, shouldSwitchEditor)
+      } catch (err) {
+        dialog.showError('Found an error!', err as any as string)
+      } finally {
+        setIsQueryLoading(false)
+
+        switch (mode) {
+          case 'partial-new':
+            break
+          case 'partial-draft':
+            stateChangeApi.stopLoadingDraftResult()
+            break
+          case 'default':
+            stateChangeApi.stopLoading(workspaceState.selectedComposableItem)
+            break
+          default:
+            // eslint-disable-next-line no-unsafe-finally
+            throw new Error()
+        }
+      }
     },
-    [isQueryLoading, onRunningSql, selectedSheet]
+    [isQueryLoading, stateChangeApi, workspaceState.items, workspaceState.selectedComposableItem]
   )
 
   React.useEffect(() => {
@@ -305,7 +357,7 @@ export default React.forwardRef<Ref, Props>(function Editor ({
         lineNumbers: true,
         matchBrackets: true,
         dragDrop: false,
-        keyMap: mode,
+        keyMap: editorMode,
         tabSize: 2,
         autofocus: true,
         extraKeys: {
@@ -355,49 +407,54 @@ export default React.forwardRef<Ref, Props>(function Editor ({
       })
       event.preventDefault()
     })
-  }, [initialValue, mode])
+  }, [initialValue, editorMode])
 
   React.useEffect(() => {
     if (!codeMirrorInstance.current) { return }
-    codeMirrorInstance.current.setOption('keyMap', mode)
-  }, [mode])
+    codeMirrorInstance.current.setOption('keyMap', editorMode)
+  }, [editorMode])
 
   React.useEffect(() => {
     if (!codeMirrorInstance.current) { return }
 
-    const relevantSheets = sheets.filter((s) => s.name !== DraftSheetName)
+    const relevantResults = workspaceState.items.filter((s) => s instanceof Sheet) as Result[]
 
     const tables = {}
     const allColumns = new Set<string>()
 
-    for (const sheet of relevantSheets) {
+    for (const sheet of relevantResults) {
       for (const column of sheet.columns) {
         allColumns.add(getAutocompleteWord(column.name))
       }
     }
 
-    for (const sheet of relevantSheets) {
+    for (const sheet of relevantResults) {
       tables[getAutocompleteWord(sheet.name)] = []
     }
 
-    if (relevantSheets.length > 0) {
-      tables[getAutocompleteWord(relevantSheets[0].name)] = Array.from(allColumns)
+    if (relevantResults.length > 0) {
+      tables[getAutocompleteWord(relevantResults[0].name)] = Array.from(allColumns)
     }
 
     codeMirrorInstance.current.setOption('hintOptions', {
       tables,
-      defaultTable: relevantSheets[0] ? getAutocompleteWord(relevantSheets[0].name) : null,
+      defaultTable: relevantResults[0] ? getAutocompleteWord(relevantResults[0].name) : null,
       closeOnUnfocus: true
     })
-  }, [sheets])
+  }, [workspaceState.items])
 
   React.useEffect(
     () => {
       const handler = (event): boolean => {
         if (!(event instanceof KeyboardEvent)) { return true }
 
+        if (event.code === 'KeyN' && (event.metaKey || event.ctrlKey)) {
+          stateChangeApi.makeDraftSql(textareaRef.current!.value.trim())
+          return false
+        }
+
         if (event.code === 'Enter' && (event.metaKey || event.ctrlKey)) {
-          runSql()
+          void runSql()
           return false
         }
 
@@ -407,12 +464,12 @@ export default React.forwardRef<Ref, Props>(function Editor ({
         }
 
         if (event.code === 'KeyT' && event.shiftKey && (event.metaKey || event.ctrlKey)) {
-          runSql('partial-new')
+          void runSql('partial-new')
           return false
         }
 
         if (event.code === 'KeyT' && (event.metaKey || event.ctrlKey)) {
-          runSql('partial-draft')
+          void runSql('partial-draft')
           return false
         }
 
@@ -424,37 +481,8 @@ export default React.forwardRef<Ref, Props>(function Editor ({
         document.removeEventListener('keydown', handler)
       }
     },
-    [runSql, formatSql]
+    [runSql, formatSql, stateChangeApi]
   )
-
-  const buttons: JSX.Element[] = []
-
-  if (!selectedSheet?.isCsv) {
-    buttons.push(
-      <Button
-        onClick={() => { runSql() }}
-        isLoading={isQueryLoading}
-        icon={<i className="fas fa-play"/>}
-        testId="run-sql"
-      >
-        Run SQL
-        <span className="short-key">{ctrlCmdChar()} ⏎</span>
-      </Button>
-    )
-  }
-
-  if (selectedSheet !== null || shownSheet?.isCsv) {
-    buttons.push(
-      <Button
-        onClick={() => { onMakingNewQuery() }}
-        icon={<i className="fas fa-plus-square"/>}
-        testId="new-sql"
-      >
-        New SQL
-        <span className="short-key">{ctrlCmdChar()} N</span>
-      </Button>
-    )
-  }
 
   return (
     <>
@@ -464,20 +492,21 @@ export default React.forwardRef<Ref, Props>(function Editor ({
         x={contextMenuOpenInfo?.clientX ?? null}
         y={contextMenuOpenInfo?.clientY ?? null}
         onClosing={() => { setContextMenuOpenInfo(null) }}
-        onRunNewSql={() => { runSql('partial-new') }}
-        onRunDraft={() => { runSql('partial-draft') }}
+        onRunNewSql={() => { void runSql('partial-new') }}
+        onRunDraft={() => { void runSql('partial-draft') }}
       />
       <div className="toolbarSection top" style={{ borderLeft: '1px solid #666' }}>
         <div className="inner">
           <div className="left">
-            {buttons.map((button, index) => {
-              return (
-                <Fragment key={index}>
-                  {index > 0 && <span className="separator" />}
-                  {button}
-                </Fragment>
-              )
-            })}
+            <Button
+              onClick={() => { void runSql() }}
+              isLoading={isQueryLoading}
+              icon={<i className="fas fa-play"/>}
+              testId="run-sql"
+            >
+              Run SQL
+              <span className="short-key">{ctrlCmdChar()} ⏎</span>
+            </Button>
             <span className="separator" />
             <Button
               onClick={() => { formatSql() }}
@@ -488,6 +517,15 @@ export default React.forwardRef<Ref, Props>(function Editor ({
               <span className="short-key">
                 {altOptionChar()} ⏎
               </span>
+            </Button>
+            <span className="separator" />
+            <Button
+              onClick={() => { stateChangeApi.makeDraftSql(textareaRef.current!.value.trim()) }}
+              icon={<i className="fas fa-plus-square"/>}
+              testId="new-sql"
+            >
+              New SQL
+              <span className="short-key">{ctrlCmdChar()} N</span>
             </Button>
           </div>
           <div className="right">

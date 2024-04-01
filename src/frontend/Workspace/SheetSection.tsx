@@ -1,105 +1,93 @@
 import React, { type ReactElement } from 'react'
-import { DraftSheetName, type PresentationType, type Sheet as SheetType } from './types'
+import { type PresentationType, type Result, type Sheet as SheetType, DraftResult } from './types'
 import Sheet from './Sheet'
 import './SheetSection.scss'
-import { type SortDirection } from '../../types'
+import { StateChangeApi, useDispatch } from './WorkspaceContext'
 
 interface Tab {
-  sheet: SheetType
+  result: Result
 }
 
-export interface Ref {
-  open: (sheetId: string) => void
-  getSelectedTab: () => Tab | null
-}
-
-interface Props {
-  sheets: SheetType[]
-  onSelectedSheetUpdated: (sheet: SheetType | null) => void
-  onRenamingSheet: (sheetName: string) => void
-  onSorting: (sheet: SheetType, column: string, direction: SortDirection) => void
-  presentationType: PresentationType
-}
-
-export default React.forwardRef<Ref, Props>(function SheetSection ({
-  sheets,
-  onSelectedSheetUpdated,
+export default function SheetSection ({
+  results,
+  selectedResult,
   onRenamingSheet,
-  onSorting,
   presentationType
-}: Props, ref): ReactElement {
+}: {
+  results: Result[]
+  selectedResult: Result | null
+  onRenamingSheet: (sheet: SheetType) => void
+  presentationType: PresentationType
+}): ReactElement {
+  const dispatch = useDispatch()
+  const stateChangeApi = React.useMemo(() => new StateChangeApi(dispatch), [dispatch])
+
   const [draggedIndex, setDraggedIndex] = React.useState<number | null>(null)
   const [tabs, setTabs] = React.useState<Tab[]>([])
-  const [shadowSheets, setShadowSheets] = React.useState<SheetType[]>([])
+  const [shadowResults, setShadowResults] = React.useState<Result[]>([])
   const [selectedTabIndex, setSelectedTabIndex] = React.useState<number>(0)
   const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc')
 
-  React.useImperativeHandle(
-    ref,
-    () => ({
-      open: (sheetId) => {
-        for (let index = 0; index < tabs.length; index++) {
-          if (tabs[index].sheet.name === sheetId) {
-            setSelectedTabIndex(index)
-            return
-          }
+  React.useEffect(
+    () => {
+      for (let index = 0; index < tabs.length; index++) {
+        if (tabs[index].result === selectedResult) {
+          setSelectedTabIndex(index)
+          return
         }
-
-        for (let index = 0; index < shadowSheets.length; index++) {
-          if (shadowSheets[index].name === sheetId) {
-            tabs.push({
-              sheet: shadowSheets[index]
-            })
-            setTabs([...tabs])
-            setSelectedTabIndex(tabs.length - 1)
-          }
-        }
-      },
-      getSelectedTab: () => {
-        return tabs[selectedTabIndex]
       }
-    }),
-    [tabs, shadowSheets, selectedTabIndex]
+
+      for (let index = 0; index < shadowResults.length; index++) {
+        if (shadowResults[index] === selectedResult) {
+          tabs.push({
+            result: shadowResults[index]
+          })
+          setTabs([...tabs])
+          setSelectedTabIndex(tabs.length - 1)
+        }
+      }
+    },
+    [selectedResult, shadowResults, tabs]
   )
 
   React.useEffect(
     () => {
       let changed = false
-      const existings = new Map(shadowSheets.map((s, index) => [s.name, index]))
+      const existings = new Map(shadowResults.map((s, index) => [s.name, index]))
       let newSelectedTabIndex = selectedTabIndex
 
       // Add a new sheet and replace a sheet
-      for (let index = 0; index < sheets.length; index++) {
-        const sheet = sheets[index]
-        const currentShadowSheetIndex = existings.get(sheet.name) ?? existings.get(sheet.previousName ?? '')
+      for (let index = 0; index < results.length; index++) {
+        const result = results[index]
+        const currentShadowSheetIndex = existings.get(result.name) ?? existings.get(result.previousName ?? '')
 
         if (currentShadowSheetIndex !== undefined) {
-          const currentSheet = shadowSheets[currentShadowSheetIndex]
-          if (currentSheet !== sheet) {
+          const currentResult = shadowResults[currentShadowSheetIndex]
+          if (currentResult !== result) {
             // The sheet has been replaced upstream. Therefore, we replace the shadow sheet and the corresponding tab.
-            shadowSheets.splice(currentShadowSheetIndex, 1, sheet)
+            shadowResults.splice(currentShadowSheetIndex, 1, result)
 
             for (let tabIndex = 0; tabIndex < tabs.length; tabIndex++) {
-              if (sheet.name === tabs[tabIndex].sheet.name) {
-                tabs[tabIndex].sheet = sheet
+              if (result.name === tabs[tabIndex].result.name) {
+                tabs[tabIndex].result = result
                 break
               }
             }
             changed = true
           }
         } else {
-          shadowSheets.push(sheet)
-          tabs.push({ sheet })
+          shadowResults.push(result)
+          tabs.push({ result })
           newSelectedTabIndex = tabs.length - 1
           changed = true
         }
       }
 
-      const sheetNameSet = new Set(sheets.map((s) => s.name))
+      const sheetNameSet = new Set(results.map((s) => s.name))
       const deletedTabIndices = new Set<number>()
 
       for (let index = 0; index < tabs.length; index++) {
-        if (!sheetNameSet.has(tabs[index].sheet.name)) {
+        if (!sheetNameSet.has(tabs[index].result.name)) {
           deletedTabIndices.add(index)
           changed = true
         }
@@ -111,24 +99,24 @@ export default React.forwardRef<Ref, Props>(function SheetSection ({
         setTabs(newTabs)
       }
 
-      newSelectedTabIndex = Math.min(Math.max(0, newSelectedTabIndex), newTabs.length - 1)
-      if (newSelectedTabIndex !== selectedTabIndex) {
-        setSelectedTabIndex(newSelectedTabIndex)
+      newSelectedTabIndex = Math.max(0, Math.min(newSelectedTabIndex, newTabs.length - 1))
+      if (newSelectedTabIndex !== selectedTabIndex && newSelectedTabIndex < newTabs.length) {
+        stateChangeApi.setSelectedResult(newTabs[newSelectedTabIndex].result)
       }
 
       const deletedShadowSheetIndices = new Set<number>()
 
-      for (let index = 0; index < shadowSheets.length; index++) {
-        if (!sheetNameSet.has(shadowSheets[index].name)) {
+      for (let index = 0; index < shadowResults.length; index++) {
+        if (!sheetNameSet.has(shadowResults[index].name)) {
           deletedShadowSheetIndices.add(index)
           changed = true
         }
       }
       if (changed) {
-        setShadowSheets(shadowSheets.filter((t, i) => !deletedShadowSheetIndices.has(i)))
+        setShadowResults(shadowResults.filter((t, i) => !deletedShadowSheetIndices.has(i)))
       }
     },
-    [selectedTabIndex, shadowSheets, sheets, tabs]
+    [selectedTabIndex, shadowResults, results, tabs, stateChangeApi]
   )
 
   const rearrangedCallback = React.useCallback(
@@ -140,23 +128,9 @@ export default React.forwardRef<Ref, Props>(function SheetSection ({
       copied.splice(newIndex, 0, moved[0])
       setTabs(copied)
 
-      const selectedSheetName = tabs[selectedTabIndex].sheet.name
-      for (let i = 0; i < copied.length; i++) {
-        if (copied[i].sheet.name === selectedSheetName) {
-          if (i !== selectedTabIndex) {
-            setSelectedTabIndex(i)
-          }
-        }
-      }
+      stateChangeApi.setSelectedResult(tabs[selectedTabIndex].result)
     },
-    [tabs, selectedTabIndex]
-  )
-
-  React.useEffect(
-    () => {
-      onSelectedSheetUpdated(selectedTabIndex >= 0 && selectedTabIndex < tabs.length ? tabs[selectedTabIndex].sheet : null)
-    },
-    [tabs, selectedTabIndex, onSelectedSheetUpdated]
+    [tabs, stateChangeApi, selectedTabIndex]
   )
 
   let content: JSX.Element | null = null
@@ -164,12 +138,10 @@ export default React.forwardRef<Ref, Props>(function SheetSection ({
   if (tabs.length > 0) {
     content = (
       <>
-        <Sheet
-          sheet={tabs[selectedTabIndex].sheet}
-          onSelectedSheetUpdated={onSelectedSheetUpdated}
+        {selectedTabIndex >= 0 && selectedTabIndex < tabs.length && <Sheet
+          result={tabs[selectedTabIndex].result}
           presentationType={presentationType}
-          onSorting={onSorting}
-        />
+        />}
         <div
           className="selector"
           data-testid="sheet-item-list"
@@ -194,24 +166,16 @@ export default React.forwardRef<Ref, Props>(function SheetSection ({
               className={`fas ${sortDirection === 'asc' ? 'fa-sort-alpha-down' : 'fa-sort-alpha-up'}`}
               title="Sort alphabetically"
               onClick={() => {
-                const selectedSheetName = tabs[selectedTabIndex].sheet.name
-
                 tabs.sort((a, b) => {
-                  if (a.sheet.isCsv !== b.sheet.isCsv) {
-                    if (a.sheet.isCsv) { return -1 } else { return 1 }
+                  if (a.result.isCsv !== b.result.isCsv) {
+                    if (a.result.isCsv) { return -1 } else { return 1 }
                   } else {
-                    return a.sheet.name.toLowerCase().localeCompare(b.sheet.name.toLowerCase())
+                    return a.result.name.toLowerCase().localeCompare(b.result.name.toLowerCase())
                   }
                 })
 
                 if (sortDirection === 'desc') {
                   tabs.reverse()
-                }
-
-                for (let i = 0; i < tabs.length; i++) {
-                  if (tabs[i].sheet.name === selectedSheetName) {
-                    setSelectedTabIndex(i)
-                  }
                 }
 
                 setTabs([...tabs])
@@ -221,11 +185,11 @@ export default React.forwardRef<Ref, Props>(function SheetSection ({
           </div>
           {tabs.map((tab, index) => {
             let icon: JSX.Element
-            if (tab.sheet.isLoading) {
+            if (tab.result.isLoading) {
               icon = <span className="spinner" />
-            } else if (tab.sheet.name === DraftSheetName) {
+            } else if (tab.result instanceof DraftResult) {
               icon = (<i className="fas fa-pencil-ruler icon"></i>)
-            } else if (tab.sheet.isCsv) {
+            } else if (tab.result.isCsv) {
               icon = (<i className="fas fa-file-csv icon"></i>)
             } else {
               icon = (<i className="fas fa-caret-square-right icon"></i>)
@@ -233,14 +197,16 @@ export default React.forwardRef<Ref, Props>(function SheetSection ({
 
             return (
               <div
-                key={tab.sheet.name}
-                data-testid={`sheet-section-item-${tab.sheet.name}`}
-                className={`tab ${selectedTabIndex === index ? 'selected' : ''} ${tab.sheet.name === DraftSheetName ? 'draft' : ''}`}
+                key={tab.result.name}
+                data-testid={`sheet-section-item-${tab.result.name}`}
+                className={`tab ${selectedTabIndex === index ? 'selected' : ''} ${tab.result instanceof DraftResult ? 'draft' : ''}`}
                 onClick={(event) => {
-                  setSelectedTabIndex(index)
+                  stateChangeApi.setSelectedResult(tab.result)
                 }}
                 onDoubleClick={(event) => {
-                  onRenamingSheet(tab.sheet.name)
+                  if (tab.result instanceof Sheet) {
+                    onRenamingSheet(tab.result as SheetType)
+                  }
                 }}
                 draggable={true}
                 onDrag={(event) => {
@@ -265,21 +231,29 @@ export default React.forwardRef<Ref, Props>(function SheetSection ({
                   rearrangedCallback(draggedIndex, index)
                 }}
               >
-                {tab.sheet.isLoading && (
+                {tab.result.isLoading && (
                   <div className="overlay" style={{ cursor: 'pointer' }}/>
                 )}
                 {icon}
-                <span className="label">{tab.sheet.name === DraftSheetName ? 'draft' : tab.sheet.name}</span>
+                <span className="label">{tab.result instanceof DraftResult ? 'draft' : tab.result.name}</span>
                 <i
                   className="fas fa-times"
                   onClick={(event) => {
                     event.stopPropagation() // don't trigger selecting sheet.
 
                     const newTabs = tabs.filter((t, i) => index !== i)
-                    if (selectedTabIndex >= newTabs.length) {
-                      setSelectedTabIndex(Math.max(0, newTabs.length - 1))
-                    }
                     setTabs(newTabs)
+
+                    let newSelectedTabIndex = selectedTabIndex
+                    if (newSelectedTabIndex >= newTabs.length) {
+                      newSelectedTabIndex = newTabs.length - 1
+                    }
+
+                    if (newSelectedTabIndex === -1) {
+                      stateChangeApi.setSelectedResult(null)
+                    } else {
+                      stateChangeApi.setSelectedResult(newTabs[newSelectedTabIndex].result)
+                    }
                   }}
                 />
               </div>
@@ -295,4 +269,4 @@ export default React.forwardRef<Ref, Props>(function SheetSection ({
       {content}
     </div>
   )
-})
+}

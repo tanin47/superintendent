@@ -1,4 +1,4 @@
-import { type Sheet } from '../Workspace/types'
+import { Sheet, type Result, generateWorkspaceItemId } from '../Workspace/types'
 import { type CopySelection, type EditorMode, type ExportedWorkflow, ExportWorkflowChannel, type SortDirection, type ColumnType } from '../../types'
 
 const urlParams = new URLSearchParams(window.location.search)
@@ -142,14 +142,22 @@ export function checkIfLicenseIsValid (licenseKey: string): CheckIfLicenseIsVali
   }
 }
 
-export async function query (q: string, table: string | null): Promise<Sheet> {
+export async function query (q: string, replace: Result | null): Promise<Result> {
   return await window.ipcRenderer
-    .invoke('query', q, table)
+    .invoke('query', q, replace?.name ?? null)
     .then((result) => {
       if (result.success === true) {
-        return {
-          presentationType: 'table',
-          ...result.data
+        if (replace) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+          replace.update(result.data, false)
+          return replace
+        } else {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+          return new Sheet({
+            id: generateWorkspaceItemId(),
+            presentationType: 'table',
+            ...result.data
+          })
         }
       } else {
         throw result.message
@@ -157,27 +165,22 @@ export async function query (q: string, table: string | null): Promise<Sheet> {
     })
 }
 
-export async function sort (sheet: Sheet, column: string, direction: SortDirection): Promise<Sheet> {
-  const sorts = sheet.sorts.filter((s) => s.name !== column)
+export async function sort (result: Result, column: string, direction: SortDirection): Promise<Result> {
+  const sorts = result.sorts.filter((s) => s.name !== column)
   if (direction !== 'none') {
     sorts.push({ name: column, direction })
   }
 
   return await window.ipcRenderer
-    .invoke('sort', sheet.name, sorts)
-    .then((result) => {
-      if (result.success === true) {
-        return {
-          ...sheet,
-          presentationType: 'table',
-          ...result.data,
-          sorts,
-          sql: sheet.sql,
-          isLoading: false,
-          isCsv: sheet.isCsv
-        }
+    .invoke('sort', result.name, sorts)
+    .then((newResult) => {
+      if (newResult.success === true) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        result.update(newResult.data, true)
+        result.updateSorts(sorts)
+        return result
       } else {
-        throw result.message
+        throw newResult.message
       }
     })
 }
@@ -206,19 +209,22 @@ export async function copy (table: string, selection: CopySelection): Promise<bo
     })
 }
 
-export async function addCsv (path: string, withHeader: boolean, format: string, replace: string): Promise<Sheet[] | null> {
+export async function addCsv (path: string, withHeader: boolean, format: string, replace: Sheet | null): Promise<Sheet> {
   return await window.ipcRenderer
-    .invoke('add-csv', path, withHeader, format, replace)
+    .invoke('add-csv', path, withHeader, format, replace?.name)
     .then((result) => {
       if (result.success === true) {
-        if (!result.data) {
-          return null
+        if (replace) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+          replace.update(result.data, false)
+          return replace
         } else {
-          return result.data.map((item) => {
-            return {
-              presentationType: 'table',
-              ...item
-            }
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+          return new Sheet({
+            presentationType: 'table',
+            id: generateWorkspaceItemId(),
+            isCsv: true,
+            ...result.data
           })
         }
       } else {
@@ -271,16 +277,16 @@ export async function rename (previousTableName: string, newTableName: string): 
     })
 }
 
-export async function changeColumnType (tableName: string, columnName: string, newType: ColumnType, timestampFormat: string | null = null): Promise<Sheet> {
+export async function changeColumnType (result: Result, columnName: string, newType: ColumnType, timestampFormat: string | null = null): Promise<Result> {
   return await window.ipcRenderer
-    .invoke('change-column-type', tableName, columnName, newType, timestampFormat)
-    .then((result) => {
-      if (result.success === true) {
-        return {
-          ...result.data
-        }
+    .invoke('change-column-type', result.name, columnName, newType, timestampFormat)
+    .then((newResult) => {
+      if (newResult.success === true) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        result.update(newResult.data, true)
+        return result
       } else {
-        throw result.message
+        throw newResult.message
       }
     })
 }

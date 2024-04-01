@@ -1,7 +1,7 @@
-import { Datastore, type Result, type Row } from './Datastore'
+import { Datastore } from './Datastore'
 import path from 'path'
 import { spawn, Thread, Worker } from 'threads'
-import { type CopySelection, type Sort, type ColumnType } from '../types'
+import { type CopySelection, type Sort, type ColumnType, type QueryResult, type QueryRow } from '../types'
 
 // Every method must be called through the worker because this runs on a different thread.
 export class Workerize extends Datastore {
@@ -29,7 +29,7 @@ export class Workerize extends Datastore {
     await Thread.terminate(this.worker as any)
   }
 
-  async addCsv (filePath: string, withHeader: boolean, separator: string, replace: string): Promise<Result[]> {
+  async addCsv (filePath: string, withHeader: boolean, separator: string, replace: string): Promise<QueryResult> {
     return await this.worker.addCsv(filePath, withHeader, separator, replace)
   }
 
@@ -37,11 +37,11 @@ export class Workerize extends Datastore {
     await this.worker.exportCsv(table, filePath, delimiter)
   }
 
-  async query (sql: string, table: string | null): Promise<Result> {
+  async query (sql: string, table: string | null): Promise<QueryResult> {
     return await this.worker.query(sql, table)
   }
 
-  async sort (table: string, sorts: Sort[]): Promise<Result> {
+  async sort (table: string, sorts: Sort[]): Promise<QueryResult> {
     return await this.worker.sort(table, sorts)
   }
 
@@ -49,7 +49,7 @@ export class Workerize extends Datastore {
     return await this.worker.copy(table, selection)
   }
 
-  async loadMore (table: string, offset: number): Promise<Row[]> {
+  async loadMore (table: string, offset: number): Promise<QueryRow[]> {
     return await this.worker.loadMore(table, offset)
   }
 
@@ -61,7 +61,7 @@ export class Workerize extends Datastore {
     await this.worker.rename(previousTableName, newTableName)
   }
 
-  async changeColumnType (tableName: string, columnName: string, newColumnType: ColumnType, timestampFormat: string | null): Promise<Result> {
+  async changeColumnType (tableName: string, columnName: string, newColumnType: ColumnType, timestampFormat: string | null): Promise<QueryResult> {
     return await this.worker.changeColumnType(tableName, columnName, newColumnType, timestampFormat)
   }
 

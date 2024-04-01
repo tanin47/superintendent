@@ -5,6 +5,7 @@ import { addCsv, convertFileList } from '../api'
 import { type Sheet } from './types'
 import { type Format } from '../../types'
 import { ctrlCmdChar } from './constants'
+import { StateChangeApi, useDispatch } from './WorkspaceContext'
 
 type Status = 'draft' | 'loading' | 'added' | 'errored'
 
@@ -13,7 +14,7 @@ interface File {
   path: string
   withHeader: boolean
   format: Format
-  replace: string
+  replace: Sheet | null
   status: Status
 }
 
@@ -32,22 +33,22 @@ function trimFilename (name: string): string {
 function FileItem ({
   file,
   disabled,
-  sheets,
+  csvs,
   onWithHeaderChanged,
   onFormatChanged,
   onReplaceChanged,
   onDeleted
 }: {
   file: File
-  sheets: Sheet[]
+  csvs: Sheet[]
   disabled: boolean
   onWithHeaderChanged: (newWithHeader: boolean) => void
   onFormatChanged: (newFormat: Format) => void
-  onReplaceChanged: (newReplace: string) => void
+  onReplaceChanged: (newReplace: Sheet | null) => void
   onDeleted: () => void
 }): JSX.Element {
   const [format, setFormat] = React.useState(file.format)
-  const [replace, setReplace] = React.useState('')
+  const [replace, setReplace] = React.useState<Sheet | null>(null)
   const [withHeader, setWithHeader] = React.useState(file.withHeader)
 
   let icon = <i className="fas fa-file draft icon" />
@@ -119,9 +120,10 @@ function FileItem ({
           <div className="selector">
             <div className="select" style={{ width: '215px' }}>
               <select
-                value={replace}
+                value={replace?.id ?? ''}
                 onChange={(event) => {
-                  const replace = event.target.value
+                  const replaceId = event.target.value
+                  const replace = csvs.find((c) => c.id === replaceId) ?? null
                   setReplace(replace)
                   onReplaceChanged(replace)
                 }}
@@ -129,13 +131,13 @@ function FileItem ({
                 data-testid="add-csv-sheet-option"
               >
                 <option value="" key="">as a new sheet</option>
-                {sheets
+                {csvs
                   .filter((s) => s.isCsv)
                   .map((s) => {
                     return (
                       <option
-                        value={s.name}
-                        key={s.name}
+                        value={s.id}
+                        key={s.id}
                       >
                         Replace {s.name}
                       </option>
@@ -157,15 +159,16 @@ export interface Ref {
 
 export default React.forwardRef(function AddCsv ({
   isOpen,
-  sheets,
-  onClose,
-  onAdded
+  csvs,
+  onClose
 }: {
   isOpen: boolean
-  sheets: Sheet[]
+  csvs: Sheet[]
   onClose: () => void
-  onAdded: (sheet: Sheet) => void
 }, ref: React.ForwardedRef<Ref>): JSX.Element {
+  const dispatch = useDispatch()
+  const stateChangeApi = React.useMemo(() => new StateChangeApi(dispatch), [dispatch])
+
   const [files, setFiles] = React.useState<File[]>([])
   const [isLoading, setIsLoading] = React.useState<boolean>(false)
   const fileRef = React.useRef<HTMLInputElement>(null)
@@ -188,12 +191,8 @@ export default React.forwardRef(function AddCsv ({
       })
 
       try {
-        const sheets = await addCsv(file.path, file.withHeader, file.format, file.replace)
-        if (sheets != null && sheets.length > 0) {
-          sheets.forEach((sheet) => {
-            onAdded(sheet)
-          })
-        }
+        const sheet = await addCsv(file.path, file.withHeader, file.format, file.replace)
+        stateChangeApi.addOrReplaceResult(sheet, true)
 
         setFiles((prevFiles) => {
           prevFiles[index] = {
@@ -226,7 +225,7 @@ export default React.forwardRef(function AddCsv ({
     setIsLoading(false)
     setFiles([])
     onClose()
-  }, [setIsLoading, onClose, onAdded, setFiles, files])
+  }, [files, onClose, stateChangeApi])
 
   const addFilesCallback = React.useCallback((fileList: string[] | null) => {
     if (fileList == null || fileList.length === 0 || isLoading) { return }
@@ -251,7 +250,7 @@ export default React.forwardRef(function AddCsv ({
         path: file,
         withHeader: true,
         format,
-        replace: '',
+        replace: null,
         status: 'draft'
       })
     }
@@ -386,7 +385,7 @@ export default React.forwardRef(function AddCsv ({
               onDeleted={() => {
                 setFiles((prevFiles) => prevFiles.filter((f, i) => i !== index))
               }}
-              sheets={sheets}
+              csvs={csvs}
             />
           })}
         </div>

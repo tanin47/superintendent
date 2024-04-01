@@ -90,8 +90,8 @@ describe('Workflow', () => {
     await $('[data-testid="input-file"]').addValue(await browser.uploadFile('./test/specs/csv-samples/user.csv'))
     await $('[data-testid="input-file"]').addValue(await browser.uploadFile('./test/specs/csv-samples/height.csv'))
 
-    await $('[data-testid="add-csv-sheet-option"]').selectByAttribute('value', 'user')
-    await $$('[data-testid="add-csv-sheet-option"]')[1].selectByAttribute('value', 'height')
+    await $('[data-testid="add-csv-sheet-option"]').selectByVisibleText('Replace user')
+    await $$('[data-testid="add-csv-sheet-option"]')[1].selectByVisibleText('Replace height')
     await $('[data-testid="import-all-files"]').click()
 
     await $('[data-testid="project-item-albatross"] span').click()

@@ -32,3 +32,18 @@ export interface WorkflowSheet {
 export interface ExportedWorkflow {
   sheets: WorkflowSheet[]
 }
+
+export interface QueryColumn {
+  name: string
+  maxCharWidthCount: number
+  tpe: ColumnType
+}
+export type QueryRow = string[]
+
+export interface QueryResult {
+  name: string
+  sql: string
+  columns: QueryColumn[]
+  rows: QueryRow[]
+  count: number
+}

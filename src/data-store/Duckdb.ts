@@ -1,15 +1,15 @@
-import { type Column, Datastore, type Result, type Row } from './Datastore'
+import { Datastore } from './Datastore'
 import { Database } from 'duckdb-async'
 import { type ColumnInfo } from 'duckdb'
 import path from 'path'
 import fs from 'fs'
 import { Parser } from 'csv-parse'
-import { ColumnTypes, type ColumnType, type CopySelection, type Sort } from '../types'
+import { ColumnTypes, type ColumnType, type CopySelection, type Sort, type QueryResult, type QueryRow, type QueryColumn } from '../types'
 import { getRandomBird } from './Birds'
 import { type Env } from './worker'
 
 interface ColumnDetectionResult {
-  columns: Column[]
+  columns: QueryColumn[]
   dateFormat: string
   timestampFormat: string
 }
@@ -87,7 +87,27 @@ export class Duckdb extends Datastore {
     }
   }
 
-  async addCsv (filePath: string, withHeader: boolean, separator: string, replace: string): Promise<Result[]> {
+  private async detectAndChangeMoreColumns (table: string): Promise<void> {
+    const columnInfos = (await this.db.prepare(`SELECT * FROM "${table}" LIMIT 1`)).columns()
+
+    for await (const col of columnInfos) {
+      if (col.type.id.toLocaleLowerCase() !== 'varchar') { continue }
+
+      try {
+        await this.execChangeColumnType(table, col.name, 'timestamp', '%Y-%m-%d %H:%M')
+      } catch (unknown) {
+        const error = unknown as any
+
+        if ('message' in error && error.message.includes('according to format specifier "%Y-%m-%d %H:%M"')) {
+          // Do nothing. The column cannot be converted to the timestamp
+        } else {
+          throw unknown
+        }
+      }
+    }
+  }
+
+  async addCsv (filePath: string, withHeader: boolean, separator: string, replace: string): Promise<QueryResult> {
     let table = this.getTableName(path.parse(filePath).name)
     const detectionResult = await this.detectColumns(filePath, withHeader, separator)
     const columnsParam = `{${detectionResult.columns.map((c) => `'${c.name}': '${c.tpe}'`).join(', ')}}`
@@ -97,7 +117,6 @@ export class Duckdb extends Datastore {
       `delim = '${separator}'`,
       `header = ${withHeader}`,
       `columns = ${columnsParam}`,
-      'all_varchar = true',
       'null_padding = true'
     ]
     if (detectionResult.dateFormat) {
@@ -106,6 +125,7 @@ export class Duckdb extends Datastore {
     if (detectionResult.timestampFormat) {
       readCsvOptions.push(`timestampformat = '${detectionResult.timestampFormat}'`)
     }
+
     await this.db.exec(`CREATE TABLE "${table}" AS FROM read_csv(${readCsvOptions.join(', ')})`)
 
     if (replace && replace !== '' && table !== replace) {
@@ -114,10 +134,10 @@ export class Duckdb extends Datastore {
       table = replace
     }
 
+    await this.detectAndChangeMoreColumns(table)
+
     const result = await this.queryAllFromTable(table, `SELECT * FROM "${table}"`)
-    result.isCsv = true
-    result.sql = ''
-    return [result]
+    return result
   }
 
   async exportCsv (table: string, filePath: string, delimiter: string): Promise<void> {
@@ -157,7 +177,7 @@ export class Duckdb extends Datastore {
     }
   }
 
-  async query (sql: string, table: string | null): Promise<Result> {
+  async query (sql: string, table: string | null): Promise<QueryResult> {
     const sanitizedSql = sql.replace(/[\n\s\r ]+/g, ' ').replace(/\\"/g, '').toLocaleLowerCase()
     const isDependentOnSelf = sanitizedSql.includes(`from ${table}`) || sanitizedSql.includes(`join ${table}`)
 
@@ -166,7 +186,6 @@ export class Duckdb extends Datastore {
     await this.db.exec(`CREATE TABLE "${newTable}" AS ${sql}`)
 
     const result = await this.queryAllFromTable(newTable, sql)
-    result.isCsv = false
 
     const shouldReplaceTable = !isDependentOnSelf && table !== null && newTable !== table
     if (shouldReplaceTable) {
@@ -179,7 +198,7 @@ export class Duckdb extends Datastore {
     return result
   }
 
-  async sort (table: string, sorts: Sort[]): Promise<Result> {
+  async sort (table: string, sorts: Sort[]): Promise<QueryResult> {
     const filteredSorts = sorts.filter((s) => s.direction !== 'none')
     const unsortedTable = this.makeUnsortedTableName(table)
 
@@ -262,9 +281,9 @@ export class Duckdb extends Datastore {
         let value: string
 
         if (columnInfos[i].type.id.toLocaleLowerCase() === 'timestamp') {
-          value = (row[selection.columns[i]] as Date).toISOString()
+          value = (row[selection.columns[i]] as Date | null)?.toISOString() ?? ''
         } else {
-          value = row[selection.columns[i]] as string
+          value = (row[selection.columns[i]] as string | null) ?? ''
         }
 
         textItems.push(value)
@@ -283,7 +302,7 @@ export class Duckdb extends Datastore {
     return await Promise.resolve({ text, html })
   }
 
-  async loadMore (table: string, offset: number): Promise<Row[]> {
+  async loadMore (table: string, offset: number): Promise<QueryRow[]> {
     const statement = await this.db.prepare(`SELECT * FROM "${table}" LIMIT ${Datastore.MAX_ROW_LOAD_MORE} OFFSET ${offset}`)
     const columns = statement.columns()
     const rows = await statement.all()
@@ -313,7 +332,7 @@ export class Duckdb extends Datastore {
     return fix
   }
 
-  private async queryAllFromTable (table: string, sql: string): Promise<Result> {
+  private async queryAllFromTable (table: string, sql: string): Promise<QueryResult> {
     const numOfRowsResult = await this.db.all(`SELECT COUNT(*) AS number_of_rows FROM "${table}"`)
     const numOfRows = numOfRowsResult.length === 0 ? 0 : Number(numOfRowsResult[0].number_of_rows)
 
@@ -337,7 +356,7 @@ export class Duckdb extends Datastore {
 
     const metadataResult = await this.db.all(metdataSql)
 
-    const columns: Column[] = columnInfos.map((col) => {
+    const columns: QueryColumn[] = columnInfos.map((col) => {
       const colType = col.type.id.toLocaleLowerCase()
       if (!ColumnTypes.includes(colType)) {
         throw new Error(`The column ${col.name} of the table ${table} has an unsupported column type: ${col.type.id.toLocaleLowerCase()}`)
@@ -354,7 +373,7 @@ export class Duckdb extends Datastore {
       .map((r) => {
         return columns.map((c) => {
           if (c.tpe === 'timestamp') {
-            return r[c.name].getTime()
+            return r[c.name]?.getTime()
           } else {
             return r[c.name]
           }
@@ -379,12 +398,11 @@ export class Duckdb extends Datastore {
       sql,
       columns,
       rows: allRows,
-      count: numOfRows,
-      isCsv: false
+      count: numOfRows
     }
   }
 
-  private async execChangeColumnType (tableName: string, columnName: string, newColumnType: string, timestampFormat: string | null = null): Promise<void> {
+  private async execChangeColumnType (tableName: string, columnName: string, newColumnType: ColumnType, timestampFormat: string | null = null): Promise<void> {
     let usingClause = ''
 
     if (newColumnType === 'timestamp') {
@@ -394,11 +412,10 @@ export class Duckdb extends Datastore {
     await this.db.exec(`ALTER TABLE "${tableName}" ALTER COLUMN "${columnName}" SET DATA TYPE ${newColumnType} ${usingClause}`)
   }
 
-  async changeColumnType (tableName: string, columnName: string, newColumnType: ColumnType, timestampFormat: string | null): Promise<Result> {
+  async changeColumnType (tableName: string, columnName: string, newColumnType: ColumnType, timestampFormat: string | null): Promise<QueryResult> {
     await this.execChangeColumnType(tableName, columnName, newColumnType, timestampFormat)
 
     const result = await this.queryAllFromTable(tableName, `SELECT * FROM "${tableName}"`)
-    result.isCsv = false
     return result
   }
 

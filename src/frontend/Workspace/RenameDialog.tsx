@@ -1,17 +1,19 @@
 import React from 'react'
-import { type Sheet as SheetType } from './types'
+import { type Sheet } from './types'
 import { rename } from '../api'
 import Modal from 'react-modal'
+import { StateChangeApi, useDispatch } from './WorkspaceContext'
 
 export default function RenameDialog ({
   renamingSheet,
-  onUpdated,
   onClosed
 }: {
-  renamingSheet: SheetType | null
-  onUpdated: (name: string) => void
+  renamingSheet: Sheet | null
   onClosed: () => void
 }): JSX.Element {
+  const dispatch = useDispatch()
+  const stateChangeApi = React.useMemo(() => new StateChangeApi(dispatch), [dispatch])
+
   const [tableName, setTableName] = React.useState<string>('')
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null)
 
@@ -36,14 +38,15 @@ export default function RenameDialog ({
 
       rename(renamingSheet.name, sanitized)
         .then((result) => {
-          onUpdated(sanitized)
+          stateChangeApi.rename(renamingSheet, sanitized)
+          onClosed()
         })
         .catch((error) => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
           setErrorMsg(error.message)
         })
     },
-    [renamingSheet, tableName, onClosed, onUpdated]
+    [renamingSheet, tableName, onClosed, stateChangeApi]
   )
 
   React.useEffect(() => {

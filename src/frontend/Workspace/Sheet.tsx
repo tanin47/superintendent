@@ -1,17 +1,18 @@
 import React, { type ForwardedRef } from 'react'
-import { type Sheet, type Selection, type UserSelectTarget, type PresentationType, type Column } from './types'
+import { type Sheet, type Selection, type UserSelectTarget, type PresentationType, type Column, type Result } from './types'
 import { Chart, type ChartType, registerables } from 'chart.js'
 import randomColor from 'randomcolor'
 import { VariableSizeGrid as BaseGrid } from 'react-window'
 import AutoSizer from 'react-virtualized-auto-sizer'
 import InfiniteLoader from 'react-window-infinite-loader'
-import { loadMore, copy } from '../api'
+import { loadMore, copy, sort } from '../api'
 import './Sheet.scss'
 import { type SortDirection } from '../../types'
 import CopyingModal from './CopyingModal'
 import { isChartEnabled, makeCopy } from './helper'
 import { useFloating, useClientPoint, useInteractions, useDismiss, useTransitionStyles, shift } from '@floating-ui/react'
 import { type ChangingColumnInfo, ChangingColumnTypeDialog } from './ChangingColumnTypeDialog'
+import { StateChangeApi, useDispatch } from './WorkspaceContext'
 
 interface CopyingData {
   cellCount: number
@@ -214,7 +215,6 @@ const Grid = React.forwardRef(function Grid ({
   onScrolled,
   infiniteLoaderRef,
   onItemsRendered,
-  onSorting,
   children
 }: {
   rowCount: number
@@ -229,7 +229,6 @@ const Grid = React.forwardRef(function Grid ({
   onScrolled: (left: number, top: number) => void
   onItemsRendered: (params: any) => void
   infiniteLoaderRef: (r: any) => void
-  onSorting: (sheet: Sheet, column: string, direction: SortDirection) => void
   children: any
 },
 ref: React.Ref<unknown>): JSX.Element {
@@ -374,7 +373,7 @@ function ColumnContextMenu ({
 }
 
 interface ColumnContextMenuOpenInfo {
-  sheet: Sheet
+  result: Result
   columnIndex: number
   clientX: number
   clientY: number
@@ -383,18 +382,17 @@ interface ColumnContextMenuOpenInfo {
 const DOUBLE_FORMATTER = new Intl.NumberFormat('en-US', { maximumFractionDigits: 18 })
 
 function Table ({
-  sheet,
-  onSelectedSheetUpdated,
+  result,
   onCopyingStarted,
-  onCopyingFinished,
-  onSorting
+  onCopyingFinished
 }: {
-  sheet: Sheet
-  onSelectedSheetUpdated: (sheet: Sheet | null) => void
+  result: Result
   onCopyingStarted: (data: CopyingData) => void
   onCopyingFinished: () => void
-  onSorting: (sheet: Sheet, column: string, direction: SortDirection) => void
 }): JSX.Element {
+  const dispatch = useDispatch()
+  const stateChangeApi = React.useMemo(() => new StateChangeApi(dispatch), [dispatch])
+
   const [columnContextMenuOpenInfo, setColumnContextMenuOpenInfo] = React.useState<ColumnContextMenuOpenInfo | null>(null)
   const [changingColumnInfo, setChangingColumnInfo] = React.useState<ChangingColumnInfo | null>(null)
   const [, setForceUpdate] = React.useState<number>(0)
@@ -402,11 +400,11 @@ function Table ({
 
   React.useEffect(
     () => {
-      columnWidths.current = [sheet.resizedColumns?.[0] ? sheet.resizedColumns[0] : MIN_CELL_WIDTH]
+      columnWidths.current = [result.resizedColumns?.[0] ? result.resizedColumns[0] : MIN_CELL_WIDTH]
 
-      sheet.columns.forEach((column, index) => {
-        if (sheet.resizedColumns?.[index + 1]) {
-          columnWidths.current.push(sheet.resizedColumns[index + 1])
+      result.columns.forEach((column, index) => {
+        if (result.resizedColumns?.[index + 1]) {
+          columnWidths.current.push(result.resizedColumns[index + 1])
           return
         }
 
@@ -423,16 +421,16 @@ function Table ({
       gridRef.current?.updateRow(0)
       setForceUpdate(forceUpdate => forceUpdate + 1)
     },
-    [sheet]
+    [result]
   )
 
   const [userSelect, _setUserSelect] = React.useState<UserSelectTarget | null>(null)
   const setUserSelect = React.useCallback(
     (newUserSelect: UserSelectTarget | null) => {
       _setUserSelect(makeCopy(newUserSelect))
-      sheet.userSelect = makeCopy(newUserSelect)
+      result.userSelect = makeCopy(newUserSelect)
     },
-    [sheet]
+    [result]
   )
   const doubleClickHandler = React.useCallback(
     (rowIndex: number, colIndex: number) => (event: React.MouseEvent) => {
@@ -447,18 +445,18 @@ function Table ({
   const setSelection = React.useCallback(
     (newSelection: Selection | null) => {
       _setSelection(makeCopy(newSelection))
-      sheet.selection = makeCopy(newSelection)
+      result.selection = makeCopy(newSelection)
     },
-    [sheet]
+    [result]
   )
   const [isSelecting, setIsSelecting] = React.useState<boolean>(false)
 
   React.useEffect(
     () => {
-      _setSelection(sheet.selection)
-      _setUserSelect(sheet.userSelect)
+      _setSelection(result.selection)
+      _setUserSelect(result.userSelect)
     },
-    [sheet, _setSelection, _setUserSelect]
+    [result, _setSelection, _setUserSelect]
   )
 
   const startSelection = React.useCallback(
@@ -503,20 +501,20 @@ function Table ({
 
   const resizeColMouseDownHandler = React.useCallback(
     (colIndex: number) => (event: React.MouseEvent) => {
-      if (!sheet.resizedColumns) {
-        sheet.resizedColumns = {}
+      if (!result.resizedColumns) {
+        result.resizedColumns = {}
       }
 
-      if (!sheet.resizedColumns[colIndex]) {
-        sheet.resizedColumns[colIndex] = columnWidths.current[colIndex]
+      if (!result.resizedColumns[colIndex]) {
+        result.resizedColumns[colIndex] = columnWidths.current[colIndex]
       }
       mouseDownX.current = event.clientX
-      mouseDownColWidth.current = sheet.resizedColumns[colIndex]
+      mouseDownColWidth.current = result.resizedColumns[colIndex]
       resizingColIndex.current = colIndex
 
       event.stopPropagation()
     },
-    [sheet]
+    [result]
   )
 
   React.useEffect(() => {
@@ -524,8 +522,8 @@ function Table ({
       if (resizingColIndex.current === null) { return }
       if (!gridRef.current) { return }
 
-      sheet.resizedColumns[resizingColIndex.current] = Math.max(event.clientX - mouseDownX.current + mouseDownColWidth.current, MIN_CELL_WIDTH)
-      columnWidths.current[resizingColIndex.current] = sheet.resizedColumns[resizingColIndex.current]
+      result.resizedColumns[resizingColIndex.current] = Math.max(event.clientX - mouseDownX.current + mouseDownColWidth.current, MIN_CELL_WIDTH)
+      columnWidths.current[resizingColIndex.current] = result.resizedColumns[resizingColIndex.current]
 
       gridRef.current.updateColumn(resizingColIndex.current)
     }
@@ -534,7 +532,7 @@ function Table ({
     return () => {
       document.removeEventListener('mousemove', handler)
     }
-  }, [sheet])
+  }, [result])
 
   React.useEffect(() => {
     const handler = (event: MouseEvent): void => {
@@ -581,11 +579,11 @@ function Table ({
         startCol--
       }
 
-      endRow = endRow === 0 ? sheet.count - 1 : endRow - 1
-      endCol = endCol === 0 ? sheet.columns.length - 1 : endCol - 1
+      endRow = endRow === 0 ? result.count - 1 : endRow - 1
+      endCol = endCol === 0 ? result.columns.length - 1 : endCol - 1
 
       const copySelection = {
-        columns: sheet.columns.slice(startCol, endCol + 1).map((c, i) => c.name),
+        columns: result.columns.slice(startCol, endCol + 1).map((c, i) => c.name),
         startRow,
         endRow,
         includeRowNumbers,
@@ -594,7 +592,7 @@ function Table ({
       cellCount = (endRow - startRow + 1) * (endCol - startCol + 1)
 
       onCopyingStarted({ cellCount })
-      void copy(sheet.name, copySelection)
+      void copy(result.name, copySelection)
         .then((result) => {
           setTimeout(
             () => { onCopyingFinished() },
@@ -618,7 +616,7 @@ function Table ({
       document.removeEventListener('copy', handler)
       document.removeEventListener('cut', handler)
     }
-  }, [onCopyingFinished, onCopyingStarted, selection, sheet, userSelect])
+  }, [onCopyingFinished, onCopyingStarted, selection, result, userSelect])
 
   const isWithinRange = (value: number, start: number, end: number): boolean => {
     return (start <= value && value <= end) || (end <= value && value <= start)
@@ -627,7 +625,7 @@ function Table ({
   const Cell = ({ columnIndex, rowIndex, style }: { columnIndex: number, rowIndex: number, style: any }): JSX.Element | null => {
     // There's a race condition between sheet and columnWidths because columnWidths is a ref.
     // There's a test that tests this bug.
-    if ((columnIndex - 1) >= sheet.columns.length) {
+    if ((columnIndex - 1) >= result.columns.length) {
       return null
     }
 
@@ -672,9 +670,9 @@ function Table ({
       let sortClass = 'unsort fa-sort'
       let direction: SortDirection = 'none'
 
-      if (sheet.sorts && columnIndex > 0) {
-        const columnName = sheet.columns[columnIndex - 1].name
-        direction = sheet.sorts.find((s) => s.name === columnName)?.direction ?? 'none'
+      if (result.sorts && columnIndex > 0) {
+        const columnName = result.columns[columnIndex - 1].name
+        direction = result.sorts.find((s) => s.name === columnName)?.direction ?? 'none'
 
         if (direction !== 'none') {
           const icon = direction === 'asc' ? 'fa-sort-alpha-down' : 'fa-sort-alpha-up'
@@ -715,7 +713,7 @@ function Table ({
             if (columnIndex < 1) { return }
 
             setColumnContextMenuOpenInfo({
-              sheet,
+              result,
               columnIndex: columnIndex - 1,
               clientX: event.clientX,
               clientY: event.clientY
@@ -737,8 +735,8 @@ function Table ({
                   event.stopPropagation()
                 }}
                 onClick={(event) => {
-                  sheet.sorts ||= []
-                  const columnName = sheet.columns[columnIndex - 1].name
+                  result.sorts ||= []
+                  const columnName = result.columns[columnIndex - 1].name
                   let newDirection: SortDirection
                   if (direction === 'asc') {
                     newDirection = 'desc'
@@ -747,20 +745,30 @@ function Table ({
                   } else {
                     newDirection = 'asc'
                   }
-                  onSorting(sheet, columnName, newDirection)
+
+                  stateChangeApi.startLoading(result)
+
+                  void sort(result, columnName, newDirection)
+                    .then((newResult) => {
+                      stateChangeApi.addOrReplaceResult(newResult, false)
+                    })
+                    .finally(() => {
+                      stateChangeApi.stopLoading(result)
+                    })
+
                   event.stopPropagation()
                 }}
               ></i>
             </>
           )}
-          {columnIndex === 0 ? '\u00A0' : sheet.columns[columnIndex - 1].name}
+          {columnIndex === 0 ? '\u00A0' : result.columns[columnIndex - 1].name}
           <div
             className="resize-column-right-bar"
             onMouseDown={resizeColMouseDownHandler(columnIndex)}
           />
         </div>
       )
-    } else if (rowIndex === sheet.rows.length + 1) {
+    } else if (rowIndex === result.rows.length + 1) {
       return (
         <div
           key={`loading-next-${columnIndex}`}
@@ -787,7 +795,7 @@ function Table ({
         </div>
       )
     } else {
-      const value = columnIndex === 0 ? rowIndex : sheet.rows[rowIndex - 1][columnIndex - 1]
+      const value = columnIndex === 0 ? rowIndex : result.rows[rowIndex - 1][columnIndex - 1]
       let nullStyles = {}
       let renderedValue = value
 
@@ -799,7 +807,7 @@ function Table ({
           fontSize: '8px'
         }
       } else if (columnIndex >= 1) {
-        const columnType = sheet.columns[columnIndex - 1].tpe
+        const columnType = result.columns[columnIndex - 1].tpe
         if (columnType === 'timestamp') {
           renderedValue = new Date(value).toISOString()
         } else if (columnType === 'double') {
@@ -843,29 +851,29 @@ function Table ({
     }
   }
 
-  const gridRowCount = sheet.rows.length + 1 + ((sheet.rows.length < sheet.count) ? 1 : 0)
+  const gridRowCount = result.rows.length + 1 + ((result.rows.length < result.count) ? 1 : 0)
 
   const computeRowHeight = React.useCallback(
     (index: number) => {
       if (index === 0) {
-        return getRowHeight(sheet.columns.map((c) => c.name))
-      } else if (index === sheet.rows.length + 1) {
+        return getRowHeight(result.columns.map((c) => c.name))
+      } else if (index === result.rows.length + 1) {
         return 20
       } else {
-        return getRowHeight(sheet.rows[index - 1])
+        return getRowHeight(result.rows[index - 1])
       }
     },
-    [sheet]
+    [result]
   )
 
   const computeCumulativeRowHeight = React.useCallback(
     (index: number) => {
       if (index === 0) {
-        return getRowHeight(sheet.columns.map((c) => c.name))
-      } else if (index === sheet.rows.length + 1) {
-        return 20 + computeCumulativeRowHeight(sheet.rows.length)
+        return getRowHeight(result.columns.map((c) => c.name))
+      } else if (index === result.rows.length + 1) {
+        return 20 + computeCumulativeRowHeight(result.rows.length)
       } else {
-        const row = sheet.rows[index - 1]
+        const row = result.rows[index - 1]
         if ((row as any).cumulativeHeight) {
           return (row as any).cumulativeHeight
         }
@@ -875,8 +883,8 @@ function Table ({
         i--
 
         for (;i >= 0; i--) {
-          if (i > 0 && i < (sheet.rows.length + 1)) {
-            const thisRow = sheet.rows[i - 1]
+          if (i > 0 && i < (result.rows.length + 1)) {
+            const thisRow = result.rows[i - 1]
 
             if ((thisRow as any).cumulativeHeight) {
               cumulativeHeight += (thisRow as any).cumulativeHeight
@@ -890,57 +898,56 @@ function Table ({
         return (row as any).cumulativeHeight
       }
     },
-    [sheet, computeRowHeight]
+    [result, computeRowHeight]
   )
 
   const loadMoreItems = React.useCallback(
     async (startIndex: number, stopIndex: number): Promise<void> => {
-      await loadMore(sheet.name, sheet.rows.length)
+      await loadMore(result.name, result.rows.length)
         .then((rows) => {
           const current = gridRef.current // setForceUpdate clears gridRef, so we need to save it first.
-          const loadingRow = sheet.rows.length
-          sheet.rows = sheet.rows.concat(rows)
+          const loadingRow = result.rows.length
+          result.rows = result.rows.concat(rows)
           setForceUpdate((n) => n + 1)
-          onSelectedSheetUpdated(sheet)
+          stateChangeApi.addOrReplaceResult(result, false)
 
           if (current) {
             current.updateRow(loadingRow) // update the height of the load more row.
           }
         })
     },
-    [sheet, onSelectedSheetUpdated]
+    [result, stateChangeApi]
   )
 
   const isItemLoaded = React.useCallback(
-    (index) => (index < (sheet.rows.length + 1)),
-    [sheet]
+    (index) => (index < (result.rows.length + 1)),
+    [result]
   )
 
   return (
     <>
       <ChangingColumnTypeDialog
         info={changingColumnInfo}
-        onChangingColumnType={(newSheet) => {
-          const current = gridRef.current
-          setForceUpdate((x) => x + 1)
-          onSelectedSheetUpdated(newSheet)
+        // onChangingColumnType={() => {
+        //   const current = gridRef.current
+        //   setForceUpdate((x) => x + 1)
 
-          if (current) {
-            current.updateRow(0)
-          }
-        }}
+        //   if (current) {
+        //     current.updateRow(0)
+        //   }
+        // }}
         onClosing={() => { setChangingColumnInfo(null) }}
       />
       <ColumnContextMenu
-        column={columnContextMenuOpenInfo ? sheet.columns[columnContextMenuOpenInfo.columnIndex] : null}
+        column={columnContextMenuOpenInfo ? result.columns[columnContextMenuOpenInfo.columnIndex] : null}
         x={columnContextMenuOpenInfo?.clientX ?? null}
         y={columnContextMenuOpenInfo?.clientY ?? null}
         onClosing={() => { setColumnContextMenuOpenInfo(null) }}
         onChangingColumnType={() => {
-          const sheet = columnContextMenuOpenInfo!.sheet
+          const result = columnContextMenuOpenInfo!.result
           setChangingColumnInfo({
-            sheet,
-            column: sheet.columns[columnContextMenuOpenInfo!.columnIndex]
+            result,
+            column: result.columns[columnContextMenuOpenInfo!.columnIndex]
           })
         }}
       />
@@ -956,21 +963,20 @@ function Table ({
                 <Grid
                   ref={gridRef}
                   infiniteLoaderRef={ref}
-                  key={sheet.name}
+                  key={result.name}
                   rowCount={gridRowCount}
                   computeRowHeight={computeRowHeight}
                   computeCumulativeRowHeight={computeCumulativeRowHeight}
                   columnCount={columnWidths.current.length}
                   columnWidths={columnWidths.current}
-                  initialScrollLeft={sheet.scrollLeft ?? 0}
-                  initialScrollTop={sheet.scrollTop ?? 0}
+                  initialScrollLeft={result.scrollLeft ?? 0}
+                  initialScrollTop={result.scrollTop ?? 0}
                   width={width}
                   height={height}
                   onItemsRendered={onItemsRendered}
-                  onSorting={onSorting}
                   onScrolled={(left, top) => {
-                    sheet.scrollLeft = left
-                    sheet.scrollTop = top
+                    result.scrollLeft = left
+                    result.scrollTop = top
                   }}
                 >
                   {Cell}
@@ -984,6 +990,7 @@ function Table ({
   )
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function Graph ({ type, sheet }: { type: ChartType, sheet: Sheet }): JSX.Element {
   const chartRef = React.useRef<any>(null)
 
@@ -1044,15 +1051,11 @@ function Graph ({ type, sheet }: { type: ChartType, sheet: Sheet }): JSX.Element
 }
 
 export default function SheetComponent ({
-  sheet,
-  presentationType,
-  onSelectedSheetUpdated,
-  onSorting
+  result,
+  presentationType
 }: {
-  sheet: Sheet
+  result: Result
   presentationType: PresentationType
-  onSelectedSheetUpdated: (sheet: Sheet | null) => void
-  onSorting: (sheet: Sheet, column: string, direction: SortDirection) => void
 }): JSX.Element {
   React.useEffect(
     () => {
@@ -1062,39 +1065,37 @@ export default function SheetComponent ({
   )
   const [copyingData, setCopyingData] = React.useState<CopyingData | null>(null)
 
-  if (sheet.columns.length === 0) {
-    let msg = `Please run ${sheet.name} in order to see the result.`
+  if (result.columns.length === 0) {
+    let msg = `Please run ${result.name} in order to see the result.`
 
-    if (sheet.isCsv) {
-      msg = `Please load the CSV into ${sheet.name} in order to see the result.`
+    if (result.isCsv) {
+      msg = `Please load the CSV into ${result.name} in order to see the result.`
     }
     return <div className="sheet" tabIndex={-1}><div className="empty-warning">{msg}</div></div>
   }
 
-  let view: JSX.Element
+  let view: JSX.Element = <></>
 
   let updatedPresentationType = presentationType
 
-  if (!isChartEnabled(sheet.rows.length)) { updatedPresentationType = 'table' }
+  if (!isChartEnabled(result.rows.length)) { updatedPresentationType = 'table' }
 
   switch (updatedPresentationType) {
     case 'table':
       view = <Table
-        sheet={sheet}
-        onSelectedSheetUpdated={onSelectedSheetUpdated}
+        result={result}
         onCopyingStarted={(data) => { setCopyingData(data) }}
         onCopyingFinished={() => { setCopyingData(null) }}
-        onSorting={onSorting}
       />
       break
     case 'line':
-      view = <Graph type="line" sheet={sheet} />
+      // view = <Graph type="line" sheet={result} />
       break
     case 'bar':
-      view = <Graph type="bar" sheet={sheet} />
+      // view = <Graph type="bar" sheet={result} />
       break
     case 'pie':
-      view = <Graph type="pie" sheet={sheet} />
+      // view = <Graph type="pie" sheet={result} />
       break
     default:
       throw new Error()
@@ -1104,11 +1105,11 @@ export default function SheetComponent ({
     <>
       <CopyingModal isOpen={!!copyingData} cellCount={copyingData?.cellCount ?? 0} />
       <div className="sheet" tabIndex={-1}>
-        {sheet.isLoading && (
+        {result.isLoading && (
           <div
             className="overlay"
             style={{
-              display: sheet.isLoading ? 'block' : 'none'
+              display: result.isLoading ? 'block' : 'none'
             }}
           />
         )}

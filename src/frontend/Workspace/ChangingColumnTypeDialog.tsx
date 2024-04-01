@@ -1,25 +1,27 @@
 import React from 'react'
 import Modal from 'react-modal'
 import './ChangingColumnTypeDialog.scss'
-import { type Column, type Sheet } from './types'
+import { type Result, type Column } from './types'
 import { type ColumnType, ColumnTypes } from '../../types'
 import { changeColumnType } from '../api'
 import Button from './Button'
+import { StateChangeApi, useDispatch } from './WorkspaceContext'
 
 export interface ChangingColumnInfo {
-  sheet: Sheet
+  result: Result
   column: Column
 }
 
 export function ChangingColumnTypeDialog ({
   info,
-  onChangingColumnType,
   onClosing
 }: {
   info: ChangingColumnInfo | null
-  onChangingColumnType: (newSheet: Sheet) => void
   onClosing: () => void
 }): JSX.Element {
+  const dispatch = useDispatch()
+  const stateChangeApi = React.useMemo(() => new StateChangeApi(dispatch), [dispatch])
+
   const [isLoading, setIsLoading] = React.useState<boolean>(false)
   const [tpe, setTpe] = React.useState<ColumnType | ''>('')
   const [timestampFormat, setTimestampFormat] = React.useState<string>('')
@@ -51,13 +53,14 @@ export function ChangingColumnTypeDialog ({
 
       try {
         const sheet = await changeColumnType(
-          info!.sheet.name,
+          info!.result,
           info!.column.name,
           tpe,
           timestampFormat
         )
 
-        onChangingColumnType(sheet)
+        stateChangeApi.addOrReplaceResult(sheet, false)
+
         close()
       } catch (unknownError) {
         const error = unknownError as any
@@ -76,7 +79,7 @@ export function ChangingColumnTypeDialog ({
         setIsLoading(false)
       }
     },
-    [info, tpe, timestampFormat, onChangingColumnType, close]
+    [tpe, timestampFormat, info, stateChangeApi, close]
   )
 
   React.useEffect(

@@ -31,7 +31,7 @@ const ExportDelimiterSymbols = {
   tilde: '~'
 }
 
-interface Workspace {
+export interface Workspace {
   window: BrowserWindow
   db: Datastore
 }
@@ -169,11 +169,19 @@ export default class Main {
   }
 
   private static getEditorMode (): EditorMode {
-    return (Main.store.get('editorMode') as (EditorMode | null)) ?? 'default'
+    return (Main.store.get('editorMode') as (EditorMode | undefined)) ?? 'default'
   }
 
   private static getExportDelimiter (): ExportDelimiter {
-    return (Main.store.get('exportDelimiter') as (ExportDelimiter | null)) ?? 'comma'
+    return (Main.store.get('exportDelimiter') as (ExportDelimiter | undefined)) ?? 'comma'
+  }
+
+  private static getLatestUpdateNoticeShownAt (): number | null {
+    return Main.store.get('latestUpdateNoticeShownAt') as (number | undefined) ?? null
+  }
+
+  static setLatestUpdateNoticeShownAt (): void {
+    Main.store.set('latestUpdateNoticeShownAt', new Date().getTime())
   }
 
   private static buildMenu (): void {
@@ -336,9 +344,9 @@ export default class Main {
         label: 'Help',
         submenu: [
           {
-            label: 'Learn More',
+            label: 'Visit our website',
             click: async () => {
-              await shell.openExternal('https://docs.superintendent.app/')
+              await shell.openExternal('https://superintendent.app/?ref=help')
             }
           }
         ]
@@ -425,6 +433,36 @@ export default class Main {
     return space
   }
 
+  static async maybeShowUpdateNotice (space: Workspace): Promise<void> {
+    const latest = Main.getLatestUpdateNoticeShownAt()
+
+    if (latest === null) {
+      Main.setLatestUpdateNoticeShownAt()
+      return
+    }
+
+    const now = new Date().getTime()
+
+    if ((now - latest) > (35 * 86400 * 1000)) {
+      void dialog.showMessageBox(
+        space.window,
+        {
+          type: 'info',
+          buttons: ['Go to our website', 'Close'],
+          defaultId: 0,
+          title: 'Check new update',
+          message: 'Superintendent.app releases a new update regularly.\n\nPlease check a new update on our website.'
+        }
+      )
+        .then((choice) => {
+          if (choice.response === 0) {
+            void shell.openExternal('https://superintendent.app/?ref=update')
+          }
+        })
+      Main.setLatestUpdateNoticeShownAt()
+    }
+  }
+
   private static async onReady (): Promise<void> {
     Store.initRenderer()
 
@@ -494,7 +532,8 @@ export default class Main {
       return await Main.wrapResponse(Main.downloadCsv(Main.getSpace(event), table, Main.getExportDelimiter()))
     })
 
-    await Main.makeWorkspace()
+    const space = await Main.makeWorkspace()
+    await Main.maybeShowUpdateNotice(space)
 
     if (process.platform === 'darwin') {
       const dockMenu = Menu.buildFromTemplate([
