@@ -128,9 +128,14 @@ export default function SheetSection ({
       copied.splice(newIndex, 0, moved[0])
       setTabs(copied)
 
-      stateChangeApi.setSelectedResult(tabs[selectedTabIndex].result)
+      // Update immediately to avoid flickering
+      copied.forEach((tab, index) => {
+        if (tab.result === selectedResult) {
+          setSelectedTabIndex(index)
+        }
+      })
     },
-    [tabs, stateChangeApi, selectedTabIndex]
+    [tabs, selectedResult]
   )
 
   let content: JSX.Element | null = null
@@ -167,6 +172,12 @@ export default function SheetSection ({
               title="Sort alphabetically"
               onClick={() => {
                 tabs.sort((a, b) => {
+                  if (a.result instanceof DraftResult) {
+                    return -100
+                  } else if (b.result instanceof DraftResult) {
+                    return 100
+                  }
+
                   if (a.result.isCsv !== b.result.isCsv) {
                     if (a.result.isCsv) { return -1 } else { return 1 }
                   } else {
@@ -180,6 +191,13 @@ export default function SheetSection ({
 
                 setTabs([...tabs])
                 setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+
+                // Update immediately to avoid flickering
+                tabs.forEach((tab, index) => {
+                  if (tab.result === selectedResult) {
+                    setSelectedTabIndex(index)
+                  }
+                })
               }}
             />
           </div>

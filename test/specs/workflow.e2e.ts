@@ -62,7 +62,6 @@ describe('Workflow', () => {
     let windowHandles = await getWindowHandles()
     await expect(windowHandles.length).toEqual(1)
     const firstWindowHandle = windowHandles[0]!
-    console.log(firstWindowHandle)
 
     await browser.electron.execute(
       async (electron) => {

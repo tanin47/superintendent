@@ -30,6 +30,13 @@ export default function Workspace (): ReactElement {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [presentationType, setPresentationType] = React.useState<PresentationType>('table')
 
+  React.useEffect(
+    () => {
+      stateChangeApi.makeDraftSql('')
+    },
+    [stateChangeApi]
+  )
+
   React.useEffect(() => {
     const callback = (event, workflow: ExportedWorkflow): void => {
       stateChangeApi.importWorkflow(workflow)
@@ -188,6 +195,7 @@ export default function Workspace (): ReactElement {
               </div>
               <div className="right">
                 <Button
+                  testId="export-sheet"
                   onClick={() => { exportCsv() }}
                   isLoading={isDownloadCsvLoading}
                   disabled={workspaceState.items.length === 0}

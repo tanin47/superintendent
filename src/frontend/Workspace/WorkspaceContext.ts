@@ -35,6 +35,7 @@ export interface Action {
   sql?: string
 }
 
+let draftSqlNumberRunner = 1
 export function reduce (state: WorkspaceState, action: Action): WorkspaceState {
   if (action.type === ActionType.RENAME) {
     state.items = state.items.map((item) => {
@@ -66,9 +67,14 @@ export function reduce (state: WorkspaceState, action: Action): WorkspaceState {
   } else if (action.type === ActionType.MAKE_DRAFT_SQL) {
     const item: DraftSql = new DraftSql({
       id: generateWorkspaceItemId(),
-      name: 'draft',
+      name: `draft-${draftSqlNumberRunner++}`,
       sql: action.sql!
     })
+
+    if (state.items.length === 0) {
+      state.selectedComposableItem = item
+    }
+
     state.items = [...state.items, item]
     return {
       ...state,
