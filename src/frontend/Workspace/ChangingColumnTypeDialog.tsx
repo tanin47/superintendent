@@ -59,7 +59,7 @@ export function ChangingColumnTypeDialog ({
           timestampFormat
         )
 
-        stateChangeApi.addOrReplaceResult(sheet, false)
+        stateChangeApi.addOrReplaceResult(sheet)
 
         close()
       } catch (unknownError) {

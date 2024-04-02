@@ -1,5 +1,5 @@
 import { $, expect } from '@wdio/globals'
-import { clearEditor, expectDefaultEditorText, getTabs } from './helpers'
+import { clearEditor, expectDefaultEditorText, getSelectedText, getTabs } from './helpers'
 
 describe('A simple scenario', () => {
   beforeAll(async () => {
@@ -13,6 +13,7 @@ describe('A simple scenario', () => {
     await $('.CodeMirror').click()
     await browser.keys('select 1')
     await $('[data-testid="run-sql"]').click()
+    await $('[data-testid="cancel-rename-button"]').click()
     await expect($('.sheet')).toHaveText('1\n 1\n1')
   })
 
@@ -52,6 +53,7 @@ describe('A simple scenario', () => {
     await $('.CodeMirror').click()
     await browser.keys('select * from csv join albatross on true')
     await $('[data-testid="run-sql"]').click()
+    await $('[data-testid="cancel-rename-button"]').click()
     await expect($('.sheet')).toHaveText(
       'Harmonia\n' +
           'Waite\n' +
@@ -73,6 +75,7 @@ describe('A simple scenario', () => {
   it('renames', async () => {
     await $('[data-testid="project-item-albatross"]').click({ button: 'right' })
     await $('[data-testid="project-context-menu-rename"]').click()
+    await expect(await getSelectedText()).toEqual('albatross')
     await $('[data-testid="rename-textbox"]').setValue('bird')
     await $('[data-testid="rename-button"]').click()
     await $('[data-testid="project-item-bird"] span').click()

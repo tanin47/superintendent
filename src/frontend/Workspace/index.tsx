@@ -168,7 +168,7 @@ export default function Workspace (): ReactElement {
               display: 'flex',
               flexDirection: 'column'
             }}>
-              <Editor ref={editorRef}/>
+              <Editor ref={editorRef} onRenamingSheet={(sheet) => { setRenamingSheet(sheet) }}/>
             </div>
           </div>
           <div className="toolbarSection">

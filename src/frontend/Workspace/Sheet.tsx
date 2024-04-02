@@ -750,7 +750,7 @@ function Table ({
 
                   void sort(result, columnName, newDirection)
                     .then((newResult) => {
-                      stateChangeApi.addOrReplaceResult(newResult, false)
+                      stateChangeApi.addOrReplaceResult(newResult)
                     })
                     .finally(() => {
                       stateChangeApi.stopLoading(result)
@@ -909,7 +909,7 @@ function Table ({
           const loadingRow = result.rows.length
           result.rows = result.rows.concat(rows)
           setForceUpdate((n) => n + 1)
-          stateChangeApi.addOrReplaceResult(result, false)
+          stateChangeApi.addOrReplaceResult(result)
 
           if (current) {
             current.updateRow(loadingRow) // update the height of the load more row.

@@ -147,7 +147,7 @@ export async function query (q: string, replace: Result | null): Promise<Result>
     .invoke('query', q, replace?.name ?? null)
     .then((result) => {
       if (result.success === true) {
-        if (replace) {
+        if (replace && replace.name === result.data.name) {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
           replace.update(result.data, false)
           return replace

@@ -26,7 +26,6 @@ export interface Action {
   item?: WorkspaceItem
   newName?: string
   result?: Result | null
-  shouldSwitchEditor?: boolean
   loading?: boolean
   targetDraftResult?: boolean
   composableItem?: WorkspaceItem | null
@@ -98,10 +97,6 @@ export function reduce (state: WorkspaceState, action: Action): WorkspaceState {
       }
 
       state.items.push(newResult)
-
-      if (!newResult.isCsv && action.shouldSwitchEditor) {
-        state.selectedComposableItem = newResult as Sheet
-      }
     }
 
     state.items = [...state.items]
@@ -197,8 +192,8 @@ export class StateChangeApi {
     }
   }
 
-  public addOrReplaceResult (result: Result, shouldSwitchEditor: boolean): void {
-    this.dispatch({ type: ActionType.ADD_OR_REPLACE_RESULT, result, shouldSwitchEditor })
+  public addOrReplaceResult (result: Result): void {
+    this.dispatch({ type: ActionType.ADD_OR_REPLACE_RESULT, result })
   }
 
   public setSelectedComposableItem (item: WorkspaceItem | null): void {

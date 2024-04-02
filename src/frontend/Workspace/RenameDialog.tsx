@@ -14,6 +14,7 @@ export default function RenameDialog ({
   const dispatch = useDispatch()
   const stateChangeApi = React.useMemo(() => new StateChangeApi(dispatch), [dispatch])
 
+  const textInputRef = React.useRef<HTMLInputElement | null>(null)
   const [tableName, setTableName] = React.useState<string>('')
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null)
 
@@ -22,6 +23,21 @@ export default function RenameDialog ({
       setTableName(renamingSheet ? renamingSheet.name : '')
     },
     [setTableName, renamingSheet]
+  )
+
+  React.useEffect(
+    () => {
+      if (renamingSheet) {
+        setTimeout(
+          () => {
+            textInputRef.current?.select()
+            textInputRef.current?.focus()
+          },
+          1
+        )
+      }
+    },
+    [renamingSheet]
   )
 
   const renameCallback = React.useCallback(
@@ -81,7 +97,8 @@ export default function RenameDialog ({
         <input
           type="text"
           className="rename-textbox"
-          ref={(ref) => ref?.focus()} value={tableName}
+          ref={textInputRef}
+          value={tableName}
           onChange={(event) => { setTableName(event.target.value) }}
           data-testid="rename-textbox"
         />
@@ -90,12 +107,13 @@ export default function RenameDialog ({
           onClick={() => { renameCallback() }}
           data-testid="rename-button"
         >
-          Rename
+          Set new name
           <span className="short-key">⏎</span>
         </button>
         <button
           className="cancel"
           onClick={() => { onClosed() }}
+          data-testid="cancel-rename-button"
         >
           Cancel
           <span className="short-key">ESC</span>

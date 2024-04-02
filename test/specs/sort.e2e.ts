@@ -94,7 +94,8 @@ describe('Sort', () => {
 
   it('BUG: ensure SQL is not changed', async () => {
     await fillEditor('select * from "456sort"')
-    await $('[data-testid="run-sql"] span').click()
+    await $('[data-testid="run-sql"]').click()
+    await $('[data-testid="cancel-rename-button"]').click()
     await expect($('[data-testid="cell-1-1"]')).toHaveText('c')
     await expect($('[data-testid="cell-2-1"]')).toHaveText('b')
     await expect($('[data-testid="cell-3-1"]')).toHaveText('a')

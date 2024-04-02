@@ -29,6 +29,7 @@ export interface Ref {
 
 interface Props {
   initialValue?: string | null
+  onRenamingSheet: (sheet: Sheet) => void
 }
 
 function getAutocompleteWord (s: string): string {
@@ -134,7 +135,8 @@ interface ContextMenuOpenInfo {
 }
 
 export default React.forwardRef<Ref, Props>(function Editor ({
-  initialValue
+  initialValue,
+  onRenamingSheet
 }: Props, ref): JSX.Element {
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
   const codeMirrorInstance = React.useRef<any>(null)
@@ -180,7 +182,7 @@ export default React.forwardRef<Ref, Props>(function Editor ({
         shownComposableItem.editorState = {
           cursor,
           selections,
-          draft: textareaRef.current!.value.trim()
+          draft: codeMirrorInstance.current.getValue() ?? ''
         }
       }
 
@@ -215,7 +217,7 @@ export default React.forwardRef<Ref, Props>(function Editor ({
   React.useImperativeHandle(ref, () => ({
     getValue: () => {
       codeMirrorInstance.current.save()
-      return textareaRef.current!.value
+      return codeMirrorInstance.current.getValue() ?? ''
     },
     setValue: (newValue: string) => {
       codeMirrorInstance.current.setValue(newValue)
@@ -269,12 +271,12 @@ export default React.forwardRef<Ref, Props>(function Editor ({
           if (selection) {
             sql = selection
           } else {
-            sql = textareaRef.current!.value.trim()
+            sql = codeMirrorInstance.current.getValue().trim()
           }
           break
         }
         case 'default':
-          sql = textareaRef.current!.value.trim()
+          sql = codeMirrorInstance.current.getValue().trim()
           break
         default:
           throw new Error()
@@ -282,7 +284,6 @@ export default React.forwardRef<Ref, Props>(function Editor ({
 
       if (sql === '') { return }
 
-      let shouldSwitchEditor = workspaceState.selectedComposableItem instanceof DraftSql
       let replace: Result | null = null
       switch (mode) {
         case 'partial-new':
@@ -303,7 +304,6 @@ export default React.forwardRef<Ref, Props>(function Editor ({
         case 'default':
           replace = workspaceState.selectedComposableItem instanceof DraftSql ? null : (workspaceState.selectedComposableItem as Result) ?? null
           stateChangeApi.startLoading(workspaceState.selectedComposableItem)
-          shouldSwitchEditor = true
           break
         default:
           throw new Error()
@@ -313,16 +313,21 @@ export default React.forwardRef<Ref, Props>(function Editor ({
       try {
         const sheet = await query(sql, replace)
 
+        stateChangeApi.addOrReplaceResult(sheet)
+        stateChangeApi.setSelectedResult(sheet)
+
         if (mode === 'default') {
           setShouldShowDraftNotice(false)
 
           if (workspaceState.selectedComposableItem instanceof DraftSql) {
             stateChangeApi.discardDraftSql(workspaceState.selectedComposableItem)
           }
+          stateChangeApi.setSelectedComposableItem(sheet)
         }
 
-        stateChangeApi.setSelectedResult(sheet)
-        stateChangeApi.addOrReplaceResult(sheet, shouldSwitchEditor)
+        if (!replace || replace.name !== sheet.name) {
+          onRenamingSheet(sheet)
+        }
       } catch (err) {
         dialog.showError('Found an error!', err as any as string)
       } finally {
@@ -343,7 +348,7 @@ export default React.forwardRef<Ref, Props>(function Editor ({
         }
       }
     },
-    [isQueryLoading, stateChangeApi, workspaceState.items, workspaceState.selectedComposableItem]
+    [isQueryLoading, onRenamingSheet, stateChangeApi, workspaceState.items, workspaceState.selectedComposableItem]
   )
 
   React.useEffect(() => {
@@ -449,7 +454,8 @@ export default React.forwardRef<Ref, Props>(function Editor ({
         if (!(event instanceof KeyboardEvent)) { return true }
 
         if (event.code === 'KeyN' && (event.metaKey || event.ctrlKey)) {
-          stateChangeApi.makeDraftSql(textareaRef.current!.value.trim())
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+          stateChangeApi.makeDraftSql(codeMirrorInstance.current?.getValue() ?? '')
           return false
         }
 
@@ -520,7 +526,8 @@ export default React.forwardRef<Ref, Props>(function Editor ({
             </Button>
             <span className="separator" />
             <Button
-              onClick={() => { stateChangeApi.makeDraftSql(textareaRef.current!.value.trim()) }}
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+              onClick={() => { stateChangeApi.makeDraftSql(codeMirrorInstance.current?.getValue() ?? '') }}
               icon={<i className="fas fa-plus-square"/>}
               testId="new-sql"
             >

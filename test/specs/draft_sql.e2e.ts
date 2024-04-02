@@ -40,6 +40,7 @@ describe('A simple scenario', () => {
   it('runs the drafl sqls', async () => {
     await $('[data-testid="project-item-draft-1"]').click()
     await $('[data-testid="run-sql"]').click()
+    await $('[data-testid="cancel-rename-button"]').click()
     await expect($('.sheet')).toHaveText(
       'test\n' +
       " 'test'\n" +
@@ -51,6 +52,7 @@ describe('A simple scenario', () => {
 
     await $('[data-testid="project-item-draft-3"]').click()
     await $('[data-testid="run-sql"]').click()
+    await $('[data-testid="cancel-rename-button"]').click()
     await expect($('.sheet')).toHaveText(
       '222\n' +
       ' 222\n' +

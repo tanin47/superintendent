@@ -14,6 +14,7 @@ describe('A simple scenario', () => {
     await $('.CodeMirror').click()
     await browser.keys("select 'test', 'testagain'")
     await $('[data-testid="run-sql"]').click()
+    await $('[data-testid="cancel-rename-button"]').click()
     await $('[data-testid="cell-1-1"]').click()
     await browser.keys([Key.Ctrl, 'c'])
 

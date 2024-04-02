@@ -35,6 +35,7 @@ describe('Workflow', () => {
 
     await fillEditor('select u.id, name, height from user u join height h on u.id = h.id order by u.id asc')
     await $('[data-testid="run-sql"]').click()
+    await $('[data-testid="cancel-rename-button"]').click()
     await expect($('.sheet')).toHaveText(
       '1\ntanin\n170\n' +
       '2\njohn\n175\n' +
@@ -93,7 +94,7 @@ describe('Workflow', () => {
     await $$('[data-testid="add-csv-sheet-option"]')[1].selectByVisibleText('Replace height')
     await $('[data-testid="import-all-files"]').click()
 
-    await $('[data-testid="project-item-albatross"] span').click()
+    await $('[data-testid="project-item-albatross"]').click()
     await $('[data-testid="run-sql"]').click()
     await expect($('.sheet')).toHaveText(
       '1\ntanin\n170\n' +

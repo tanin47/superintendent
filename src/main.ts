@@ -348,6 +348,12 @@ export default class Main {
             click: async () => {
               await shell.openExternal('https://superintendent.app/?ref=help')
             }
+          },
+          {
+            label: 'See SQL reference',
+            click: async () => {
+              await shell.openExternal('https://duckdb.org/docs/sql/query_syntax/select')
+            }
           }
         ]
       }

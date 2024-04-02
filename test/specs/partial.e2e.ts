@@ -12,6 +12,7 @@ describe('Change column type', () => {
     await $('.CodeMirror').click()
     await browser.keys("select * from (select 123, '2022-10-04', 3.14) order by 1 desc")
     await $('[data-testid="run-sql"]').click()
+    await $('[data-testid="cancel-rename-button"]').click()
     await expect($('.sheet')).toHaveText(
       '123\n2022-10-04\n3.14\n' +
             " 123\n'2022-10-04'\n3.14\n" +
@@ -34,6 +35,7 @@ describe('Change column type', () => {
   it('create a new query from partial', async () => {
     await $('.CodeMirror').click({ button: 'right' })
     await $('[data-testid="editor-context-menu-run-new"]').click()
+    await $('[data-testid="cancel-rename-button"]').click()
     await expect($('.sheet')).toHaveText(
       '123\n' +
             ' 123\n' +
@@ -57,6 +59,7 @@ describe('Change column type', () => {
   it('create a new query from partial', async () => {
     await $('.CodeMirror').click({ button: 'right' })
     await $('[data-testid="editor-context-menu-run-new"]').click()
+    await $('[data-testid="cancel-rename-button"]').click()
     await expect($('.sheet')).toHaveText(
       '123\n2022-10-04\n3.14\n' +
             " 123\n'2022-10-04'\n3.14\n" +

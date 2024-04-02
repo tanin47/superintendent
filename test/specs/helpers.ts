@@ -32,6 +32,10 @@ export async function getTabs (): Promise<Tab[]> {
     })
 }
 
+export async function getSelectedText (): Promise<string> {
+  return (await browser.executeScript('return window.getSelection().toString()', []))
+}
+
 export async function bypassLicense (): Promise<void> {
   await expect($('#checkLicenseForm')).toExist()
   await browser.electron.execute(

@@ -15,10 +15,12 @@ describe('A simple scenario', () => {
   it('builds data', async () => {
     await fillEditor("select 'test', 'testagain'")
     await $('[data-testid="run-sql"]').click()
+    await $('[data-testid="cancel-rename-button"]').click()
 
     await $('[data-testid="new-sql"]').click()
     await fillEditor("select 'another', 123")
     await $('[data-testid="run-sql"]').click()
+    await $('[data-testid="cancel-rename-button"]').click()
   })
 
   it('exports the second sheet', async () => {
