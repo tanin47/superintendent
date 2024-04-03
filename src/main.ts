@@ -431,6 +431,7 @@ export default class Main {
         query: { editorMode: Main.getEditorMode(), ...initialFileMap }
       }
     )
+    space.window.webContents.session.setSpellCheckerEnabled(false)
 
     if (!process.env.SUPERINTENDENT_IS_PROD) {
       space.window.webContents.openDevTools()
