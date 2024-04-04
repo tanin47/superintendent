@@ -35,7 +35,11 @@ export abstract class Datastore {
   }
 
   static sanitizeName (name: string): string {
-    return name.replace(/[^a-zA-Z0-9_]/g, '_').replace(/^_+/g, '').replace(/_+$/g, '')
+    let sanitized = name.replace(/[^a-zA-Z0-9_]/g, '_').replace(/^_+/g, '').replace(/_+$/g, '')
+
+    if (sanitized === '') { sanitized = 'empty' }
+
+    return sanitized
   }
 
   protected getTableName (name: string, number: number | null = null): string {

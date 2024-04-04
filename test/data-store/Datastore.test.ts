@@ -5,5 +5,6 @@ describe('Datastore', () => {
     await expect(Datastore.sanitizeName('test')).toEqual('test')
     await expect(Datastore.sanitizeName('test(1)')).toEqual('test_1')
     await expect(Datastore.sanitizeName('test(1)something')).toEqual('test_1_something')
+    await expect(Datastore.sanitizeName('')).toEqual('empty')
   })
 })

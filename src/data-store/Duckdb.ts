@@ -79,7 +79,7 @@ export class Duckdb extends Datastore {
         return {
           name,
           maxCharWidthCount: 0,
-          tpe: types[index]
+          tpe: types[index] || 'VARCHAR'
         }
       }),
       dateFormat,

@@ -40,18 +40,44 @@ describe('Workerize', () => {
         await expect(result).toEqual(
           {
             count: 2,
-            columns: [{ name: 'firstname', maxCharWidthCount: 8 }, { name: 'last_quote_name', maxCharWidthCount: 17 }, { name: 'email', maxCharWidthCount: 33 }],
+            columns: [
+              { name: 'firstname', maxCharWidthCount: 8, tpe: 'varchar' },
+              { name: 'last_quote_name', maxCharWidthCount: 17, tpe: 'varchar' },
+              { name: 'email', maxCharWidthCount: 33, tpe: 'varchar' }
+            ],
             name: expect.any(String),
             sql,
             rows: [
               ['Harmonia', 'Waite', 'Har"quote"monia.Waite@yopmail.com'],
               ['Joy', `something${format.separator}another`, 'Joy.Haerr@yopmail.com']
-            ],
-            isCsv: false
+            ]
           }
         )
       })
     }
+  })
+
+  it('handles empty column name', async () => {
+    await workerize.addCsv('./test/data-store/csv-samples/empty_header.csv', true, ',', '')
+
+    const sql = 'SELECT * FROM empty_header'
+    const result = await workerize.query(sql, null)
+
+    await expect(result).toEqual(
+      {
+        count: 1,
+        columns: [
+          { name: 'empty', maxCharWidthCount: 3, tpe: 'varchar' },
+          { name: 'name', maxCharWidthCount: 5, tpe: 'varchar' },
+          { name: 'something', maxCharWidthCount: 7, tpe: 'varchar' }
+        ],
+        name: expect.any(String),
+        sql,
+        rows: [
+          ['row', 'tanin', 'nothing']
+        ]
+      }
+    )
   })
 
   describe('import/export', () => {
