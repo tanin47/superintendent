@@ -17,8 +17,24 @@ You can use VSCode.
    - Run `yarn wdio --spec ./test/specs/draft_notice.e2e.ts` to run specific tests.
 4. To build the prod artifacts:
    - Mac: run `APPLEID=<EMAIL> APPLEIDPASS=<PASS> yarn run gulp release`
-   - Windows: run `set CSC_LINK=c:\Users\tanin\projects\tanin_na_nakorn.p12`, `set CSC_KEY_PASSWORD=474747` and `yarn run gulp release`
+   - Windows: run `CODE_SIGNING_TOOL_DIR="c:/Users/tanin/projects/CodeSignTool-v1.3.0-windows" SSL_USERNAME=tanin SSL_PASSWORD="<PASSWORD_FOR_SSL.COM>" yarn run gulp release`
+     - This requires an OTP input
    - Linux: run `yarn run gulp release`
+
+On Windows, we use MINGW64, not the Command-Line Tool.
+
+Windows Code Signing
+----------------------
+
+### Validate that the binary is signed correctly
+
+1. Open PowerShell
+2. Run `powershell -command "Get-AuthenticodeSignature -FilePath \"<file>\""`
+
+For convenience, here are the 2 files we should verify:
+
+* `powershell -command "Get-AuthenticodeSignature -FilePath ./electron-builder/out/win-unpacked/superintendent.exe"`
+* `powershell -command "Get-AuthenticodeSignature -FilePath \"./electron-builder/out/superintendent Setup 5.2.0.exe\""`
 
 Testing
 --------
