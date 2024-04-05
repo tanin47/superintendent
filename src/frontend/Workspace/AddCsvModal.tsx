@@ -432,7 +432,7 @@ export default React.forwardRef(function AddCsv ({
             )
           : (
           <div className="license-notice free">
-            <i className="fas fa-exclamation-circle"></i> You are using the free version that will only load the first 2,000 rows of CSV files.
+            <i className="fas fa-exclamation-circle"></i> You are using the free version that will only load the first 10,000 rows of CSV files.
             <br />
             <span className="click" onClick={() => { onGoToLicense() }}>Click here to buy a license</span>
           </div>

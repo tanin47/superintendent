@@ -13,7 +13,7 @@ describe('Change column type', () => {
 
     stream.write('id,name\n')
 
-    for (let i = 0; i < 2010; i++) {
+    for (let i = 0; i < 10010; i++) {
       stream.write(`${i},name${i}\n`)
     }
   })
@@ -30,6 +30,6 @@ describe('Change column type', () => {
     await $('[data-testid="input-file"]').addValue(await browser.uploadFile(csvFile!))
     await $('[data-testid="import-all-files"]').click()
 
-    await expect($('.toolbarSection .total')).toHaveText('2,000 rows(Only 1,000 are shown)')
+    await expect($('.toolbarSection .total')).toHaveText('10,000 rows(Only 1,000 are shown)')
   })
 })

@@ -1,7 +1,7 @@
 const { execFileSync } = require('child_process')
 const os = require('os')
 
-function readEnv(key) {
+function readEnv (key) {
   const value = process.env[key]
 
   if (!value) {
@@ -13,7 +13,7 @@ function readEnv(key) {
 
 exports.default = function (context) {
   const platformName = os.platform()
- 
+
   if (platformName === 'win32') {
     console.log('Signing the installer for win32.')
 
@@ -33,6 +33,6 @@ exports.default = function (context) {
       execFileSync(binary, args, options)
     }
   } else {
-    console.log(`Signing the installer for ${electronPlatformName} is not supported.`)
+    console.log(`Signing the installer for ${platformName} is not supported.`)
   }
 }

@@ -126,7 +126,7 @@ export class Duckdb extends Datastore {
       readCsvOptions.push(`timestampformat = '${detectionResult.timestampFormat}'`)
     }
 
-    const limitClause = hasValidLicense ? '' : 'LIMIT 2000'
+    const limitClause = hasValidLicense ? '' : 'LIMIT 10000'
 
     await this.db.exec(`CREATE TABLE "${table}" AS FROM read_csv(${readCsvOptions.join(', ')}) ${limitClause}`)
 
