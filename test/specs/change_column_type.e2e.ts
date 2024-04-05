@@ -15,6 +15,8 @@ describe('Change column type', () => {
     await $('[data-testid="input-file"]').addValue(await browser.uploadFile('./test/specs/csv-samples/column_detection.csv'))
     await $('[data-testid="import-all-files"]').click()
 
+    await expect($('.toolbarSection .total')).toHaveText('3 rows')
+
     await expect($('.sheet')).toHaveText(
       '1\n2012-12-01T03:45:23.000Z\n1.3\ntanin\n2012-12-01T03:45:00.000Z\n' +
       '2\n2014-02-28T13:45:23.000Z\n4\njohn\n2014-02-28T13:45:00.000Z\n' +

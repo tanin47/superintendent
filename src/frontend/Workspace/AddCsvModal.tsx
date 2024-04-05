@@ -193,6 +193,7 @@ export default React.forwardRef(function AddCsv ({
       try {
         const sheet = await addCsv(file.path, file.withHeader, file.format, file.replace)
         stateChangeApi.addOrReplaceResult(sheet)
+        stateChangeApi.setSelectedResult(sheet)
 
         setFiles((prevFiles) => {
           prevFiles[index] = {

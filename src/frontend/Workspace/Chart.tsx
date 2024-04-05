@@ -45,6 +45,8 @@ ChartJs.register(
   ArcElement
 )
 
+const MAX_ROWS = 1000
+
 function formatTimestamp (value: Date, format: LabelTimestampFormat): string {
   const dateTime = DateTime.fromJSDate(value).setZone('utc')
 
@@ -137,16 +139,28 @@ function Canvas ({
         type = options.type as ChartJsType
       }
 
+      const labels: any[] = []
+
+      for (let i = 0; i < Math.max(MAX_ROWS, result.rows.length); i++) {
+        labels.push(format(result.rows[i][labelColumnIndex], result.columns[labelColumnIndex].tpe, options.labelColumnTimestampFormat))
+      }
+
       const config = {
         type,
         data: {
-          labels: result.rows.map((r) => format(r[labelColumnIndex], result.columns[labelColumnIndex].tpe, options.labelColumnTimestampFormat)),
+          labels,
           datasets: options.datasetColumnIndices
             .filter((columnIndex) => columnIndex !== null)
             .map((columnIndex) => {
+              const data: any[] = []
+
+              for (let i = 0; i < Math.max(MAX_ROWS, result.rows.length); i++) {
+                data.push(format(result.rows[i][columnIndex!], result.columns[columnIndex!].tpe, options.labelColumnTimestampFormat))
+              }
+
               return {
                 label: result.columns[columnIndex!].name,
-                data: result.rows.map((r) => format(r[columnIndex!], result.columns[columnIndex!].tpe, options.labelColumnTimestampFormat))
+                data
               }
             })
         },
@@ -287,6 +301,16 @@ export default function Chart ({
           <div className="config-area">
             <table>
               <tbody>
+                {result.count > MAX_ROWS && (
+                  <tr className="control">
+                    <td className="value" colSpan={2}>
+                      <div className="warning">
+                        The chart only shows the data from the first 1,000 rows, but the sheet has 2,340 rows.
+                        Please reduce the number of rows of the sheet.
+                      </div>
+                    </td>
+                  </tr>
+                )}
                 <tr className="control">
                   <td className="label">
                     Type
