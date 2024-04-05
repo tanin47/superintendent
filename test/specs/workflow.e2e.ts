@@ -1,5 +1,5 @@
 import { $, browser, expect } from '@wdio/globals'
-import { bypassLicense, fillEditor, getTabs, getWindowHandles } from './helpers'
+import { fillEditor, getTabs, getWindowHandles } from './helpers'
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
@@ -7,8 +7,6 @@ import os from 'os'
 describe('Workflow', () => {
   let workflowFile: string
   beforeAll(async () => {
-    await bypassLicense()
-
     const tmpdir = fs.mkdtempSync(path.join(os.tmpdir(), 'superintendent-test'))
     workflowFile = path.join(tmpdir, 'test.super')
   })
@@ -35,7 +33,7 @@ describe('Workflow', () => {
 
     await fillEditor('select u.id, name, height from user u join height h on u.id = h.id order by u.id asc')
     await $('[data-testid="run-sql"]').click()
-    await $('[data-testid="cancel-rename-button"]').click()
+    await $('[data-testid="rename-button"]').click()
     await expect($('.sheet')).toHaveText(
       '1\ntanin\n170\n' +
       '2\njohn\n175\n' +
@@ -80,8 +78,6 @@ describe('Workflow', () => {
     const newWindowHandle = (await getWindowHandles()).find((h) => h !== firstWindowHandle)!
 
     await browser.switchToWindow(newWindowHandle)
-
-    await bypassLicense()
   })
 
   it('populates the loaded workflow', async () => {

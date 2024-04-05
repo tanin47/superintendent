@@ -1,59 +1,81 @@
 import React, { type ReactElement } from 'react'
 import './index.scss'
 import { checkIfLicenseIsValid } from '../api'
-import CheckLicenseForm from './Form'
 
-type Result = 'loading' | 'failed'
+export default function CheckLicenseForm ({
+  onGoToWorkspace
+}: {
+  onGoToWorkspace: () => void
+}): ReactElement {
+  const [licenseKey, setLicenseKey] = React.useState('')
+  const [isLoading] = React.useState(false)
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
 
-export default function CheckLicense ({ onFinished }: { onFinished: () => void }): ReactElement {
-  const [result, setResult] = React.useState<Result>('loading')
+  const placeholder = React.useMemo(() => [
+    '---- Superintendent license ----',
+    'Type: Trial',
+    'Name: Super Intendant',
+    'Email: support@superintendent.app',
+    'Key0: SomeKey0',
+    'Key1:',
+    'SomeKeyLine1',
+    'SomeKeyLine2',
+    '---- End of Superintendent license ----'
+  ].join('\n'), [])
 
-  React.useEffect(
-    () => {
-      if (window.miscApi.isWdioEnabled()) {
-        const listener = (): void => { onFinished() }
-        const removeListener = window.ipcRenderer.on('bypass-license', listener)
-        return () => {
-          removeListener()
-        }
-      }
-    },
-    [onFinished]
-  )
+  return (
+    <div id="checkLicenseForm">
+      <div className="enter-license-form">
+        <div className="label">
+          <span className="step">1</span>
+          Go to <span className="link" onClick={() => { window.shellApi.openExternal('https://superintendent.app') }}>https://superintendent.app</span> to purchase a license key
+        </div>
+        <div className="label">
+          <span className="step">2</span>
+          Check your email for the license key
+        </div>
+        <div className="label">
+          <span className="step">3</span>
+          Enter the license key below:
+        </div>
+        <div className="field">
+          <div className="input">
+            <textarea
+              disabled={isLoading}
+              value={licenseKey}
+              onChange={(event) => { setLicenseKey(event.target.value) }}
+              placeholder={placeholder}
+            />
+          </div>
+        </div>
+        <div className="cta">
+          {errorMessage != null && (
+            <div className="error-message">{errorMessage}</div>
+          )}
+          <div className="button-panel">
+            <button
+              disabled={isLoading}
+              onClick={() => {
+                const result = checkIfLicenseIsValid(licenseKey)
 
-  React.useEffect(() => {
-    setTimeout(
-      () => {
-        const licenseKey = window.storeApi.get('license-key')
-
-        if (!licenseKey) {
-          setResult('failed')
-          return
-        }
-
-        const result = checkIfLicenseIsValid(licenseKey)
-
-        if (result.success) {
-          onFinished()
-        } else {
-          setResult('failed')
-        }
-      },
-      100
-    )
-  }, [onFinished])
-
-  if (result === 'loading') {
-    return (
-      <div id="checkLicense">
-        <div className="loading">
-          <span className="spinner" /> Loading...
+                if (result.success) {
+                  onGoToWorkspace()
+                } else {
+                  setErrorMessage(result.errorMessage!)
+                }
+              }}
+            >
+              Submit
+            </button>
+            <button
+              disabled={isLoading}
+              onClick={() => { onGoToWorkspace() }}
+            >
+              Go back
+            </button>
+          </div>
         </div>
       </div>
-    )
-  } else if (result === 'failed') {
-    return <CheckLicenseForm onFinished={onFinished} />
-  } else {
-    throw new Error() // impossible
-  }
+    </div>
+  )
 }

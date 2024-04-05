@@ -2,6 +2,9 @@ import { $, expect } from '@wdio/globals'
 
 describe('Incorrect license', () => {
   it('uses a incorrect license', async () => {
+    await $('[data-testid="add-files"]').click()
+    await $('.license-notice.free .click').click()
+
     const license = '---- Superintendent license ----\n' +
           'Email: tanin47@gmail.com\n' +
           'Expired: 2024-09-20T23:57:20.766258645\n' +

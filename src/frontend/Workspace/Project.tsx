@@ -119,9 +119,11 @@ function ContextMenu ({
 }
 
 export default function Project ({
-  onRenamingSheet
+  onRenamingSheet,
+  onGoToLicense
 }: {
   onRenamingSheet: (info: RenameDialogInfo) => void
+  onGoToLicense: () => void
 }): JSX.Element {
   const workspaceState = useWorkspaceContext()
   const dispatch = useDispatch()
@@ -262,6 +264,7 @@ export default function Project ({
         isOpen={shouldOpenAddCsv}
         csvs={composableItems.filter((i) => i.getIsCsv()) as Sheet[]}
         onClose={() => { setShouldOpenAddCsv(false) }}
+        onGoToLicense={onGoToLicense}
       />
       <ContextMenu
         open={openContextMenu !== null}

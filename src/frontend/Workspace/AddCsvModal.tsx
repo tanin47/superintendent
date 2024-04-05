@@ -1,11 +1,12 @@
 import React from 'react'
 import Modal from 'react-modal'
 import './AddCsvModal.scss'
-import { addCsv, convertFileList } from '../api'
+import { addCsv, convertFileList, hasValidLicense } from '../api'
 import { type Sheet } from './types'
 import { type Format } from '../../types'
 import { ctrlCmdChar } from './constants'
 import { StateChangeApi, useDispatch } from './WorkspaceContext'
+import { DateTime } from 'luxon'
 
 type Status = 'draft' | 'loading' | 'added' | 'errored'
 
@@ -160,12 +161,22 @@ export interface Ref {
 export default React.forwardRef(function AddCsv ({
   isOpen,
   csvs,
-  onClose
+  onClose,
+  onGoToLicense
 }: {
   isOpen: boolean
   csvs: Sheet[]
   onClose: () => void
+  onGoToLicense: () => void
 }, ref: React.ForwardedRef<Ref>): JSX.Element {
+  const licenseValidity = React.useMemo(
+    () => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+      isOpen
+      return hasValidLicense(true)
+    },
+    [isOpen]
+  )
   const dispatch = useDispatch()
   const stateChangeApi = React.useMemo(() => new StateChangeApi(dispatch), [dispatch])
 
@@ -413,6 +424,20 @@ export default React.forwardRef(function AddCsv ({
             </button>
           </div>
         </div>
+        {licenseValidity.state === 'valid'
+          ? (
+          <div className="license-notice paid">
+            You are using the paid version. Your license will expire on {licenseValidity.expiredAt ? DateTime.fromJSDate(licenseValidity.expiredAt).toLocaleString(DateTime.DATE_MED) : '[unknown]'}
+          </div>
+            )
+          : (
+          <div className="license-notice free">
+            <i className="fas fa-exclamation-circle"></i> You are using the free version that will only load the first 2,000 rows of CSV files.
+            <br />
+            <span className="click" onClick={() => { onGoToLicense() }}>Click here to buy a license</span>
+          </div>
+            )
+        }
       </div>
     </Modal>
   )

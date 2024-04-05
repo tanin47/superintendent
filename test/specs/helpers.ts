@@ -36,16 +36,6 @@ export async function getSelectedText (): Promise<string> {
   return (await browser.executeScript('return window.getSelection().toString()', []))
 }
 
-export async function bypassLicense (): Promise<void> {
-  await expect($('#checkLicenseForm')).toExist()
-  await browser.electron.execute(
-    async (electron) => {
-      electron.BrowserWindow.getAllWindows()[0].webContents.send('bypass-license')
-    }
-  )
-  await expect($('.toolbarSection')).toExist()
-}
-
 export async function getWindowHandles (): Promise<string[]> {
   const original = await browser.getWindowHandle()
   const windowHandles = await browser.getWindowHandles()

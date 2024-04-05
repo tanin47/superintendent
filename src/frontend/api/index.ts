@@ -103,20 +103,54 @@ export function verifySignature (licenseKey: string): boolean {
   )
 }
 
-export function verifyExpiredAt (licenseKey: string): boolean {
+export function extractLicenseExpiredAt (licenseKey: string | null | undefined): Date | null {
+  if (!licenseKey) { return null }
+
   const expiredAt = extractLicenseInfo(licenseKey, 'Expired')
 
-  if (expiredAt == null) { return false }
+  if (expiredAt == null) { return null }
 
-  const expiredDateInMillis = Date.parse(expiredAt.endsWith('Z') ? expiredAt : `${expiredAt}Z`)
-  const now = new Date()
-
-  return now.getTime() < expiredDateInMillis
+  return new Date(Date.parse(expiredAt.endsWith('Z') ? expiredAt : `${expiredAt}Z`))
 }
 
-export function checkIfLicenseIsValid (licenseKey: string): CheckIfLicenseIsValidResult {
+export function verifyExpiredAt (licenseKey: string): boolean {
+  const expiredDate = extractLicenseExpiredAt(licenseKey)
+
+  if (!expiredDate) { return false }
+
+  const now = new Date()
+
+  return now.getTime() < expiredDate.getTime()
+}
+
+export interface LicenseKeyValidity {
+  state: 'valid' | 'invalid'
+  expiredAt: Date | null
+}
+
+let cachedHasValidLicense: LicenseKeyValidity | null = null
+export function hasValidLicense (forceCheck: boolean = false): LicenseKeyValidity {
+  if (!forceCheck) {
+    if (cachedHasValidLicense === null) {
+      // do nothing
+    } else {
+      return cachedHasValidLicense
+    }
+  }
+
+  const licenseKey = window.storeApi.get('license-key')
+  const result = checkIfLicenseIsValid(licenseKey)
+
+  cachedHasValidLicense = {
+    state: result.success ? 'valid' : 'invalid',
+    expiredAt: extractLicenseExpiredAt(licenseKey)
+  }
+  return cachedHasValidLicense
+}
+
+export function checkIfLicenseIsValid (licenseKey: string | null | undefined): CheckIfLicenseIsValidResult {
   try {
-    if (!verifySignature(licenseKey)) {
+    if (!licenseKey || !verifySignature(licenseKey)) {
       return {
         success: false,
         errorMessage: 'The license key is not valid. Please contact support@superintendent.app.'
@@ -131,6 +165,10 @@ export function checkIfLicenseIsValid (licenseKey: string): CheckIfLicenseIsVali
     }
 
     window.storeApi.set('license-key', licenseKey)
+    cachedHasValidLicense = {
+      state: 'valid',
+      expiredAt: extractLicenseExpiredAt(licenseKey)
+    }
 
     return { success: true }
   } catch (error) {
@@ -211,7 +249,7 @@ export async function copy (table: string, selection: CopySelection): Promise<bo
 
 export async function addCsv (path: string, withHeader: boolean, format: string, replace: Sheet | null): Promise<Sheet> {
   return await window.ipcRenderer
-    .invoke('add-csv', path, withHeader, format, replace?.name)
+    .invoke('add-csv', path, withHeader, format, replace?.name, hasValidLicense()?.state === 'valid')
     .then((result) => {
       if (result.success === true) {
         if (replace) {

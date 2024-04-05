@@ -1,14 +1,7 @@
-import { browser, $, expect } from '@wdio/globals'
+import { $, expect } from '@wdio/globals'
 import { fillEditor } from './helpers'
 
 describe('A simple scenario', () => {
-  beforeAll(async () => {
-    await browser.electron.execute((electron) => {
-      electron.BrowserWindow.getAllWindows()[0].webContents.send('bypass-license')
-    })
-    await expect($('.toolbarSection')).toExist()
-  })
-
   it('builds data', async () => {
     await fillEditor("select 'test'")
     await $('[data-testid="new-sql"]').click()
@@ -40,7 +33,7 @@ describe('A simple scenario', () => {
   it('runs the drafl sqls', async () => {
     await $('[data-testid="project-item-draft-1"]').click()
     await $('[data-testid="run-sql"]').click()
-    await $('[data-testid="cancel-rename-button"]').click()
+    await $('[data-testid="rename-button"]').click()
     await expect($('.sheet')).toHaveText(
       'test\n' +
       " 'test'\n" +
@@ -52,7 +45,7 @@ describe('A simple scenario', () => {
 
     await $('[data-testid="project-item-draft-3"]').click()
     await $('[data-testid="run-sql"]').click()
-    await $('[data-testid="cancel-rename-button"]').click()
+    await $('[data-testid="rename-button"]').click()
     await expect($('.sheet')).toHaveText(
       '222\n' +
       ' 222\n' +

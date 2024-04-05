@@ -9,31 +9,15 @@ if (window.miscApi.isWdioEnabled()) {
   confirm = () => { return true }
 }
 
-type Page = 'check-license' | 'workspace'
-
-interface PageState {
-  page: Page
-}
-
-interface Action {
-  changeTo: Page
-}
-
-const initialState: PageState = { page: 'check-license' }
-
-function reducer (state: PageState, action: Action): PageState {
-  return { ...state, page: action.changeTo }
-}
+type Page = 'license' | 'workspace'
 
 export default function App (): ReactElement {
-  const [state, dispatch] = React.useReducer(reducer, initialState)
+  const [page, setPage] = React.useState<Page>('workspace')
 
-  switch (state.page) {
-    case 'check-license':
-      return <CheckLicense onFinished={() => { dispatch({ changeTo: 'workspace' }) }} />
+  switch (page) {
+    case 'license':
+      return <CheckLicense onGoToWorkspace={() => { setPage('workspace') }} />
     case 'workspace':
-      return <Workspace />
+      return <Workspace onGoToLicense={() => { setPage('license') }}/>
   }
-
-  throw new Error()
 }

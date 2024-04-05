@@ -1,13 +1,6 @@
 import { $, expect } from '@wdio/globals'
 
 describe('Change column type', () => {
-  beforeAll(async () => {
-    await browser.electron.execute(async (electron) => {
-      electron.BrowserWindow.getAllWindows()[0].webContents.send('bypass-license')
-    })
-    await expect($('.toolbarSection')).toExist()
-  })
-
   it('imports a csv', async () => {
     await $('.CodeMirror').click()
     await $('[data-testid="add-files"]').click()

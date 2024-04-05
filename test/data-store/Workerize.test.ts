@@ -31,7 +31,7 @@ describe('Workerize', () => {
 
     for (const format of formats) {
       it(`Import ${format.filename}`, async () => {
-        await workerize.addCsv(`./test/data-store/csv-samples/${format.filename}`, true, format.separator, '')
+        await workerize.addCsv(`./test/data-store/csv-samples/${format.filename}`, true, format.separator, '', true)
 
         const table = format.filename.split('.')[0]
         const sql = `SELECT * FROM ${table}`
@@ -58,7 +58,7 @@ describe('Workerize', () => {
   })
 
   it('handles empty column name', async () => {
-    await workerize.addCsv('./test/data-store/csv-samples/empty_header.csv', true, ',', '')
+    await workerize.addCsv('./test/data-store/csv-samples/empty_header.csv', true, ',', '', true)
 
     const sql = 'SELECT * FROM empty_header'
     const result = await workerize.query(sql, null)
@@ -82,7 +82,7 @@ describe('Workerize', () => {
 
   describe('import/export', () => {
     it('import bom', async () => {
-      await workerize.addCsv('./test/data-store/csv-samples/bom.csv', true, ',', '')
+      await workerize.addCsv('./test/data-store/csv-samples/bom.csv', true, ',', '', true)
       const result = await workerize.query('SELECT * FROM bom', null)
 
       await expect(result).toEqual(
@@ -103,7 +103,7 @@ describe('Workerize', () => {
     })
 
     it('import dup column names', async () => {
-      await workerize.addCsv('./test/data-store/csv-samples/dup_column.csv', true, ',', '')
+      await workerize.addCsv('./test/data-store/csv-samples/dup_column.csv', true, ',', '', true)
       const result = await workerize.query('SELECT * FROM dup_column', null)
 
       await expect(result).toEqual(
@@ -123,7 +123,7 @@ describe('Workerize', () => {
     })
 
     it('import unicode', async () => {
-      await workerize.addCsv('./test/data-store/csv-samples/unicode.csv', true, ',', '')
+      await workerize.addCsv('./test/data-store/csv-samples/unicode.csv', true, ',', '', true)
       const result = await workerize.query('SELECT * FROM unicode', null)
 
       await expect(result).toEqual(
@@ -144,7 +144,7 @@ describe('Workerize', () => {
     })
 
     it('import quote', async () => {
-      await workerize.addCsv('./test/data-store/csv-samples/quote.csv', true, ',', '')
+      await workerize.addCsv('./test/data-store/csv-samples/quote.csv', true, ',', '', true)
       const result = await workerize.query('SELECT * FROM quote', null)
 
       const expectedResult = {

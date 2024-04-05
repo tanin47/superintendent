@@ -29,8 +29,8 @@ export class Workerize extends Datastore {
     await Thread.terminate(this.worker as any)
   }
 
-  async addCsv (filePath: string, withHeader: boolean, separator: string, replace: string): Promise<QueryResult> {
-    return await this.worker.addCsv(filePath, withHeader, separator, replace)
+  async addCsv (filePath: string, withHeader: boolean, separator: string, replace: string, hasValidLicense: boolean): Promise<QueryResult> {
+    return await this.worker.addCsv(filePath, withHeader, separator, replace, hasValidLicense)
   }
 
   async exportCsv (table: string, filePath: string, delimiter: string): Promise<void> {

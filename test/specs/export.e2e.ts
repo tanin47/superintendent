@@ -5,22 +5,15 @@ import path from 'path'
 import os from 'os'
 
 describe('A simple scenario', () => {
-  beforeAll(async () => {
-    await browser.electron.execute((electron) => {
-      electron.BrowserWindow.getAllWindows()[0].webContents.send('bypass-license')
-    })
-    await expect($('.toolbarSection')).toExist()
-  })
-
   it('builds data', async () => {
     await fillEditor("select 'test', 'testagain'")
     await $('[data-testid="run-sql"]').click()
-    await $('[data-testid="cancel-rename-button"]').click()
+    await $('[data-testid="rename-button"]').click()
 
     await $('[data-testid="new-sql"]').click()
     await fillEditor("select 'another', 123")
     await $('[data-testid="run-sql"]').click()
-    await $('[data-testid="cancel-rename-button"]').click()
+    await $('[data-testid="rename-button"]').click()
   })
 
   it('exports the second sheet', async () => {

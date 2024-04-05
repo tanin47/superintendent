@@ -354,7 +354,17 @@ export default class Main {
             click: async () => {
               await shell.openExternal('https://duckdb.org/docs/sql/query_syntax/select')
             }
-          }
+          },
+          ...(process.env.SUPERINTENDENT_IS_PROD
+            ? []
+            : [
+                {
+                  label: 'Clear the license',
+                  click: async () => {
+                    Main.store.delete('license-key')
+                  }
+                }
+              ])
         ]
       }
     ]
@@ -511,7 +521,7 @@ export default class Main {
       return await Main.wrapResponse(Main.getSpace(event).db.changeColumnType(tableName, columnName, newColumnType, timestampFormat))
     })
 
-    ipcMain.handle('add-csv', async (event, path: string, withHeader: boolean, format: Format, replace: string) => {
+    ipcMain.handle('add-csv', async (event, path: string, withHeader: boolean, format: Format, replace: string, hasValidLicense: boolean) => {
       let separator: string
 
       if (format === 'comma') {
@@ -532,7 +542,7 @@ export default class Main {
         throw new Error()
       }
 
-      return await Main.wrapResponse(Main.getSpace(event).db.addCsv(path, withHeader, separator, replace))
+      return await Main.wrapResponse(Main.getSpace(event).db.addCsv(path, withHeader, separator, replace, hasValidLicense))
     })
 
     ipcMain.handle('download-csv', async (event, table: string) => {

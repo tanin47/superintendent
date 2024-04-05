@@ -2,13 +2,6 @@ import { $, expect } from '@wdio/globals'
 import { expectDefaultEditorText, fillEditor } from './helpers'
 
 describe('Sort', () => {
-  beforeAll(async () => {
-    await browser.electron.execute(async (electron) => {
-      electron.BrowserWindow.getAllWindows()[0].webContents.send('bypass-license')
-    })
-    await expect($('.toolbarSection')).toExist()
-  })
-
   it('sort 1 column', async () => {
     await $('[data-testid="add-files"]').click()
     await $('[data-testid="input-file"]').clearValue()
@@ -95,7 +88,7 @@ describe('Sort', () => {
   it('BUG: ensure SQL is not changed', async () => {
     await fillEditor('select * from "456sort"')
     await $('[data-testid="run-sql"]').click()
-    await $('[data-testid="cancel-rename-button"]').click()
+    await $('[data-testid="rename-button"]').click()
     await expect($('[data-testid="cell-1-1"]')).toHaveText('c')
     await expect($('[data-testid="cell-2-1"]')).toHaveText('b')
     await expect($('[data-testid="cell-3-1"]')).toHaveText('a')

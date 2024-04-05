@@ -2,18 +2,11 @@ import { $, expect } from '@wdio/globals'
 import { clearEditor, expectDefaultEditorText, getSelectedText, getTabs } from './helpers'
 
 describe('A simple scenario', () => {
-  beforeAll(async () => {
-    await browser.electron.execute(async (electron) => {
-      electron.BrowserWindow.getAllWindows()[0].webContents.send('bypass-license')
-    })
-    await expect($('.toolbarSection')).toExist()
-  })
-
   it('select 1', async () => {
     await $('.CodeMirror').click()
     await browser.keys('select 1')
     await $('[data-testid="run-sql"]').click()
-    await $('[data-testid="cancel-rename-button"]').click()
+    await $('[data-testid="rename-button"]').click()
     await expect($('.sheet')).toHaveText('1\n 1\n1')
   })
 
@@ -53,7 +46,7 @@ describe('A simple scenario', () => {
     await $('.CodeMirror').click()
     await browser.keys('select * from csv join albatross on true')
     await $('[data-testid="run-sql"]').click()
-    await $('[data-testid="cancel-rename-button"]').click()
+    await $('[data-testid="rename-button"]').click()
     await expect($('.sheet')).toHaveText(
       'Harmonia\n' +
           'Waite\n' +

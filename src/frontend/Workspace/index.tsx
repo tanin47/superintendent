@@ -14,7 +14,11 @@ import ResizeBar from './ResizeBar'
 import RenameDialog, { type RenameDialogInfo } from './RenameDialog'
 import { DispatchContext, StateChangeApi, WorkspaceContext, reduce } from './WorkspaceContext'
 
-export default function Workspace (): ReactElement {
+export default function Workspace ({
+  onGoToLicense
+}: {
+  onGoToLicense: () => void
+}): ReactElement {
   const [workspaceState, dispatch] = React.useReducer(reduce, { items: [], selectedComposableItem: null, selectedResult: null })
   const stateChangeApi = React.useMemo(() => new StateChangeApi(dispatch), [dispatch])
 
@@ -157,6 +161,7 @@ export default function Workspace (): ReactElement {
             <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: projectWidth, display: 'flex', flexDirection: 'column' }}>
               <Project
                 onRenamingSheet={(info) => { setRenamingInfo(info) }}
+                onGoToLicense={onGoToLicense}
               />
             </div>
             <ResizeBar
@@ -237,7 +242,7 @@ export default function Workspace (): ReactElement {
                   disabled={workspaceState.selectedResult === null}
                   icon={<i className="fas fa-file-download" />}
                 >
-                  Export {workspaceState.selectedResult?.presentationType === 'chart' ? 'chart' : 'sheet'}
+                  Export sheet
                   <span className="short-key">
                     {ctrlCmdChar()} E
                   </span>

@@ -45,7 +45,7 @@ ChartJs.register(
   ArcElement
 )
 
-const MAX_ROWS = 1000
+const MAX_ROWS = 500
 
 function formatTimestamp (value: Date, format: LabelTimestampFormat): string {
   const dateTime = DateTime.fromJSDate(value).setZone('utc')
@@ -79,7 +79,7 @@ function computeLabelColumnTimestamp (result: Result, labelColumnIndex: number):
   let duplicateMonth = false
   let duplicateYear = false
 
-  for (let i = 1; i < result.rows.length; i++) {
+  for (let i = 1; i < Math.min(MAX_ROWS, result.rows.length); i++) {
     const diffMillis = result.rows[i][labelColumnIndex] - result.rows[i - 1][labelColumnIndex]
     if (diffMillis < 86400 * 1000) {
       duplicateDay = true
@@ -141,7 +141,7 @@ function Canvas ({
 
       const labels: any[] = []
 
-      for (let i = 0; i < Math.max(MAX_ROWS, result.rows.length); i++) {
+      for (let i = 0; i < Math.min(MAX_ROWS, result.rows.length); i++) {
         labels.push(format(result.rows[i][labelColumnIndex], result.columns[labelColumnIndex].tpe, options.labelColumnTimestampFormat))
       }
 
@@ -154,7 +154,7 @@ function Canvas ({
             .map((columnIndex) => {
               const data: any[] = []
 
-              for (let i = 0; i < Math.max(MAX_ROWS, result.rows.length); i++) {
+              for (let i = 0; i < Math.min(MAX_ROWS, result.rows.length); i++) {
                 data.push(format(result.rows[i][columnIndex!], result.columns[columnIndex!].tpe, options.labelColumnTimestampFormat))
               }
 
@@ -305,8 +305,7 @@ export default function Chart ({
                   <tr className="control">
                     <td className="value" colSpan={2}>
                       <div className="warning">
-                        The chart only shows the data from the first 1,000 rows, but the sheet has 2,340 rows.
-                        Please reduce the number of rows of the sheet.
+                        The chart only shows the data from the first {MAX_ROWS} rows. Please reduce the number of rows of the sheet.
                       </div>
                     </td>
                   </tr>
