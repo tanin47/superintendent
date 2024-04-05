@@ -1,5 +1,5 @@
 import { Datastore } from './Datastore'
-import { Database } from 'duckdb-async'
+import { Database, type TableData } from 'duckdb-async'
 import { type ColumnInfo } from 'duckdb'
 import path from 'path'
 import fs from 'fs'
@@ -305,9 +305,9 @@ export class Duckdb extends Datastore {
   async loadMore (table: string, offset: number): Promise<QueryRow[]> {
     const statement = await this.db.prepare(`SELECT * FROM "${table}" LIMIT ${Datastore.MAX_ROW_LOAD_MORE} OFFSET ${offset}`)
     const columns = statement.columns()
-    const rows = await statement.all()
+    const rows = this.sanitizeTable(await statement.all(), columns)
 
-    return await Promise.resolve(rows.map((r) => columns.map((c) => r[c.name])))
+    return await Promise.resolve(rows)
   }
 
   private async maybeFixColumnTypes (table: string, columns: ColumnInfo[]): Promise<boolean> {
@@ -330,6 +330,14 @@ export class Duckdb extends Datastore {
       fix = true
     }
     return fix
+  }
+
+  private sanitizeTable (data: TableData, columns: ColumnInfo[]): any[][] {
+    return data.map((r) => {
+      return columns.map((c) => {
+        return r[c.name]
+      })
+    })
   }
 
   private async queryAllFromTable (table: string, sql: string): Promise<QueryResult> {
@@ -369,16 +377,7 @@ export class Duckdb extends Datastore {
       }
     })
 
-    const allRows = (await statement.all())
-      .map((r) => {
-        return columns.map((c) => {
-          if (c.tpe === 'timestamp') {
-            return r[c.name]?.getTime()
-          } else {
-            return r[c.name]
-          }
-        })
-      })
+    const allRows = this.sanitizeTable(await statement.all(), columnInfos)
 
     if (metadataResult.length > 0) {
       const columnMap = {}

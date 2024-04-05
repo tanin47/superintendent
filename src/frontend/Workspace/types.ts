@@ -4,7 +4,7 @@ export const DraftSheetName = '_T_DRAFT_T_'
 
 export type RunSqlMode = 'default' | 'partial-new' | 'partial-draft'
 
-export const PresentationTypes = ['table', 'line', 'pie', 'bar'] as const
+export const PresentationTypes = ['table', 'chart'] as const
 export type PresentationType = typeof PresentationTypes[number]
 
 export interface Column {
@@ -74,6 +74,19 @@ export class DraftSql extends WorkspaceItem {
   }
 }
 
+export type ChartType = 'line' | 'bar' | 'stacked_bar' | 'pie'
+export const LabelTimestampFormats = ['hour', 'day', 'month', 'year'] as const
+export type LabelTimestampFormat = typeof LabelTimestampFormats[number]
+
+export interface ChartOptions {
+  type: ChartType
+  labelColumnIndex: number | null
+  labelColumnTimestampFormat: LabelTimestampFormat
+  datasetColumnIndices: Array<number | null>
+  minDatasetRange: number | null
+  maxDatasetRange: number | null
+}
+
 export type ResultProps = WorkspaceItemProps & {
   isCsv: boolean
   count: number
@@ -86,13 +99,14 @@ export type ResultProps = WorkspaceItemProps & {
   sorts?: Sort[]
   selection?: Selection | null
   userSelect?: UserSelectTarget | null
+  chartOptions?: ChartOptions | null
 }
 
 export abstract class Result extends WorkspaceItem {
   isCsv: boolean
   count: number
   columns: Column[]
-  rows: string[][]
+  rows: any[][]
   presentationType: PresentationType
   scrollLeft: number | null
   scrollTop: number | null
@@ -100,6 +114,7 @@ export abstract class Result extends WorkspaceItem {
   sorts: Sort[]
   selection: Selection | null
   userSelect: UserSelectTarget | null
+  chartOptions: ChartOptions | null
 
   constructor (
     options: ResultProps
@@ -117,6 +132,7 @@ export abstract class Result extends WorkspaceItem {
     this.sorts = options.sorts ?? []
     this.selection = options.selection ?? null
     this.userSelect = options.userSelect ?? null
+    this.chartOptions = options.chartOptions ?? null
   }
 
   getIsCsv (): boolean {

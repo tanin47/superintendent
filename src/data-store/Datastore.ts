@@ -35,7 +35,7 @@ export abstract class Datastore {
   }
 
   static sanitizeName (name: string): string {
-    let sanitized = name.replace(/[^a-zA-Z0-9_]/g, '_').replace(/^_+/g, '').replace(/_+$/g, '')
+    let sanitized = name.replace(/[^a-zA-Z0-9_]+/g, '_').replace(/^_+/g, '').replace(/_+$/g, '')
 
     if (sanitized === '') { sanitized = 'empty' }
 

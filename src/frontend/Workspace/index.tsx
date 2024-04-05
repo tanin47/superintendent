@@ -2,7 +2,7 @@ import React, { type ReactElement } from 'react'
 import './index.scss'
 import { downloadCsv } from '../api'
 import { type ExportedWorkflow, ImportWorkflowChannel } from '../../types'
-import { type PresentationType, type Sheet, Result } from './types'
+import { type PresentationType, Result } from './types'
 import SheetSection from './SheetSection'
 import Button from './Button'
 import Editor, { type Ref as EditorRef } from './Editor'
@@ -11,21 +11,14 @@ import { formatTotal } from './helper'
 import { ctrlCmdChar } from './constants'
 import Project from './Project'
 import ResizeBar from './ResizeBar'
-import RenameDialog from './RenameDialog'
+import RenameDialog, { type RenameDialogInfo } from './RenameDialog'
 import { DispatchContext, StateChangeApi, WorkspaceContext, reduce } from './WorkspaceContext'
-
-// const PresentationTypeLabel = {
-//   table: 'Table',
-//   line: 'Line chart',
-//   pie: 'Pie chart',
-//   bar: 'Bar chart'
-// }
 
 export default function Workspace (): ReactElement {
   const [workspaceState, dispatch] = React.useReducer(reduce, { items: [], selectedComposableItem: null, selectedResult: null })
   const stateChangeApi = React.useMemo(() => new StateChangeApi(dispatch), [dispatch])
 
-  const [renamingSheet, setRenamingSheet] = React.useState<Sheet | null>(null)
+  const [renamingInfo, setRenamingInfo] = React.useState<RenameDialogInfo | null>(null)
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [presentationType, setPresentationType] = React.useState<PresentationType>('table')
@@ -84,8 +77,23 @@ export default function Workspace (): ReactElement {
     [workspaceState.selectedResult]
   )
 
+  const togglePresentationType = React.useCallback(
+    () => {
+      if (!workspaceState.selectedResult) { return }
+
+      const newPresentationType = workspaceState.selectedResult.presentationType === 'table' ? 'chart' : 'table'
+      stateChangeApi.setPresentationType(workspaceState.selectedResult, newPresentationType)
+    },
+    [stateChangeApi, workspaceState.selectedResult]
+  )
+
   React.useEffect(() => {
     const handler = (event): boolean => {
+      if (event.code === 'KeyU' && (event.metaKey || event.ctrlKey)) {
+        togglePresentationType()
+        return false
+      }
+
       if (event.code === 'KeyE' && (event.metaKey || event.ctrlKey)) {
         exportCsv()
         return false
@@ -98,7 +106,7 @@ export default function Workspace (): ReactElement {
     return () => {
       document.removeEventListener('keydown', handler)
     }
-  }, [exportCsv])
+  }, [exportCsv, togglePresentationType])
 
   const ensureValidSize = React.useCallback(
     () => {
@@ -142,13 +150,13 @@ export default function Workspace (): ReactElement {
           }}
         >
           <RenameDialog
-            renamingSheet={renamingSheet}
-            onClosed={() => { setRenamingSheet(null) }}
+            renamingInfo={renamingInfo}
+            onClosed={() => { setRenamingInfo(null) }}
           />
           <div id="editorSection" style={{ height: editorHeight }}>
             <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: projectWidth, display: 'flex', flexDirection: 'column' }}>
               <Project
-                onRenamingSheet={(sheet) => { setRenamingSheet(sheet) }}
+                onRenamingSheet={(info) => { setRenamingInfo(info) }}
               />
             </div>
             <ResizeBar
@@ -168,7 +176,7 @@ export default function Workspace (): ReactElement {
               display: 'flex',
               flexDirection: 'column'
             }}>
-              <Editor ref={editorRef} onRenamingSheet={(sheet) => { setRenamingSheet(sheet) }}/>
+              <Editor ref={editorRef} onRenamingSheet={(info) => { setRenamingInfo(info) }}/>
             </div>
           </div>
           <div className="toolbarSection">
@@ -184,7 +192,7 @@ export default function Workspace (): ReactElement {
                 {workspaceState.selectedResult && (
                   <>
                     <span className='total'>
-                      <i className="fas fa-table"></i>
+                      <i className="fas fa-list-ol"></i>
                       {formatTotal(workspaceState.selectedResult.count)}
                       {workspaceState.selectedResult.rows.length < workspaceState.selectedResult.count &&
                         <span className="preview">(Only {workspaceState.selectedResult.rows.length.toLocaleString('en-US')} are shown)</span>
@@ -194,14 +202,42 @@ export default function Workspace (): ReactElement {
                 )}
               </div>
               <div className="right">
+                {workspaceState.selectedResult?.presentationType === 'chart'
+                  ? (
+                      <Button
+                        testId="tabularize-sheet"
+                        onClick={() => { togglePresentationType() }}
+                        disabled={workspaceState.selectedResult === null}
+                        icon={<i className="fas fa-table"></i>}
+                      >
+                        Table
+                        <span className="short-key">
+                          {ctrlCmdChar()} U
+                        </span>
+                      </Button>
+                    )
+                  : (
+                      <Button
+                        testId="visualize-sheet"
+                        onClick={() => { togglePresentationType() }}
+                        disabled={workspaceState.selectedResult === null}
+                        icon={<i className="fas fa-chart-bar"></i>}
+                      >
+                        Visualize
+                        <span className="short-key">
+                          {ctrlCmdChar()} U
+                        </span>
+                      </Button>
+                    )}
+                <span className="separator" />
                 <Button
                   testId="export-sheet"
                   onClick={() => { exportCsv() }}
                   isLoading={isDownloadCsvLoading}
-                  disabled={workspaceState.items.length === 0}
+                  disabled={workspaceState.selectedResult === null}
                   icon={<i className="fas fa-file-download" />}
                 >
-                  Export sheet
+                  Export {workspaceState.selectedResult?.presentationType === 'chart' ? 'chart' : 'sheet'}
                   <span className="short-key">
                     {ctrlCmdChar()} E
                   </span>
@@ -219,7 +255,7 @@ export default function Workspace (): ReactElement {
             results={workspaceState.items.filter((i) => i instanceof Result) as Result[]}
             selectedResult={workspaceState.selectedResult}
             presentationType={presentationType}
-            onRenamingSheet={(sheet) => { setRenamingSheet(sheet) }}
+            onRenamingSheet={(info) => { setRenamingInfo(info) }}
           />
         </div>
       </DispatchContext.Provider>

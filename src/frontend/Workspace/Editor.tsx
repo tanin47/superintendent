@@ -19,6 +19,7 @@ import * as dialog from './dialog'
 import { useFloating, useClientPoint, useInteractions, useDismiss, useTransitionStyles, shift } from '@floating-ui/react'
 import { getInitialEditorMode, query } from '../api'
 import { StateChangeApi, useDispatch, useWorkspaceContext } from './WorkspaceContext'
+import { type RenameDialogInfo } from './RenameDialog'
 
 export interface Ref {
   getValue: () => string
@@ -29,7 +30,7 @@ export interface Ref {
 
 interface Props {
   initialValue?: string | null
-  onRenamingSheet: (sheet: Sheet) => void
+  onRenamingSheet: (info: RenameDialogInfo) => void
 }
 
 function getAutocompleteWord (s: string): string {
@@ -326,7 +327,7 @@ export default React.forwardRef<Ref, Props>(function Editor ({
         }
 
         if (!replace || replace.name !== sheet.name) {
-          onRenamingSheet(sheet)
+          onRenamingSheet({ sheet, isNewTable: true })
         }
       } catch (err) {
         dialog.showError('Found an error!', err as any as string)

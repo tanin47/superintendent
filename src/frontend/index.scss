@@ -8,7 +8,7 @@
 
 @font-face {
   font-family: 'Dosis';
-  src: url('./fonts/dosis-v19-latin-regular.woff2') format('woff2');
+  src: url('./fonts/Inter-Regular.ttf') format('woff2');
 }
 
 .fa, .fas {
@@ -35,6 +35,10 @@ html {
   cursor: pointer;
 }
 
+input[type="text"] {
+  border: 1px solid #333;
+}
+
 .modal {
   position: fixed;
   background-color: white;
@@ -46,7 +50,6 @@ html {
   border-radius: 5px;
   padding: 20px;
   color: #333;
-  width: 550px;
 
   font-family: 'Dosis', sans-serif !important;
   * {
@@ -59,7 +62,7 @@ html {
     background-color: #333;
     color: #fff;
     padding: 8px 12px;
-    font-size: 16px;
+    font-size: 12px;
     cursor: pointer;
     display: flex;
     align-items: center;

@@ -1,7 +1,5 @@
 import React, { type ForwardedRef } from 'react'
-import { type Sheet, type Selection, type UserSelectTarget, type PresentationType, type Column, type Result } from './types'
-import { Chart, type ChartType, registerables } from 'chart.js'
-import randomColor from 'randomcolor'
+import { type Selection, type UserSelectTarget, type Column, type Result } from './types'
 import { VariableSizeGrid as BaseGrid } from 'react-window'
 import AutoSizer from 'react-virtualized-auto-sizer'
 import InfiniteLoader from 'react-window-infinite-loader'
@@ -9,10 +7,11 @@ import { loadMore, copy, sort } from '../api'
 import './Sheet.scss'
 import { type SortDirection } from '../../types'
 import CopyingModal from './CopyingModal'
-import { isChartEnabled, makeCopy } from './helper'
+import { makeCopy } from './helper'
 import { useFloating, useClientPoint, useInteractions, useDismiss, useTransitionStyles, shift } from '@floating-ui/react'
 import { type ChangingColumnInfo, ChangingColumnTypeDialog } from './ChangingColumnTypeDialog'
 import { StateChangeApi, useDispatch } from './WorkspaceContext'
+import Chart from './Chart'
 
 interface CopyingData {
   cellCount: number
@@ -36,7 +35,7 @@ function getTextWidth (text: string, font: string): number {
   return Math.ceil(width) + 9 // for padding
 }
 
-function getRowHeight (row: string[]): number {
+function getRowHeight (row: any[]): number {
   if ((row as any).height) {
     return (row as any).height
   }
@@ -809,7 +808,7 @@ function Table ({
       } else if (columnIndex >= 1) {
         const columnType = result.columns[columnIndex - 1].tpe
         if (columnType === 'timestamp') {
-          renderedValue = new Date(value).toISOString()
+          renderedValue = (value as Date).toISOString()
         } else if (columnType === 'double') {
           renderedValue = DOUBLE_FORMATTER.format(value as number)
         }
@@ -990,79 +989,11 @@ function Table ({
   )
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function Graph ({ type, sheet }: { type: ChartType, sheet: Sheet }): JSX.Element {
-  const chartRef = React.useRef<any>(null)
-
-  React.useEffect(
-    () => {
-      const ctx = chartRef.current?.getContext('2d')
-
-      if (!ctx) { return }
-
-      let colorOptionsMap: { backgroundColor?: string[], borderColor?: string } = {}
-
-      let colors = randomColor({
-        count: sheet.columns.length,
-        seed: 42
-      })
-
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      const instance = new Chart(ctx, {
-        type,
-        data: {
-          labels: sheet.rows.map((r) => r[0]),
-          datasets: sheet.columns.slice(1).map((column, index) => {
-            if (type === 'pie') {
-              colors = randomColor({
-                count: sheet.rows.length,
-                seed: 42
-              })
-              colorOptionsMap = { backgroundColor: sheet.rows.map((r, rowIndex) => colors[rowIndex]) }
-            } else {
-              colorOptionsMap = {
-                borderColor: colors[index],
-                backgroundColor: sheet.rows.map(() => colors[index])
-              }
-            }
-            return {
-              label: column.name,
-              data: sheet.rows.map((r) => parseFloat(r[index + 1])),
-              ...colorOptionsMap
-            }
-          })
-        },
-        options: {
-          maintainAspectRatio: false,
-          normalized: true
-        }
-      })
-
-      return () => {
-        instance.destroy()
-      }
-    },
-    [sheet, type]
-  )
-
-  return (
-    <canvas ref={chartRef} />
-  )
-}
-
 export default function SheetComponent ({
-  result,
-  presentationType
+  result
 }: {
   result: Result
-  presentationType: PresentationType
 }): JSX.Element {
-  React.useEffect(
-    () => {
-      Chart.register(...registerables)
-    },
-    []
-  )
   const [copyingData, setCopyingData] = React.useState<CopyingData | null>(null)
 
   if (result.columns.length === 0) {
@@ -1076,11 +1007,7 @@ export default function SheetComponent ({
 
   let view: JSX.Element = <></>
 
-  let updatedPresentationType = presentationType
-
-  if (!isChartEnabled(result.rows.length)) { updatedPresentationType = 'table' }
-
-  switch (updatedPresentationType) {
+  switch (result.presentationType) {
     case 'table':
       view = <Table
         result={result}
@@ -1088,14 +1015,8 @@ export default function SheetComponent ({
         onCopyingFinished={() => { setCopyingData(null) }}
       />
       break
-    case 'line':
-      // view = <Graph type="line" sheet={result} />
-      break
-    case 'bar':
-      // view = <Graph type="bar" sheet={result} />
-      break
-    case 'pie':
-      // view = <Graph type="pie" sheet={result} />
+    case 'chart':
+      view = <Chart result={result} />
       break
     default:
       throw new Error()

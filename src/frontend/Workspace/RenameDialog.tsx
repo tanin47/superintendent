@@ -4,11 +4,16 @@ import { rename } from '../api'
 import Modal from 'react-modal'
 import { StateChangeApi, useDispatch } from './WorkspaceContext'
 
+export interface RenameDialogInfo {
+  sheet: Sheet
+  isNewTable: boolean
+}
+
 export default function RenameDialog ({
-  renamingSheet,
+  renamingInfo,
   onClosed
 }: {
-  renamingSheet: Sheet | null
+  renamingInfo: RenameDialogInfo | null
   onClosed: () => void
 }): JSX.Element {
   const dispatch = useDispatch()
@@ -20,14 +25,14 @@ export default function RenameDialog ({
 
   React.useEffect(
     () => {
-      setTableName(renamingSheet ? renamingSheet.name : '')
+      setTableName(renamingInfo ? renamingInfo.sheet.name : '')
     },
-    [setTableName, renamingSheet]
+    [setTableName, renamingInfo]
   )
 
   React.useEffect(
     () => {
-      if (renamingSheet) {
+      if (renamingInfo) {
         setTimeout(
           () => {
             textInputRef.current?.select()
@@ -37,24 +42,24 @@ export default function RenameDialog ({
         )
       }
     },
-    [renamingSheet]
+    [renamingInfo]
   )
 
   const renameCallback = React.useCallback(
     () => {
       setErrorMsg(null) // Clear error message.
-      if (!renamingSheet) return
+      if (!renamingInfo) return
 
       const sanitized = tableName.trim()
 
-      if (sanitized === renamingSheet.name) {
+      if (sanitized === renamingInfo.sheet.name) {
         onClosed()
         return
       }
 
-      rename(renamingSheet.name, sanitized)
+      rename(renamingInfo.sheet.name, sanitized)
         .then((result) => {
-          stateChangeApi.rename(renamingSheet, sanitized)
+          stateChangeApi.rename(renamingInfo.sheet, sanitized)
           onClosed()
         })
         .catch((error) => {
@@ -62,12 +67,12 @@ export default function RenameDialog ({
           setErrorMsg(error.message)
         })
     },
-    [renamingSheet, tableName, onClosed, stateChangeApi]
+    [renamingInfo, tableName, onClosed, stateChangeApi]
   )
 
   React.useEffect(() => {
     const handler = (event): void => {
-      if (!renamingSheet) { return }
+      if (!renamingInfo) { return }
 
       if (event.code === 'Enter') {
         event.stopPropagation()
@@ -85,11 +90,11 @@ export default function RenameDialog ({
     return () => {
       document.removeEventListener('keyup', handler)
     }
-  }, [renamingSheet, renameCallback, onClosed])
+  }, [renameCallback, onClosed, renamingInfo])
 
   return (
     <Modal
-      isOpen={renamingSheet !== null}
+      isOpen={renamingInfo !== null}
       className="modal"
       overlayClassName="modal-overlay"
     >
@@ -107,17 +112,17 @@ export default function RenameDialog ({
           onClick={() => { renameCallback() }}
           data-testid="rename-button"
         >
-          Set new name
+          Set name
           <span className="short-key">⏎</span>
         </button>
-        <button
+        {!renamingInfo?.isNewTable && <button
           className="cancel"
           onClick={() => { onClosed() }}
           data-testid="cancel-rename-button"
         >
           Cancel
           <span className="short-key">ESC</span>
-        </button>
+        </button>}
       </div>
       {errorMsg !== null && (<div className="rename-error">Error: {errorMsg}</div>)}
     </Modal>

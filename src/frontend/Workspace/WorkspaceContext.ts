@@ -1,5 +1,5 @@
 import React from 'react'
-import { Result, type WorkspaceItem, DraftSql, Sheet, generateWorkspaceItemId, DraftResult } from './types'
+import { Result, type WorkspaceItem, DraftSql, Sheet, generateWorkspaceItemId, DraftResult, type PresentationType, type ChartOptions } from './types'
 import { drop } from '../api'
 import { type ExportedWorkflow } from '../../types'
 
@@ -18,7 +18,9 @@ export enum ActionType {
   SET_COMPOSABLE_ITEM = 'set_composable_item',
   SET_RESULT = 'set_result',
   IMPORT_WORKFLOW = 'import_workflow',
-  DISCARD_DRAFT_SQL = 'discard_draft_sql'
+  DISCARD_DRAFT_SQL = 'discard_draft_sql',
+  SET_PRESENTATION_TYPE = 'set_presentation_type',
+  SET_CHART_OPTIONS = 'set_chart_options'
 }
 
 export interface Action {
@@ -32,6 +34,8 @@ export interface Action {
   workflow?: ExportedWorkflow
   draftSql?: DraftSql
   sql?: string
+  presentationType?: PresentationType
+  chartOptions?: ChartOptions
 }
 
 let draftSqlNumberRunner = 1
@@ -88,9 +92,6 @@ export function reduce (state: WorkspaceState, action: Action): WorkspaceState {
       if (found !== newResult) {
         throw new Error('They should have been the same object')
       }
-      // state.items.splice(foundIndex, 1, newResult)
-      // setTimeout(() => { resultSectionRef.current!.open(newResult.name) }, 1)
-      // TODO: replace selectedComposableItem
     } else {
       if (found && found instanceof DraftSql) {
         state.items.splice(foundIndex, 1)
@@ -144,6 +145,22 @@ export function reduce (state: WorkspaceState, action: Action): WorkspaceState {
     const draftSql = action.draftSql!
 
     state.items = state.items.filter((i) => i.id !== draftSql.id)
+    return { ...state }
+  } else if (action.type === ActionType.SET_PRESENTATION_TYPE) {
+    const item = action.result!
+    const presentationType = action.presentationType!
+
+    item.presentationType = presentationType
+
+    state.items = [...state.items]
+    return { ...state }
+  } else if (action.type === ActionType.SET_CHART_OPTIONS) {
+    const item = action.result!
+    const chartOptions = action.chartOptions!
+
+    item.chartOptions = chartOptions
+
+    state.items = [...state.items]
     return { ...state }
   }
 
@@ -225,5 +242,13 @@ export class StateChangeApi {
 
   public discardDraftSql (draftSql: DraftSql): void {
     this.dispatch({ type: ActionType.DISCARD_DRAFT_SQL, draftSql })
+  }
+
+  public setPresentationType (result: Result, presentationType: PresentationType): void {
+    this.dispatch({ type: ActionType.SET_PRESENTATION_TYPE, result, presentationType })
+  }
+
+  public setChartOptions (result: Result, chartOptions: ChartOptions): void {
+    this.dispatch({ type: ActionType.SET_CHART_OPTIONS, result, chartOptions })
   }
 }

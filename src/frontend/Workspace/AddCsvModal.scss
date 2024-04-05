@@ -1,10 +1,11 @@
 .modal {
-  width: 600px;
+  max-width: 600px;
 }
 
 .add-csv {
   display: block;
   position: relative;
+  width: 550px;
 
   .fas {
     font-family: "Font Awesome 5 Free" !important;
@@ -12,7 +13,7 @@
 
   .header-panel {
     display: block;
-    font-size: 20px;
+    font-size: 15px;
     font-weight: bold;
     margin-bottom: 20px;
   }
@@ -24,13 +25,13 @@
     display: block;
     text-align: center;
     padding: 10px;
+    font-size: 12px;
     cursor: pointer;
 
     .short-key {
       margin-left: 5px;
       padding: 1px 2px 1px 1px;
       border-radius: 2px;
-      font-size: 12px;
       background-color: #666;
       color: #ddd;
       vertical-align: middle;
@@ -53,7 +54,6 @@
       .left {
         display: inline-block;
         font-size: 13px;
-        font-family: 'JetBrains Mono', monospace !important;
         line-height: 22px;
 
         i.icon {
@@ -135,7 +135,7 @@
           padding: 0 8px;
           color: #eee;
           font-family: 'Dosis', sans-serif;
-          font-size: 13px;
+          font-size: 12px;
           cursor: pointer;
 
           &:disabled {

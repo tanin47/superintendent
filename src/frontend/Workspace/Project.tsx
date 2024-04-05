@@ -8,6 +8,7 @@ import { Sheet, DraftSql, type WorkspaceItem } from './types'
 import { type ExportedWorkflow, ExportWorkflowChannel } from '../../types'
 import { useFloating, useClientPoint, useInteractions, useDismiss, useTransitionStyles, shift } from '@floating-ui/react'
 import { StateChangeApi, useDispatch, useWorkspaceContext } from './WorkspaceContext'
+import { type RenameDialogInfo } from './RenameDialog'
 
 interface ContextMenuOpenInfo {
   item: WorkspaceItem
@@ -120,7 +121,7 @@ function ContextMenu ({
 export default function Project ({
   onRenamingSheet
 }: {
-  onRenamingSheet: (sheet: Sheet) => void
+  onRenamingSheet: (info: RenameDialogInfo) => void
 }): JSX.Element {
   const workspaceState = useWorkspaceContext()
   const dispatch = useDispatch()
@@ -268,7 +269,7 @@ export default function Project ({
         x={openContextMenu?.clientX ?? null}
         y={openContextMenu?.clientY ?? null}
         onClosing={() => { setOpenContextMenu(null) }}
-        onRenaming={() => { onRenamingSheet(openContextMenu!.item as Sheet) }}
+        onRenaming={() => { onRenamingSheet({ sheet: openContextMenu!.item as Sheet, isNewTable: false }) }}
         onViewing={() => { stateChangeApi.setSelectedResult(openContextMenu!.item as Sheet) }}
         onDeleting={() => { stateChangeApi.deleteComposableItem(openContextMenu!.item) }}
       />

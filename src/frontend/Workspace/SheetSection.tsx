@@ -3,6 +3,7 @@ import { type PresentationType, type Result, type Sheet as SheetType, DraftResul
 import Sheet from './Sheet'
 import './SheetSection.scss'
 import { StateChangeApi, useDispatch } from './WorkspaceContext'
+import { type RenameDialogInfo } from './RenameDialog'
 
 interface Tab {
   result: Result
@@ -16,7 +17,7 @@ export default function SheetSection ({
 }: {
   results: Result[]
   selectedResult: Result | null
-  onRenamingSheet: (sheet: SheetType) => void
+  onRenamingSheet: (info: RenameDialogInfo) => void
   presentationType: PresentationType
 }): ReactElement {
   const dispatch = useDispatch()
@@ -145,7 +146,6 @@ export default function SheetSection ({
       <>
         {selectedTabIndex >= 0 && selectedTabIndex < tabs.length && <Sheet
           result={tabs[selectedTabIndex].result}
-          presentationType={presentationType}
         />}
         <div
           className="selector"
@@ -223,7 +223,7 @@ export default function SheetSection ({
                 }}
                 onDoubleClick={(event) => {
                   if (tab.result instanceof Sheet) {
-                    onRenamingSheet(tab.result as SheetType)
+                    onRenamingSheet({ sheet: tab.result as SheetType, isNewTable: false })
                   }
                 }}
                 draggable={true}
