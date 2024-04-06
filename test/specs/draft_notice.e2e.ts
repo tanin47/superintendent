@@ -41,7 +41,6 @@ describe('draft notice', () => {
 
   it("makes new SQL doesn't trigger draft notice", async () => {
     await fillEditor('select 1, 2, 4')
-    await browser.pause(100000)
     await $('[data-testid="new-sql"]').click()
 
     await expect($('[data-testid="project-item-draft-3"]')).toHaveElementClass(expect.stringContaining('selected'))

@@ -232,11 +232,15 @@ export default function Editor ({
 
   const makeNewSql = React.useCallback(
     () => {
-      setShouldSkipSavingDraft(true)
+      if (editingItem?.base instanceof DraftSql) {
+        // do nothing
+      } else {
+        setShouldSkipSavingDraft(true)
+      }
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       stateChangeApi.makeDraftSql(codeMirrorInstance.current?.getValue() ?? '')
     },
-    [stateChangeApi]
+    [editingItem?.base, stateChangeApi]
   )
 
   const revertSql = React.useCallback(
