@@ -420,19 +420,20 @@ export default class Main {
       initialFile = Main.initialFile
     } else if (Main.isWin()) {
       initialFile = process.argv[1]
-
-      if (initialFile) {
-        if (
-          (!process.env.SUPERINTENDENT_IS_PROD && initialFile.endsWith('main.js')) ||
-            (process.env.ENABLE_WDIO === 'yes' && initialFile.startsWith('--'))
-        ) {
-          // Do nothing. Windows strangely opens these non files.
-          initialFile = null
-        }
-      }
     } else {
       initialFile = process.argv[2]
     }
+
+    if (initialFile) {
+      if (
+        (!process.env.SUPERINTENDENT_IS_PROD && initialFile.endsWith('main.js')) ||
+          (process.env.ENABLE_WDIO === 'yes' && initialFile.startsWith('--'))
+      ) {
+        // Do nothing.
+        initialFile = null
+      }
+    }
+
     const initialFileMap: { initialFile?: string } = initialFile ? { initialFile } : {}
 
     await space.window.loadFile(
