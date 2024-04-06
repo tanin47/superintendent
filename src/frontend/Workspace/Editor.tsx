@@ -11,14 +11,14 @@ import 'codemirror/addon/comment/comment'
 import 'codemirror/keymap/vim.js'
 import './Editor.scss'
 import { EditorModeChannel, type EditorMode } from '../../types'
-import { type RunSqlMode, type Result, DraftSheetName, DraftSql, Sheet, DraftResult, generateWorkspaceItemId } from './types'
+import { type RunSqlMode, type Result, DraftSheetName, DraftSql, Sheet, DraftResult, generateWorkspaceItemId, type ComposableItem } from './types'
 import { format } from 'sql-formatter'
 import Button from './Button'
 import { altOptionChar, ctrlCmdChar } from './constants'
 import * as dialog from './dialog'
 import { useFloating, useClientPoint, useInteractions, useDismiss, useTransitionStyles, shift } from '@floating-ui/react'
 import { getInitialEditorMode, query } from '../api'
-import { StateChangeApi, type WorkspaceItemWrapper, useDispatch, useWorkspaceContext } from './WorkspaceContext'
+import { StateChangeApi, type ObjectWrapper, useDispatch, useWorkspaceContext } from './WorkspaceContext'
 import { type RenameDialogInfo } from './RenameDialog'
 
 function getAutocompleteWord (s: string): string {
@@ -127,13 +127,13 @@ export default function Editor ({
   editingItem,
   onRenamingSheet
 }: {
-  editingItem: WorkspaceItemWrapper | null
+  editingItem: ObjectWrapper<ComposableItem> | null
   onRenamingSheet: (info: RenameDialogInfo) => void
 }): JSX.Element {
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
   const codeMirrorInstance = React.useRef<any>(null)
   const [isQueryLoading, setIsQueryLoading] = React.useState<boolean>(false)
-  const [shownComposableItem, setShownComposableItem] = React.useState<WorkspaceItemWrapper | null>(null)
+  const [shownComposableItem, setShownComposableItem] = React.useState<ObjectWrapper<ComposableItem> | null>(null)
   const [shouldShowDraftNotice, setShouldShowDraftNotice] = React.useState<boolean>(false)
   const [shouldShowCsvNotice, setShouldShowCsvNotice] = React.useState<boolean>(false)
   const [contextMenuOpenInfo, setContextMenuOpenInfo] = React.useState<ContextMenuOpenInfo | null>(null)
@@ -185,7 +185,7 @@ export default function Editor ({
           setShouldShowDraftNotice(true)
         }
       } else {
-        codeMirrorInstance.current.setValue(editingItem?.base.getIsCsv() ? '' : editingItem.base.sql)
+        codeMirrorInstance.current.setValue(editingItem?.base.isCsv ? '' : editingItem.base.sql)
         setShouldShowDraftNotice(false)
       }
 
@@ -200,8 +200,8 @@ export default function Editor ({
       codeMirrorInstance.current.focus()
       setShownComposableItem(editingItem)
 
-      codeMirrorInstance.current.setOption('readOnly', editingItem?.base.getIsCsv() ? 'nocursor' : false)
-      setShouldShowCsvNotice(editingItem?.base.getIsCsv())
+      codeMirrorInstance.current.setOption('readOnly', editingItem?.base.isCsv ? 'nocursor' : false)
+      setShouldShowCsvNotice(editingItem?.base.isCsv ?? false)
     },
     [editingItem, shownComposableItem]
   )
@@ -268,7 +268,7 @@ export default function Editor ({
         case 'partial-new':
           break
         case 'partial-draft':
-          replace = (workspaceState.items.find((i) => i.base instanceof DraftResult)?.base as DraftResult) ?? new DraftResult({
+          replace = (workspaceState.results.find((i) => i.base instanceof DraftResult)?.base as DraftResult) ?? new DraftResult({
             id: generateWorkspaceItemId(),
             name: DraftSheetName,
             sql,
@@ -327,7 +327,7 @@ export default function Editor ({
         }
       }
     },
-    [isQueryLoading, onRenamingSheet, stateChangeApi, workspaceState.items, editingItem]
+    [isQueryLoading, workspaceState.results, stateChangeApi, editingItem, onRenamingSheet]
   )
 
   React.useEffect(() => {
@@ -401,7 +401,7 @@ export default function Editor ({
   React.useEffect(() => {
     if (!codeMirrorInstance.current) { return }
 
-    const relevantResults = workspaceState.items.filter((s) => s.base instanceof Sheet)
+    const relevantResults = workspaceState.results.filter((s) => s.base instanceof Sheet)
 
     const tables = {}
     const allColumns = new Set<string>()
@@ -425,7 +425,7 @@ export default function Editor ({
       defaultTable: relevantResults[0] ? getAutocompleteWord((relevantResults[0].base as Sheet).name) : null,
       closeOnUnfocus: true
     })
-  }, [workspaceState.items])
+  }, [workspaceState.results])
 
   React.useEffect(
     () => {

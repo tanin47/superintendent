@@ -29,40 +29,46 @@ export function generateWorkspaceItemId (): string {
   return `item-${workspaceItemIdRunner++}`
 }
 
-export interface WorkspaceItemProps {
+export interface ComposableItem {
   id: string
   name: string
   previousName?: string | null
   sql: string
   editorState?: SheetEditorState | null
   isLoading?: boolean
+  isCsv: boolean
 }
 
-export abstract class WorkspaceItem {
+abstract class WorkspaceItem {
   id: string
   name: string
   previousName: string | null
   sql: string
   editorState: SheetEditorState | null
   isLoading: boolean
+  isCsv: boolean
 
-  constructor (options: WorkspaceItemProps) {
+  constructor (options: ComposableItem) {
     this.id = options.id
     this.name = options.name
     this.previousName = options.previousName ?? null
     this.sql = options.sql
     this.editorState = options.editorState ?? null
     this.isLoading = options.isLoading ?? false
+    this.isCsv = options.isCsv ?? false
   }
 
-  abstract getIsCsv (): boolean
   abstract getRank (): number
   abstract isComposable (): boolean
 }
 
-export class DraftSql extends WorkspaceItem {
-  getIsCsv (): boolean {
-    return false
+export class DraftSql extends WorkspaceItem implements ComposableItem {
+  constructor (options: ComposableItem) {
+    super(options)
+
+    if (this.isCsv) {
+      throw new Error('DraftSql must have isCsv = false')
+    }
   }
 
   getRank (): number {
@@ -86,8 +92,7 @@ export interface ChartOptions {
   processedColumnNames: Set<string>
 }
 
-export type ResultProps = WorkspaceItemProps & {
-  isCsv: boolean
+export type ResultProps = ComposableItem & {
   count: number
   columns: Column[]
   rows: string[][]
@@ -134,10 +139,6 @@ export abstract class Result extends WorkspaceItem {
     this.chartOptions = options.chartOptions ?? null
   }
 
-  getIsCsv (): boolean {
-    return this.isCsv
-  }
-
   getRank (): number {
     return this.isCsv ? 1 : 2
   }
@@ -174,7 +175,7 @@ export class DraftResult extends Result {
   }
 }
 
-export class Sheet extends Result {
+export class Sheet extends Result implements ComposableItem {
   isComposable (): boolean {
     return true
   }

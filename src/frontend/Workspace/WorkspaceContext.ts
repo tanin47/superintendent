@@ -1,14 +1,15 @@
 import React from 'react'
-import { Result, type WorkspaceItem, DraftSql, Sheet, generateWorkspaceItemId, DraftResult, type PresentationType, type ChartOptions } from './types'
+import { Result, DraftSql, Sheet, generateWorkspaceItemId, DraftResult, type PresentationType, type ChartOptions } from './types'
 import { drop } from '../api'
 import { type ExportedWorkflow } from '../../types'
 
-export interface WorkspaceItemWrapper {
-  base: WorkspaceItem
+export interface ObjectWrapper<T> {
+  base: T
 }
 
 export interface WorkspaceState {
-  items: WorkspaceItemWrapper[]
+  draftSqls: Array<ObjectWrapper<DraftSql>>
+  results: Array<ObjectWrapper<Result>>
   selectedComposableItemId: string | null
   selectedResultId: string | null
 }
@@ -18,7 +19,8 @@ export enum ActionType {
   ADD_OR_REPLACE_RESULT = 'add_or_replace_result',
   TOGGLE_LOADING = 'toggle_loading',
   RENAME = 'rename',
-  DELETE = 'delete',
+  DELETE_DRAFT_SQL = 'delete_draft_sql',
+  DELETE_RESULT = 'delete_result',
   SET_COMPOSABLE_ITEM_ID = 'set_composable_item_id',
   SET_RESULT_ID = 'set_result_id',
   IMPORT_WORKFLOW = 'import_workflow',
@@ -41,35 +43,44 @@ export interface Action {
 }
 
 function update (state: WorkspaceState, index: number | null = null): WorkspaceState {
-  if (index !== null && index >= 0 && index < state.items.length) {
-    state.items[index] = { ...state.items[index] }
+  if (index !== null && index >= 0 && index < state.results.length) {
+    state.results[index] = { ...state.results[index] }
   }
 
-  state.items = [...state.items]
+  state.results = [...state.results]
   return { ...state }
 }
 
 let draftSqlNumberRunner = 1
 export function reduce (state: WorkspaceState, action: Action): WorkspaceState {
   if (action.type === ActionType.RENAME) {
-    const index = state.items.findIndex((i) => i.base.id === action.id)!
+    const index = state.results.findIndex((i) => i.base.id === action.id)!
 
-    state.items[index].base.name = action.newName!
+    state.results[index].base.name = action.newName!
     return update(state, index)
-  } else if (action.type === ActionType.DELETE) {
+  } else if (action.type === ActionType.DELETE_DRAFT_SQL) {
     const id = action.id!
-    const item = state.items.find((i) => i.base.id === id)
+    state.draftSqls = state.draftSqls.filter((i) => i.base.id !== id)
 
-    if (item && !(item.base instanceof DraftSql)) {
-      const confirmMsg = `Are you sure you want to remove: ${item.base.name}?`
+    if (id === state.selectedComposableItemId) {
+      state.selectedComposableItemId = null
+    }
+
+    return { ...state }
+  } else if (action.type === ActionType.DELETE_RESULT) {
+    const id = action.id!
+    const result = state.results.find((i) => i.base.id === id)
+
+    if (result) {
+      const confirmMsg = `Are you sure you want to remove: ${result.base.name}?`
       if (!confirm(confirmMsg)) {
         return state
       }
 
-      void drop(item.base.name)
+      void drop(result.base.name)
     }
 
-    state.items = state.items.filter((i) => i.base.id !== item?.base.id)
+    state.results = state.results.filter((i) => i.base.id !== id)
 
     if (id === state.selectedComposableItemId) {
       state.selectedComposableItemId = null
@@ -80,42 +91,39 @@ export function reduce (state: WorkspaceState, action: Action): WorkspaceState {
 
     return { ...state }
   } else if (action.type === ActionType.MAKE_DRAFT_SQL) {
-    const item: DraftSql = new DraftSql({
+    const draftSql: DraftSql = new DraftSql({
       id: generateWorkspaceItemId(),
       name: `draft-${draftSqlNumberRunner++}`,
-      sql: action.sql!
+      sql: action.sql!,
+      isCsv: false
     })
 
-    if (state.items.length === 0) {
-      state.selectedComposableItemId = item.id
-    }
-
-    state.items = [...state.items, { base: item }]
+    state.draftSqls = [...state.draftSqls, { base: draftSql }]
     return {
       ...state,
-      selectedComposableItemId: item.id
+      selectedComposableItemId: draftSql.id
     }
   } else if (action.type === ActionType.ADD_OR_REPLACE_RESULT) {
     const newResult = action.newResult!
-    const foundIndex = state.items.findIndex((s) => s.base.id === newResult.id)
+    const foundIndex = state.results.findIndex((s) => s.base.id === newResult.id)
 
     if (foundIndex > -1) {
-      state.items.splice(foundIndex, 1)
+      state.results.splice(foundIndex, 1)
     }
-    state.items.push({ base: newResult })
+    state.results.push({ base: newResult })
 
     return update(state)
   } else if (action.type === ActionType.TOGGLE_LOADING) {
     let index: number
 
     if (action.targetDraftResult) {
-      index = state.items.findIndex((i) => i.base instanceof DraftResult)
+      index = state.results.findIndex((i) => i.base instanceof DraftResult)
     } else {
-      index = state.items.findIndex((i) => i.base.id === action.id!)
+      index = state.results.findIndex((i) => i.base.id === action.id!)
     }
 
     if (index > -1) {
-      state.items[index].base.isLoading = action.loading!
+      state.results[index].base.isLoading = action.loading!
     }
 
     return update(state, index)
@@ -126,8 +134,8 @@ export function reduce (state: WorkspaceState, action: Action): WorkspaceState {
     state.selectedResultId = action.id ?? null
     return { ...state }
   } else if (action.type === ActionType.IMPORT_WORKFLOW) {
-    state.items = [
-      ...state.items,
+    state.results = [
+      ...state.results,
       ...action.workflow!.sheets.map((sheet) => ({
         base: new Sheet({
           id: generateWorkspaceItemId(),
@@ -144,14 +152,14 @@ export function reduce (state: WorkspaceState, action: Action): WorkspaceState {
     ]
     return { ...state }
   } else if (action.type === ActionType.DISCARD_DRAFT_SQL) {
-    state.items = state.items.filter((i) => i.base.id !== action.id!)
+    state.draftSqls = state.draftSqls.filter((i) => i.base.id !== action.id!)
     return { ...state }
   } else if (action.type === ActionType.SET_PRESENTATION_TYPE) {
     const presentationType = action.presentationType!
-    const index = state.items.findIndex((i) => i.base.id === action.id!)
+    const index = state.results.findIndex((i) => i.base.id === action.id!)
 
     if (index > -1) {
-      const base = state.items[index].base
+      const base = state.results[index].base
 
       if (base instanceof Result) {
         base.presentationType = presentationType
@@ -161,10 +169,10 @@ export function reduce (state: WorkspaceState, action: Action): WorkspaceState {
     return update(state, index)
   } else if (action.type === ActionType.SET_CHART_OPTIONS) {
     const chartOptions = action.chartOptions!
-    const index = state.items.findIndex((i) => i.base.id === action.id!)
+    const index = state.results.findIndex((i) => i.base.id === action.id!)
 
     if (index > -1) {
-      const base = state.items[index].base
+      const base = state.results[index].base
 
       if (base instanceof Result) {
         base.chartOptions = chartOptions
@@ -177,7 +185,7 @@ export function reduce (state: WorkspaceState, action: Action): WorkspaceState {
   return state
 }
 
-export const WorkspaceContext = React.createContext<WorkspaceState>({ items: [], selectedComposableItemId: null, selectedResultId: null })
+export const WorkspaceContext = React.createContext<WorkspaceState>({ draftSqls: [], results: [], selectedComposableItemId: null, selectedResultId: null })
 export const DispatchContext = React.createContext<React.Dispatch<Action> | null>(null)
 
 export function useWorkspaceContext (): WorkspaceState {
@@ -227,9 +235,16 @@ export class StateChangeApi {
     this.dispatch({ type: ActionType.SET_RESULT_ID, id })
   }
 
-  public deleteComposableItemId (id: string): void {
+  public deleteDraftSql (id: string): void {
     this.dispatch({
-      type: ActionType.DELETE,
+      type: ActionType.DELETE_DRAFT_SQL,
+      id
+    })
+  }
+
+  public deleteResult (id: string): void {
+    this.dispatch({
+      type: ActionType.DELETE_RESULT,
       id
     })
   }

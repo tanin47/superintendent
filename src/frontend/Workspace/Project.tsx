@@ -4,14 +4,14 @@ import Button from './Button'
 import { ctrlCmdChar } from './constants'
 import AddCsv, { type Ref as AddCsvRef } from './AddCsvModal'
 import { convertFileList, exportWorkflow, getInitialFile } from '../api'
-import { Sheet, DraftSql } from './types'
+import { Sheet, DraftSql, type ComposableItem, Result } from './types'
 import { type ExportedWorkflow, ExportWorkflowChannel } from '../../types'
 import { useFloating, useClientPoint, useInteractions, useDismiss, useTransitionStyles, shift } from '@floating-ui/react'
-import { StateChangeApi, type WorkspaceItemWrapper, useDispatch, useWorkspaceContext } from './WorkspaceContext'
+import { StateChangeApi, useDispatch, useWorkspaceContext, type ObjectWrapper } from './WorkspaceContext'
 import { type RenameDialogInfo } from './RenameDialog'
 
 interface ContextMenuOpenInfo {
-  item: WorkspaceItemWrapper
+  item: ObjectWrapper<ComposableItem>
   clientX: number
   clientY: number
 }
@@ -31,7 +31,7 @@ function ContextMenu ({
   onRenaming: () => void
   onDeleting: () => void
   onClosing: () => void
-  item: WorkspaceItemWrapper | null
+  item: ObjectWrapper<ComposableItem> | null
   x: number | null
   y: number | null
 }): JSX.Element {
@@ -118,12 +118,66 @@ function ContextMenu ({
   )
 }
 
+function ProjectItem ({
+  item,
+  className,
+  onContextMenu
+}: {
+  item: ObjectWrapper<ComposableItem>
+  className?: string | null
+  onContextMenu: (info: ContextMenuOpenInfo) => void
+}): JSX.Element {
+  const dispatch = useDispatch()
+  const stateChangeApi = React.useMemo(() => new StateChangeApi(dispatch), [dispatch])
+
+  let icon = <i className="fas fa-question-circle"></i>
+
+  if (item.base instanceof DraftSql) {
+    icon = <i className="fas fa-pen-square"></i>
+  } else if (item.base instanceof Sheet) {
+    icon = item.base.isCsv
+      ? (
+    <i className="fas fa-file-csv"></i>
+        )
+      : (
+    <i className="fas fa-caret-square-right"></i>
+        )
+  }
+
+  return (
+    <div
+      className={`item ${className}`}
+      data-testid={`project-item-${item.base.name}`}
+      onClick={() => { stateChangeApi.setSelectedComposableItemId(item.base.id) }}
+      onDoubleClick={() => {
+        if (item.base instanceof Sheet) {
+          stateChangeApi.setSelectedResultId(item.base.id)
+        }
+      }}
+      onContextMenu={(event) => {
+        onContextMenu({
+          item,
+          clientX: event.clientX,
+          clientY: event.clientY
+        })
+      }}
+    >
+      {icon}
+      <span className="name">{item.base.name}</span>
+    </div>
+  )
+}
+
+function sort (a: ObjectWrapper<ComposableItem>, b: ObjectWrapper<ComposableItem>): number {
+  return a.base.name.localeCompare(b.base.name)
+}
+
 export default function Project ({
   selectedComposableItem,
   onRenamingSheet,
   onGoToLicense
 }: {
-  selectedComposableItem: WorkspaceItemWrapper | null
+  selectedComposableItem: ObjectWrapper<ComposableItem> | null
   onRenamingSheet: (info: RenameDialogInfo) => void
   onGoToLicense: () => void
 }): JSX.Element {
@@ -131,13 +185,28 @@ export default function Project ({
   const dispatch = useDispatch()
   const stateChangeApi = React.useMemo(() => new StateChangeApi(dispatch), [dispatch])
 
-  const [composableItems, setComposableItems] = React.useState<WorkspaceItemWrapper[]>([])
+  const [draftSqls, setDraftSqls] = React.useState<Array<ObjectWrapper<DraftSql>>>([])
+  const [csvs, setCsvs] = React.useState<Array<ObjectWrapper<Sheet>>>([])
+  const [sheets, setSheets] = React.useState<Array<ObjectWrapper<Sheet>>>([])
 
   React.useEffect(
     () => {
-      setComposableItems(workspaceState.items.filter((i) => i.base.isComposable()))
+      const items = [...workspaceState.draftSqls]
+      items.sort(sort)
+      setDraftSqls(items)
     },
-    [workspaceState.items]
+    [workspaceState.draftSqls]
+  )
+
+  React.useEffect(
+    () => {
+      const csvs = [...workspaceState.results.filter((i) => i.base.isCsv && i.base.isComposable()).sort(sort)]
+      const sheets = [...workspaceState.results.filter((i) => !i.base.isCsv && i.base.isComposable()).sort(sort)]
+
+      setCsvs(csvs)
+      setSheets(sheets)
+    },
+    [workspaceState.results]
   )
 
   const [shouldOpenAddCsv, setShouldOpenAddCsv] = React.useState<boolean>(false)
@@ -159,11 +228,19 @@ export default function Project ({
     const callback = (): void => {
       const workflow: ExportedWorkflow = { sheets: [] }
 
-      composableItems.forEach((sheet) => {
+      csvs.forEach((sheet) => {
         workflow.sheets.push({
           name: sheet.base.name,
           sql: sheet.base.sql,
-          isCsv: sheet.base.getIsCsv()
+          isCsv: sheet.base.isCsv
+        })
+      })
+
+      sheets.forEach((sheet) => {
+        workflow.sheets.push({
+          name: sheet.base.name,
+          sql: sheet.base.sql,
+          isCsv: sheet.base.isCsv
         })
       })
 
@@ -175,7 +252,7 @@ export default function Project ({
     return () => {
       removeListener()
     }
-  }, [composableItems])
+  }, [csvs, sheets])
 
   React.useEffect(() => {
     const handler = (event): boolean => {
@@ -251,20 +328,12 @@ export default function Project ({
     [addFiles]
   )
 
-  const sortedItems = composableItems.sort((left, right) => {
-    if (left.base.getRank() !== right.base.getRank()) {
-      return left.base.getRank() - right.base.getRank()
-    } else {
-      return left.base.name.toLowerCase().localeCompare(right.base.name.toLowerCase())
-    }
-  })
-
   return (
     <>
       <AddCsv
         ref={addCsvRef}
         isOpen={shouldOpenAddCsv}
-        csvs={composableItems.filter((i) => i.base.getIsCsv())}
+        csvs={csvs}
         onClose={() => { setShouldOpenAddCsv(false) }}
         onGoToLicense={onGoToLicense}
       />
@@ -276,7 +345,13 @@ export default function Project ({
         onClosing={() => { setOpenContextMenu(null) }}
         onRenaming={() => { onRenamingSheet({ sheet: openContextMenu!.item.base as Sheet, isNewTable: false }) }}
         onViewing={() => { stateChangeApi.setSelectedResultId(openContextMenu!.item.base.id) }}
-        onDeleting={() => { stateChangeApi.deleteComposableItemId(openContextMenu!.item.base.id) }}
+        onDeleting={() => {
+          if (openContextMenu!.item.base instanceof DraftSql) {
+            stateChangeApi.deleteDraftSql(openContextMenu!.item.base.id)
+          } else if (openContextMenu!.item.base instanceof Result) {
+            stateChangeApi.deleteResult(openContextMenu!.item.base.id)
+          }
+        }}
       />
       <div className="toolbarSection top">
         <div className="inner">
@@ -294,45 +369,44 @@ export default function Project ({
       </div>
       <div className="project-panel">
         <div className="body">
-          {sortedItems.map((item, index) => {
-            const shouldAddTopBorder = index >= 1 && item.base.getRank() !== sortedItems[index - 1].base.getRank()
-
-            let icon = <i className="fas fa-question-circle"></i>
-
-            if (item.base instanceof DraftSql) {
-              icon = <i className="fas fa-pen-square"></i>
-            } else if (item.base instanceof Sheet) {
-              icon = item.base.isCsv
-                ? (
-              <i className="fas fa-file-csv"></i>
-                  )
-                : (
-              <i className="fas fa-caret-square-right"></i>
-                  )
-            }
+          {draftSqls.map((item) => {
+            return (
+              <ProjectItem
+                key={item.base.id}
+                item={item}
+                className={`draft ${item.base.id === selectedComposableItem?.base.id ? 'selected' : item === openContextMenu?.item ? 'contextMenuOpened' : ''}`}
+                onContextMenu={(info) => {
+                  setOpenContextMenu(info)
+                }}
+              />
+            )
+          })}
+          {csvs.map((item, index) => {
+            const shouldAddTopBorder = index === 0 && draftSqls.length > 0
 
             return (
-              <div
+              <ProjectItem
                 key={item.base.id}
-                className={`item ${item.base.id === selectedComposableItem?.base.id ? 'selected' : item === openContextMenu?.item ? 'contextMenuOpened' : ''} ${shouldAddTopBorder ? 'top-separator' : ''} ${item.base instanceof DraftSql ? 'draft' : ''}`}
-                data-testid={`project-item-${item.base.name}`}
-                onClick={(event) => { stateChangeApi.setSelectedComposableItemId(item.base.id) }}
-                onDoubleClick={() => {
-                  if (item.base instanceof Sheet) {
-                    stateChangeApi.setSelectedResultId(item.base.id)
-                  }
+                item={item}
+                className={`${item.base.id === selectedComposableItem?.base.id ? 'selected' : item === openContextMenu?.item ? 'contextMenuOpened' : ''} ${shouldAddTopBorder ? 'top-separator' : ''}`}
+                onContextMenu={(info) => {
+                  setOpenContextMenu(info)
                 }}
-                onContextMenu={(event) => {
-                  setOpenContextMenu({
-                    item,
-                    clientX: event.clientX,
-                    clientY: event.clientY
-                  })
+              />
+            )
+          })}
+          {sheets.map((item, index) => {
+            const shouldAddTopBorder = index === 0 && (csvs.length + draftSqls.length) > 0
+
+            return (
+              <ProjectItem
+                key={item.base.id}
+                item={item}
+                className={`${item.base.id === selectedComposableItem?.base.id ? 'selected' : item === openContextMenu?.item ? 'contextMenuOpened' : ''} ${shouldAddTopBorder ? 'top-separator' : ''}`}
+                onContextMenu={(info) => {
+                  setOpenContextMenu(info)
                 }}
-              >
-                {icon}
-                <span className="name">{item.base.name}</span>
-              </div>
+              />
             )
           })}
         </div>

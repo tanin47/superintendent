@@ -21,7 +21,7 @@ import {
 import { type Result, type ChartOptions, type ChartType, type LabelTimestampFormat, LabelTimestampFormats } from './types'
 import React from 'react'
 import './Chart.scss'
-import { StateChangeApi, type WorkspaceItemWrapper, useDispatch } from './WorkspaceContext'
+import { StateChangeApi, useDispatch, type ObjectWrapper } from './WorkspaceContext'
 import { type ColumnType } from '../../types'
 import { DateTime } from 'luxon'
 
@@ -111,12 +111,12 @@ function computeLabelColumnTimestamp (result: Result, labelColumnIndex: number):
 function Canvas ({
   result
 }: {
-  result: WorkspaceItemWrapper
+  result: ObjectWrapper<Result>
 }): JSX.Element {
   const chartRef = React.useRef<HTMLCanvasElement | null>(null)
   const instance = React.useRef<ChartJs | null>(null)
 
-  const _result = result.base as Result
+  const _result = result.base
 
   React.useEffect(
     () => {
@@ -212,7 +212,7 @@ const VALID_DATASET_TYPES = new Set<ColumnType>(['bigint', 'double'])
 export default function Chart ({
   result
 }: {
-  result: WorkspaceItemWrapper
+  result: ObjectWrapper<Result>
 }): JSX.Element {
   const dispatch = useDispatch()
   const stateChangeApi = React.useMemo(() => new StateChangeApi(dispatch), [dispatch])
@@ -225,7 +225,7 @@ export default function Chart ({
     processedColumnNames: new Set()
   })
 
-  const _result = result.base as Result
+  const _result = result.base
 
   React.useEffect(
     () => {

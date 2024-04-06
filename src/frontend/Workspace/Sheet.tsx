@@ -10,7 +10,7 @@ import CopyingModal from './CopyingModal'
 import { makeCopy } from './helper'
 import { useFloating, useClientPoint, useInteractions, useDismiss, useTransitionStyles, shift } from '@floating-ui/react'
 import { type ChangingColumnInfo, ChangingColumnTypeDialog } from './ChangingColumnTypeDialog'
-import { StateChangeApi, type WorkspaceItemWrapper, useDispatch } from './WorkspaceContext'
+import { type ObjectWrapper, StateChangeApi, useDispatch } from './WorkspaceContext'
 import Chart from './Chart'
 
 interface CopyingData {
@@ -385,14 +385,14 @@ function Table ({
   onCopyingStarted,
   onCopyingFinished
 }: {
-  result: WorkspaceItemWrapper
+  result: ObjectWrapper<Result>
   onCopyingStarted: (data: CopyingData) => void
   onCopyingFinished: () => void
 }): JSX.Element {
   const dispatch = useDispatch()
   const stateChangeApi = React.useMemo(() => new StateChangeApi(dispatch), [dispatch])
 
-  const _result = result.base as Result
+  const _result = result.base
 
   const [columnContextMenuOpenInfo, setColumnContextMenuOpenInfo] = React.useState<ColumnContextMenuOpenInfo | null>(null)
   const [changingColumnInfo, setChangingColumnInfo] = React.useState<ChangingColumnInfo | null>(null)
@@ -997,11 +997,11 @@ function Table ({
 export default function SheetComponent ({
   result
 }: {
-  result: WorkspaceItemWrapper
+  result: ObjectWrapper<Result>
 }): JSX.Element {
   const [copyingData, setCopyingData] = React.useState<CopyingData | null>(null)
 
-  const _result = result.base as Result
+  const _result = result.base
 
   if (_result.columns.length === 0) {
     let msg = `Please run ${_result.name} in order to see the result.`

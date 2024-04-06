@@ -2,7 +2,7 @@ import React, { type ReactElement } from 'react'
 import './index.scss'
 import { downloadCsv } from '../api'
 import { type ExportedWorkflow, ImportWorkflowChannel } from '../../types'
-import { Result } from './types'
+import { type ComposableItem, type Result } from './types'
 import SheetSection from './SheetSection'
 import Button from './Button'
 import Editor from './Editor'
@@ -12,25 +12,31 @@ import { ctrlCmdChar } from './constants'
 import Project from './Project'
 import ResizeBar from './ResizeBar'
 import RenameDialog, { type RenameDialogInfo } from './RenameDialog'
-import { DispatchContext, StateChangeApi, WorkspaceContext, reduce } from './WorkspaceContext'
+import { DispatchContext, type ObjectWrapper, StateChangeApi, WorkspaceContext, reduce } from './WorkspaceContext'
 
 export default function Workspace ({
   onGoToLicense
 }: {
   onGoToLicense: () => void
 }): ReactElement {
-  const [workspaceState, dispatch] = React.useReducer(reduce, { items: [], selectedComposableItemId: null, selectedResultId: null })
+  const [workspaceState, dispatch] = React.useReducer(reduce, { draftSqls: [], results: [], selectedComposableItemId: null, selectedResultId: null })
   const stateChangeApi = React.useMemo(() => new StateChangeApi(dispatch), [dispatch])
 
   const selectedResult = React.useMemo(
     () => {
-      return (workspaceState.items.find((i) => i.base.id === workspaceState.selectedResultId) ?? null)
+      return (workspaceState.results.find((i) => i.base.id === workspaceState.selectedResultId) ?? null)
     },
     [workspaceState]
   )
   const selectedComposableItem = React.useMemo(
     () => {
-      return workspaceState.items.find((i) => i.base.id === workspaceState.selectedComposableItemId) ?? null
+      let found: ObjectWrapper<ComposableItem> | null = workspaceState.results.find((i) => i.base.id === workspaceState.selectedComposableItemId) ?? null
+
+      if (!found) {
+        found = workspaceState.draftSqls.find((i) => i.base.id === workspaceState.selectedComposableItemId) ?? null
+      }
+
+      return found
     },
     [workspaceState]
   )
@@ -92,7 +98,7 @@ export default function Workspace ({
     () => {
       if (!selectedResult) { return }
 
-      const result = selectedResult.base as Result
+      const result = selectedResult.base
 
       const newPresentationType = result.presentationType === 'table' ? 'chart' : 'table'
       stateChangeApi.setPresentationType(result.id, newPresentationType)
@@ -211,9 +217,9 @@ export default function Workspace ({
                   <>
                     <span className='total'>
                       <i className="fas fa-list-ol"></i>
-                      {formatTotal((selectedResult.base as Result).count)}
-                      {(selectedResult.base as Result).rows.length < (selectedResult.base as Result).count &&
-                        <span className="preview">(Only {(selectedResult.base as Result).rows.length.toLocaleString('en-US')} are shown)</span>
+                      {formatTotal((selectedResult.base).count)}
+                      {(selectedResult.base).rows.length < (selectedResult.base).count &&
+                        <span className="preview">(Only {(selectedResult.base).rows.length.toLocaleString('en-US')} are shown)</span>
                       }
                     </span>
                   </>
@@ -270,7 +276,7 @@ export default function Workspace ({
             </ResizeBar>
           </div>
           <SheetSection
-            results={workspaceState.items.filter((i) => i.base instanceof Result)}
+            results={workspaceState.results}
             selectedResult={selectedResult}
             onRenamingSheet={(info) => { setRenamingInfo(info) }}
           />

@@ -1,8 +1,8 @@
 import React, { type ReactElement } from 'react'
-import { type Sheet as SheetType, DraftResult } from './types'
+import { type Sheet as SheetType, DraftResult, type Result } from './types'
 import Sheet from './Sheet'
 import './SheetSection.scss'
-import { StateChangeApi, type WorkspaceItemWrapper, useDispatch } from './WorkspaceContext'
+import { type ObjectWrapper, StateChangeApi, useDispatch } from './WorkspaceContext'
 import { type RenameDialogInfo } from './RenameDialog'
 
 interface Tab {
@@ -14,8 +14,8 @@ export default function SheetSection ({
   selectedResult,
   onRenamingSheet
 }: {
-  results: WorkspaceItemWrapper[]
-  selectedResult: WorkspaceItemWrapper | null
+  results: Array<ObjectWrapper<Result>>
+  selectedResult: ObjectWrapper<Result> | null
   onRenamingSheet: (info: RenameDialogInfo) => void
 }): ReactElement {
   const dispatch = useDispatch()
@@ -23,7 +23,7 @@ export default function SheetSection ({
 
   const [draggedIndex, setDraggedIndex] = React.useState<number | null>(null)
   const [tabs, setTabs] = React.useState<Tab[]>([])
-  const resultMap = React.useRef<Map<string, WorkspaceItemWrapper>>(new Map())
+  const resultMap = React.useRef<Map<string, ObjectWrapper<Result>>>(new Map())
   const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc')
 
   React.useEffect(
@@ -130,8 +130,8 @@ export default function SheetSection ({
                     return 100
                   }
 
-                  if (resultMap.current.get(a.resultId)?.base.getIsCsv() !== resultMap.current.get(b.resultId)?.base.getIsCsv()) {
-                    if (resultMap.current.get(a.resultId)?.base.getIsCsv()) { return -1 } else { return 1 }
+                  if (resultMap.current.get(a.resultId)?.base.isCsv !== resultMap.current.get(b.resultId)?.base.isCsv) {
+                    if (resultMap.current.get(a.resultId)?.base.isCsv) { return -1 } else { return 1 }
                   } else {
                     return resultMap.current.get(a.resultId)!.base.name.toLowerCase().localeCompare(resultMap.current.get(b.resultId)!.base.name.toLowerCase())
                   }
@@ -154,7 +154,7 @@ export default function SheetSection ({
               icon = <span className="spinner" />
             } else if (result.base instanceof DraftResult) {
               icon = (<i className="fas fa-pencil-ruler icon"></i>)
-            } else if (result.base.getIsCsv()) {
+            } else if (result.base.isCsv) {
               icon = (<i className="fas fa-file-csv icon"></i>)
             } else {
               icon = (<i className="fas fa-caret-square-right icon"></i>)
