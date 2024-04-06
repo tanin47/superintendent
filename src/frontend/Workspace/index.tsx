@@ -2,10 +2,10 @@ import React, { type ReactElement } from 'react'
 import './index.scss'
 import { downloadCsv } from '../api'
 import { type ExportedWorkflow, ImportWorkflowChannel } from '../../types'
-import { type PresentationType, Result } from './types'
+import { Result } from './types'
 import SheetSection from './SheetSection'
 import Button from './Button'
-import Editor, { type Ref as EditorRef } from './Editor'
+import Editor from './Editor'
 import * as dialog from './dialog'
 import { formatTotal } from './helper'
 import { ctrlCmdChar } from './constants'
@@ -19,13 +19,23 @@ export default function Workspace ({
 }: {
   onGoToLicense: () => void
 }): ReactElement {
-  const [workspaceState, dispatch] = React.useReducer(reduce, { items: [], selectedComposableItem: null, selectedResult: null })
+  const [workspaceState, dispatch] = React.useReducer(reduce, { items: [], selectedComposableItemId: null, selectedResultId: null })
   const stateChangeApi = React.useMemo(() => new StateChangeApi(dispatch), [dispatch])
 
-  const [renamingInfo, setRenamingInfo] = React.useState<RenameDialogInfo | null>(null)
+  const selectedResult = React.useMemo(
+    () => {
+      return (workspaceState.items.find((i) => i.base.id === workspaceState.selectedResultId) ?? null)
+    },
+    [workspaceState]
+  )
+  const selectedComposableItem = React.useMemo(
+    () => {
+      return workspaceState.items.find((i) => i.base.id === workspaceState.selectedComposableItemId) ?? null
+    },
+    [workspaceState]
+  )
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [presentationType, setPresentationType] = React.useState<PresentationType>('table')
+  const [renamingInfo, setRenamingInfo] = React.useState<RenameDialogInfo | null>(null)
 
   React.useEffect(
     () => {
@@ -45,9 +55,6 @@ export default function Workspace ({
       removeListener()
     }
   }, [stateChangeApi])
-
-  const editorRef = React.useRef<EditorRef>(null)
-
   const [isDownloadCsvLoading, setIsDownloadCsvLoading] = React.useState<boolean>(false)
 
   const [editorHeight, setEditorHeight] = React.useState<number>(250)
@@ -59,9 +66,9 @@ export default function Workspace ({
       // Add some delay for the UI to be updated.
       setTimeout(
         () => {
-          if (!workspaceState.selectedResult) { return }
+          if (!selectedResult) { return }
 
-          downloadCsv(workspaceState.selectedResult.name)
+          downloadCsv(selectedResult.base.name)
             .then((filePath) => {
               if (!filePath) { return }
 
@@ -78,17 +85,19 @@ export default function Workspace ({
         1
       )
     },
-    [workspaceState.selectedResult]
+    [selectedResult]
   )
 
   const togglePresentationType = React.useCallback(
     () => {
-      if (!workspaceState.selectedResult) { return }
+      if (!selectedResult) { return }
 
-      const newPresentationType = workspaceState.selectedResult.presentationType === 'table' ? 'chart' : 'table'
-      stateChangeApi.setPresentationType(workspaceState.selectedResult, newPresentationType)
+      const result = selectedResult.base as Result
+
+      const newPresentationType = result.presentationType === 'table' ? 'chart' : 'table'
+      stateChangeApi.setPresentationType(result.id, newPresentationType)
     },
-    [stateChangeApi, workspaceState.selectedResult]
+    [stateChangeApi, selectedResult]
   )
 
   React.useEffect(() => {
@@ -160,6 +169,7 @@ export default function Workspace ({
           <div id="editorSection" style={{ height: editorHeight }}>
             <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: projectWidth, display: 'flex', flexDirection: 'column' }}>
               <Project
+                selectedComposableItem={selectedComposableItem}
                 onRenamingSheet={(info) => { setRenamingInfo(info) }}
                 onGoToLicense={onGoToLicense}
               />
@@ -181,7 +191,10 @@ export default function Workspace ({
               display: 'flex',
               flexDirection: 'column'
             }}>
-              <Editor ref={editorRef} onRenamingSheet={(info) => { setRenamingInfo(info) }}/>
+              <Editor
+                editingItem={selectedComposableItem}
+                onRenamingSheet={(info) => { setRenamingInfo(info) }}
+              />
             </div>
           </div>
           <div className="toolbarSection">
@@ -194,25 +207,25 @@ export default function Workspace ({
             {/* eslint-disable-next-line react/no-unknown-property */}
             <div className="inner" unselectable="on">
               <div className="left">
-                {workspaceState.selectedResult && (
+                {selectedResult && (
                   <>
                     <span className='total'>
                       <i className="fas fa-list-ol"></i>
-                      {formatTotal(workspaceState.selectedResult.count)}
-                      {workspaceState.selectedResult.rows.length < workspaceState.selectedResult.count &&
-                        <span className="preview">(Only {workspaceState.selectedResult.rows.length.toLocaleString('en-US')} are shown)</span>
+                      {formatTotal((selectedResult.base as Result).count)}
+                      {(selectedResult.base as Result).rows.length < (selectedResult.base as Result).count &&
+                        <span className="preview">(Only {(selectedResult.base as Result).rows.length.toLocaleString('en-US')} are shown)</span>
                       }
                     </span>
                   </>
                 )}
               </div>
               <div className="right">
-                {workspaceState.selectedResult?.presentationType === 'chart'
+                {(selectedResult?.base as Result | null)?.presentationType === 'chart'
                   ? (
                       <Button
                         testId="tabularize-sheet"
                         onClick={() => { togglePresentationType() }}
-                        disabled={workspaceState.selectedResult === null}
+                        disabled={selectedResult === null}
                         icon={<i className="fas fa-table"></i>}
                       >
                         Table
@@ -225,7 +238,7 @@ export default function Workspace ({
                       <Button
                         testId="visualize-sheet"
                         onClick={() => { togglePresentationType() }}
-                        disabled={workspaceState.selectedResult === null}
+                        disabled={selectedResult === null}
                         icon={<i className="fas fa-chart-bar"></i>}
                       >
                         Visualize
@@ -239,7 +252,7 @@ export default function Workspace ({
                   testId="export-sheet"
                   onClick={() => { exportCsv() }}
                   isLoading={isDownloadCsvLoading}
-                  disabled={workspaceState.selectedResult === null}
+                  disabled={selectedResult === null}
                   icon={<i className="fas fa-file-download" />}
                 >
                   Export sheet
@@ -257,9 +270,8 @@ export default function Workspace ({
             </ResizeBar>
           </div>
           <SheetSection
-            results={workspaceState.items.filter((i) => i instanceof Result) as Result[]}
-            selectedResult={workspaceState.selectedResult}
-            presentationType={presentationType}
+            results={workspaceState.items.filter((i) => i.base instanceof Result)}
+            selectedResult={selectedResult}
             onRenamingSheet={(info) => { setRenamingInfo(info) }}
           />
         </div>

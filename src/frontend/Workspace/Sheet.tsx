@@ -10,7 +10,7 @@ import CopyingModal from './CopyingModal'
 import { makeCopy } from './helper'
 import { useFloating, useClientPoint, useInteractions, useDismiss, useTransitionStyles, shift } from '@floating-ui/react'
 import { type ChangingColumnInfo, ChangingColumnTypeDialog } from './ChangingColumnTypeDialog'
-import { StateChangeApi, useDispatch } from './WorkspaceContext'
+import { StateChangeApi, type WorkspaceItemWrapper, useDispatch } from './WorkspaceContext'
 import Chart from './Chart'
 
 interface CopyingData {
@@ -385,12 +385,14 @@ function Table ({
   onCopyingStarted,
   onCopyingFinished
 }: {
-  result: Result
+  result: WorkspaceItemWrapper
   onCopyingStarted: (data: CopyingData) => void
   onCopyingFinished: () => void
 }): JSX.Element {
   const dispatch = useDispatch()
   const stateChangeApi = React.useMemo(() => new StateChangeApi(dispatch), [dispatch])
+
+  const _result = result.base as Result
 
   const [columnContextMenuOpenInfo, setColumnContextMenuOpenInfo] = React.useState<ColumnContextMenuOpenInfo | null>(null)
   const [changingColumnInfo, setChangingColumnInfo] = React.useState<ChangingColumnInfo | null>(null)
@@ -399,11 +401,11 @@ function Table ({
 
   React.useEffect(
     () => {
-      columnWidths.current = [result.resizedColumns?.[0] ? result.resizedColumns[0] : MIN_CELL_WIDTH]
+      columnWidths.current = [_result.resizedColumns?.[0] ? _result.resizedColumns[0] : MIN_CELL_WIDTH]
 
-      result.columns.forEach((column, index) => {
-        if (result.resizedColumns?.[index + 1]) {
-          columnWidths.current.push(result.resizedColumns[index + 1])
+      _result.columns.forEach((column, index) => {
+        if (_result.resizedColumns?.[index + 1]) {
+          columnWidths.current.push(_result.resizedColumns[index + 1])
           return
         }
 
@@ -420,16 +422,16 @@ function Table ({
       gridRef.current?.updateRow(0)
       setForceUpdate(forceUpdate => forceUpdate + 1)
     },
-    [result]
+    [_result.columns, _result.resizedColumns]
   )
 
   const [userSelect, _setUserSelect] = React.useState<UserSelectTarget | null>(null)
   const setUserSelect = React.useCallback(
     (newUserSelect: UserSelectTarget | null) => {
       _setUserSelect(makeCopy(newUserSelect))
-      result.userSelect = makeCopy(newUserSelect)
+      _result.userSelect = makeCopy(newUserSelect)
     },
-    [result]
+    [_result]
   )
   const doubleClickHandler = React.useCallback(
     (rowIndex: number, colIndex: number) => (event: React.MouseEvent) => {
@@ -444,18 +446,18 @@ function Table ({
   const setSelection = React.useCallback(
     (newSelection: Selection | null) => {
       _setSelection(makeCopy(newSelection))
-      result.selection = makeCopy(newSelection)
+      _result.selection = makeCopy(newSelection)
     },
-    [result]
+    [_result]
   )
   const [isSelecting, setIsSelecting] = React.useState<boolean>(false)
 
   React.useEffect(
     () => {
-      _setSelection(result.selection)
-      _setUserSelect(result.userSelect)
+      _setSelection(_result.selection)
+      _setUserSelect(_result.userSelect)
     },
-    [result, _setSelection, _setUserSelect]
+    [_result, _setSelection, _setUserSelect]
   )
 
   const startSelection = React.useCallback(
@@ -500,38 +502,41 @@ function Table ({
 
   const resizeColMouseDownHandler = React.useCallback(
     (colIndex: number) => (event: React.MouseEvent) => {
-      if (!result.resizedColumns) {
-        result.resizedColumns = {}
+      if (!_result.resizedColumns) {
+        _result.resizedColumns = {}
       }
 
-      if (!result.resizedColumns[colIndex]) {
-        result.resizedColumns[colIndex] = columnWidths.current[colIndex]
+      if (!_result.resizedColumns[colIndex]) {
+        _result.resizedColumns[colIndex] = columnWidths.current[colIndex]
       }
       mouseDownX.current = event.clientX
-      mouseDownColWidth.current = result.resizedColumns[colIndex]
+      mouseDownColWidth.current = _result.resizedColumns[colIndex]
       resizingColIndex.current = colIndex
 
       event.stopPropagation()
     },
-    [result]
+    [_result]
   )
 
-  React.useEffect(() => {
-    const handler = (event: MouseEvent): void => {
-      if (resizingColIndex.current === null) { return }
-      if (!gridRef.current) { return }
+  React.useEffect(
+    () => {
+      const handler = (event: MouseEvent): void => {
+        if (resizingColIndex.current === null) { return }
+        if (!gridRef.current) { return }
 
-      result.resizedColumns[resizingColIndex.current] = Math.max(event.clientX - mouseDownX.current + mouseDownColWidth.current, MIN_CELL_WIDTH)
-      columnWidths.current[resizingColIndex.current] = result.resizedColumns[resizingColIndex.current]
+        _result.resizedColumns[resizingColIndex.current] = Math.max(event.clientX - mouseDownX.current + mouseDownColWidth.current, MIN_CELL_WIDTH)
+        columnWidths.current[resizingColIndex.current] = _result.resizedColumns[resizingColIndex.current]
 
-      gridRef.current.updateColumn(resizingColIndex.current)
-    }
-    document.addEventListener('mousemove', handler)
+        gridRef.current.updateColumn(resizingColIndex.current)
+      }
+      document.addEventListener('mousemove', handler)
 
-    return () => {
-      document.removeEventListener('mousemove', handler)
-    }
-  }, [result])
+      return () => {
+        document.removeEventListener('mousemove', handler)
+      }
+    },
+    [_result]
+  )
 
   React.useEffect(() => {
     const handler = (event: MouseEvent): void => {
@@ -578,11 +583,11 @@ function Table ({
         startCol--
       }
 
-      endRow = endRow === 0 ? result.count - 1 : endRow - 1
-      endCol = endCol === 0 ? result.columns.length - 1 : endCol - 1
+      endRow = endRow === 0 ? _result.count - 1 : endRow - 1
+      endCol = endCol === 0 ? _result.columns.length - 1 : endCol - 1
 
       const copySelection = {
-        columns: result.columns.slice(startCol, endCol + 1).map((c, i) => c.name),
+        columns: _result.columns.slice(startCol, endCol + 1).map((c, i) => c.name),
         startRow,
         endRow,
         includeRowNumbers,
@@ -591,7 +596,7 @@ function Table ({
       cellCount = (endRow - startRow + 1) * (endCol - startCol + 1)
 
       onCopyingStarted({ cellCount })
-      void copy(result.name, copySelection)
+      void copy(_result.name, copySelection)
         .then((result) => {
           setTimeout(
             () => { onCopyingFinished() },
@@ -615,7 +620,7 @@ function Table ({
       document.removeEventListener('copy', handler)
       document.removeEventListener('cut', handler)
     }
-  }, [onCopyingFinished, onCopyingStarted, selection, result, userSelect])
+  }, [onCopyingFinished, onCopyingStarted, selection, result, userSelect, _result.count, _result.columns, _result.name])
 
   const isWithinRange = (value: number, start: number, end: number): boolean => {
     return (start <= value && value <= end) || (end <= value && value <= start)
@@ -624,7 +629,7 @@ function Table ({
   const Cell = ({ columnIndex, rowIndex, style }: { columnIndex: number, rowIndex: number, style: any }): JSX.Element | null => {
     // There's a race condition between sheet and columnWidths because columnWidths is a ref.
     // There's a test that tests this bug.
-    if ((columnIndex - 1) >= result.columns.length) {
+    if ((columnIndex - 1) >= _result.columns.length) {
       return null
     }
 
@@ -669,9 +674,9 @@ function Table ({
       let sortClass = 'unsort fa-sort'
       let direction: SortDirection = 'none'
 
-      if (result.sorts && columnIndex > 0) {
-        const columnName = result.columns[columnIndex - 1].name
-        direction = result.sorts.find((s) => s.name === columnName)?.direction ?? 'none'
+      if (_result.sorts && columnIndex > 0) {
+        const columnName = _result.columns[columnIndex - 1].name
+        direction = _result.sorts.find((s) => s.name === columnName)?.direction ?? 'none'
 
         if (direction !== 'none') {
           const icon = direction === 'asc' ? 'fa-sort-alpha-down' : 'fa-sort-alpha-up'
@@ -712,7 +717,7 @@ function Table ({
             if (columnIndex < 1) { return }
 
             setColumnContextMenuOpenInfo({
-              result,
+              result: _result,
               columnIndex: columnIndex - 1,
               clientX: event.clientX,
               clientY: event.clientY
@@ -734,8 +739,8 @@ function Table ({
                   event.stopPropagation()
                 }}
                 onClick={(event) => {
-                  result.sorts ||= []
-                  const columnName = result.columns[columnIndex - 1].name
+                  _result.sorts ||= []
+                  const columnName = _result.columns[columnIndex - 1].name
                   let newDirection: SortDirection
                   if (direction === 'asc') {
                     newDirection = 'desc'
@@ -745,14 +750,14 @@ function Table ({
                     newDirection = 'asc'
                   }
 
-                  stateChangeApi.startLoading(result)
+                  stateChangeApi.startLoading(_result.id)
 
-                  void sort(result, columnName, newDirection)
+                  void sort(_result, columnName, newDirection)
                     .then((newResult) => {
                       stateChangeApi.addOrReplaceResult(newResult)
                     })
                     .finally(() => {
-                      stateChangeApi.stopLoading(result)
+                      stateChangeApi.stopLoading(_result.id)
                     })
 
                   event.stopPropagation()
@@ -760,14 +765,14 @@ function Table ({
               ></i>
             </>
           )}
-          {columnIndex === 0 ? '\u00A0' : result.columns[columnIndex - 1].name}
+          {columnIndex === 0 ? '\u00A0' : _result.columns[columnIndex - 1].name}
           <div
             className="resize-column-right-bar"
             onMouseDown={resizeColMouseDownHandler(columnIndex)}
           />
         </div>
       )
-    } else if (rowIndex === result.rows.length + 1) {
+    } else if (rowIndex === _result.rows.length + 1) {
       return (
         <div
           key={`loading-next-${columnIndex}`}
@@ -794,7 +799,7 @@ function Table ({
         </div>
       )
     } else {
-      const value = columnIndex === 0 ? rowIndex : result.rows[rowIndex - 1][columnIndex - 1]
+      const value = columnIndex === 0 ? rowIndex : _result.rows[rowIndex - 1][columnIndex - 1]
       let nullStyles = {}
       let renderedValue = value
 
@@ -806,7 +811,7 @@ function Table ({
           fontSize: '8px'
         }
       } else if (columnIndex >= 1) {
-        const columnType = result.columns[columnIndex - 1].tpe
+        const columnType = _result.columns[columnIndex - 1].tpe
         if (columnType === 'timestamp') {
           renderedValue = (value as Date).toISOString()
         } else if (columnType === 'double') {
@@ -850,29 +855,29 @@ function Table ({
     }
   }
 
-  const gridRowCount = result.rows.length + 1 + ((result.rows.length < result.count) ? 1 : 0)
+  const gridRowCount = _result.rows.length + 1 + ((_result.rows.length < _result.count) ? 1 : 0)
 
   const computeRowHeight = React.useCallback(
     (index: number) => {
       if (index === 0) {
-        return getRowHeight(result.columns.map((c) => c.name))
-      } else if (index === result.rows.length + 1) {
+        return getRowHeight(_result.columns.map((c) => c.name))
+      } else if (index === _result.rows.length + 1) {
         return 20
       } else {
-        return getRowHeight(result.rows[index - 1])
+        return getRowHeight(_result.rows[index - 1])
       }
     },
-    [result]
+    [_result.columns, _result.rows]
   )
 
   const computeCumulativeRowHeight = React.useCallback(
     (index: number) => {
       if (index === 0) {
-        return getRowHeight(result.columns.map((c) => c.name))
-      } else if (index === result.rows.length + 1) {
-        return 20 + computeCumulativeRowHeight(result.rows.length)
+        return getRowHeight(_result.columns.map((c) => c.name))
+      } else if (index === _result.rows.length + 1) {
+        return 20 + computeCumulativeRowHeight(_result.rows.length)
       } else {
-        const row = result.rows[index - 1]
+        const row = _result.rows[index - 1]
         if ((row as any).cumulativeHeight) {
           return (row as any).cumulativeHeight
         }
@@ -882,8 +887,8 @@ function Table ({
         i--
 
         for (;i >= 0; i--) {
-          if (i > 0 && i < (result.rows.length + 1)) {
-            const thisRow = result.rows[i - 1]
+          if (i > 0 && i < (_result.rows.length + 1)) {
+            const thisRow = _result.rows[i - 1]
 
             if ((thisRow as any).cumulativeHeight) {
               cumulativeHeight += (thisRow as any).cumulativeHeight
@@ -897,30 +902,30 @@ function Table ({
         return (row as any).cumulativeHeight
       }
     },
-    [result, computeRowHeight]
+    [_result.rows, _result.columns, computeRowHeight]
   )
 
   const loadMoreItems = React.useCallback(
     async (startIndex: number, stopIndex: number): Promise<void> => {
-      await loadMore(result.name, result.rows.length)
+      await loadMore(_result.name, _result.rows.length)
         .then((rows) => {
           const current = gridRef.current // setForceUpdate clears gridRef, so we need to save it first.
-          const loadingRow = result.rows.length
-          result.rows = result.rows.concat(rows)
+          const loadingRow = _result.rows.length
+          _result.rows = _result.rows.concat(rows)
           setForceUpdate((n) => n + 1)
-          stateChangeApi.addOrReplaceResult(result)
+          stateChangeApi.addOrReplaceResult(_result)
 
           if (current) {
             current.updateRow(loadingRow) // update the height of the load more row.
           }
         })
     },
-    [result, stateChangeApi]
+    [_result, stateChangeApi]
   )
 
   const isItemLoaded = React.useCallback(
-    (index) => (index < (result.rows.length + 1)),
-    [result]
+    (index) => (index < (_result.rows.length + 1)),
+    [_result.rows.length]
   )
 
   return (
@@ -938,7 +943,7 @@ function Table ({
         onClosing={() => { setChangingColumnInfo(null) }}
       />
       <ColumnContextMenu
-        column={columnContextMenuOpenInfo ? result.columns[columnContextMenuOpenInfo.columnIndex] : null}
+        column={columnContextMenuOpenInfo ? _result.columns[columnContextMenuOpenInfo.columnIndex] : null}
         x={columnContextMenuOpenInfo?.clientX ?? null}
         y={columnContextMenuOpenInfo?.clientY ?? null}
         onClosing={() => { setColumnContextMenuOpenInfo(null) }}
@@ -946,7 +951,7 @@ function Table ({
           const result = columnContextMenuOpenInfo!.result
           setChangingColumnInfo({
             result,
-            column: result.columns[columnContextMenuOpenInfo!.columnIndex]
+            column: _result.columns[columnContextMenuOpenInfo!.columnIndex]
           })
         }}
       />
@@ -962,20 +967,20 @@ function Table ({
                 <Grid
                   ref={gridRef}
                   infiniteLoaderRef={ref}
-                  key={result.name}
+                  key={_result.name}
                   rowCount={gridRowCount}
                   computeRowHeight={computeRowHeight}
                   computeCumulativeRowHeight={computeCumulativeRowHeight}
                   columnCount={columnWidths.current.length}
                   columnWidths={columnWidths.current}
-                  initialScrollLeft={result.scrollLeft ?? 0}
-                  initialScrollTop={result.scrollTop ?? 0}
+                  initialScrollLeft={_result.scrollLeft ?? 0}
+                  initialScrollTop={_result.scrollTop ?? 0}
                   width={width}
                   height={height}
                   onItemsRendered={onItemsRendered}
                   onScrolled={(left, top) => {
-                    result.scrollLeft = left
-                    result.scrollTop = top
+                    _result.scrollLeft = left
+                    _result.scrollTop = top
                   }}
                 >
                   {Cell}
@@ -992,22 +997,24 @@ function Table ({
 export default function SheetComponent ({
   result
 }: {
-  result: Result
+  result: WorkspaceItemWrapper
 }): JSX.Element {
   const [copyingData, setCopyingData] = React.useState<CopyingData | null>(null)
 
-  if (result.columns.length === 0) {
-    let msg = `Please run ${result.name} in order to see the result.`
+  const _result = result.base as Result
 
-    if (result.isCsv) {
-      msg = `Please load the CSV into ${result.name} in order to see the result.`
+  if (_result.columns.length === 0) {
+    let msg = `Please run ${_result.name} in order to see the result.`
+
+    if (_result.isCsv) {
+      msg = `Please load the CSV into ${_result.name} in order to see the result.`
     }
     return <div className="sheet" tabIndex={-1}><div className="empty-warning">{msg}</div></div>
   }
 
   let view: JSX.Element = <></>
 
-  switch (result.presentationType) {
+  switch (_result.presentationType) {
     case 'table':
       view = <Table
         result={result}
@@ -1026,11 +1033,11 @@ export default function SheetComponent ({
     <>
       <CopyingModal isOpen={!!copyingData} cellCount={copyingData?.cellCount ?? 0} />
       <div className="sheet" tabIndex={-1}>
-        {result.isLoading && (
+        {result.base.isLoading && (
           <div
             className="overlay"
             style={{
-              display: result.isLoading ? 'block' : 'none'
+              display: result.base.isLoading ? 'block' : 'none'
             }}
           />
         )}

@@ -59,7 +59,7 @@ export default function RenameDialog ({
 
       rename(renamingInfo.sheet.name, sanitized)
         .then((result) => {
-          stateChangeApi.rename(renamingInfo.sheet, sanitized)
+          stateChangeApi.rename(renamingInfo.sheet.id, sanitized)
           onClosed()
         })
         .catch((error) => {

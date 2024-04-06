@@ -80,11 +80,10 @@ export type LabelTimestampFormat = typeof LabelTimestampFormats[number]
 
 export interface ChartOptions {
   type: ChartType
-  labelColumnIndex: number | null
+  labelColumnName: string
   labelColumnTimestampFormat: LabelTimestampFormat
-  datasetColumnIndices: Array<number | null>
-  minDatasetRange: number | null
-  maxDatasetRange: number | null
+  datasetColumnNames: string[]
+  processedColumnNames: Set<string>
 }
 
 export type ResultProps = WorkspaceItemProps & {

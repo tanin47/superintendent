@@ -3,10 +3,14 @@ import { Result, type WorkspaceItem, DraftSql, Sheet, generateWorkspaceItemId, D
 import { drop } from '../api'
 import { type ExportedWorkflow } from '../../types'
 
+export interface WorkspaceItemWrapper {
+  base: WorkspaceItem
+}
+
 export interface WorkspaceState {
-  items: WorkspaceItem[]
-  selectedComposableItem: WorkspaceItem | null
-  selectedResult: Result | null
+  items: WorkspaceItemWrapper[]
+  selectedComposableItemId: string | null
+  selectedResultId: string | null
 }
 
 export enum ActionType {
@@ -15,8 +19,8 @@ export enum ActionType {
   TOGGLE_LOADING = 'toggle_loading',
   RENAME = 'rename',
   DELETE = 'delete',
-  SET_COMPOSABLE_ITEM = 'set_composable_item',
-  SET_RESULT = 'set_result',
+  SET_COMPOSABLE_ITEM_ID = 'set_composable_item_id',
+  SET_RESULT_ID = 'set_result_id',
   IMPORT_WORKFLOW = 'import_workflow',
   DISCARD_DRAFT_SQL = 'discard_draft_sql',
   SET_PRESENTATION_TYPE = 'set_presentation_type',
@@ -25,45 +29,53 @@ export enum ActionType {
 
 export interface Action {
   type: ActionType
-  item?: WorkspaceItem
+  id?: string | null
   newName?: string
-  result?: Result | null
+  newResult?: Result | null
   loading?: boolean
   targetDraftResult?: boolean
-  composableItem?: WorkspaceItem | null
   workflow?: ExportedWorkflow
-  draftSql?: DraftSql
   sql?: string
   presentationType?: PresentationType
-  chartOptions?: ChartOptions
+  chartOptions?: ChartOptions | null
+}
+
+function update (state: WorkspaceState, index: number | null = null): WorkspaceState {
+  if (index !== null && index >= 0 && index < state.items.length) {
+    state.items[index] = { ...state.items[index] }
+  }
+
+  state.items = [...state.items]
+  return { ...state }
 }
 
 let draftSqlNumberRunner = 1
 export function reduce (state: WorkspaceState, action: Action): WorkspaceState {
   if (action.type === ActionType.RENAME) {
-    state.items = state.items.map((item) => {
-      if (item === action.item!) {
-        item.previousName = item.name
-        item.name = action.newName!
-      }
-      return item
-    })
-    return { ...state }
+    const index = state.items.findIndex((i) => i.base.id === action.id)!
+
+    state.items[index].base.name = action.newName!
+    return update(state, index)
   } else if (action.type === ActionType.DELETE) {
-    const item = action.item!
-    if (!(item instanceof DraftSql)) {
-      const confirmMsg = `Are you sure you want to remove: ${item.name}?`
+    const id = action.id!
+    const item = state.items.find((i) => i.base.id === id)
+
+    if (item && !(item.base instanceof DraftSql)) {
+      const confirmMsg = `Are you sure you want to remove: ${item.base.name}?`
       if (!confirm(confirmMsg)) {
         return state
       }
 
-      void drop(item.name)
+      void drop(item.base.name)
     }
 
-    state.items = state.items.filter((i) => i !== item)
+    state.items = state.items.filter((i) => i.base.id !== item?.base.id)
 
-    if (item === state.selectedComposableItem) {
-      state.selectedComposableItem = null
+    if (id === state.selectedComposableItemId) {
+      state.selectedComposableItemId = null
+    }
+    if (id === state.selectedResultId) {
+      state.selectedResultId = null
     }
 
     return { ...state }
@@ -75,99 +87,97 @@ export function reduce (state: WorkspaceState, action: Action): WorkspaceState {
     })
 
     if (state.items.length === 0) {
-      state.selectedComposableItem = item
+      state.selectedComposableItemId = item.id
     }
 
-    state.items = [...state.items, item]
+    state.items = [...state.items, { base: item }]
     return {
       ...state,
-      selectedComposableItem: item
+      selectedComposableItemId: item.id
     }
   } else if (action.type === ActionType.ADD_OR_REPLACE_RESULT) {
-    const newResult = action.result!
-    const foundIndex = state.items.findIndex((s) => s.id === newResult.id)
-    const found = foundIndex > -1 ? state.items[foundIndex] : null
+    const newResult = action.newResult!
+    const foundIndex = state.items.findIndex((s) => s.base.id === newResult.id)
 
-    if (found && !(found instanceof DraftSql)) {
-      if (found !== newResult) {
-        throw new Error('They should have been the same object')
-      }
-    } else {
-      if (found && found instanceof DraftSql) {
-        state.items.splice(foundIndex, 1)
-      }
-
-      state.items.push(newResult)
+    if (foundIndex > -1) {
+      state.items.splice(foundIndex, 1)
     }
+    state.items.push({ base: newResult })
 
-    state.items = [...state.items]
-    return { ...state }
+    return update(state)
   } else if (action.type === ActionType.TOGGLE_LOADING) {
-    let targetItem: Result
+    let index: number
 
     if (action.targetDraftResult) {
-      targetItem = state.items.find((i) => i instanceof DraftResult)! as Result
+      index = state.items.findIndex((i) => i.base instanceof DraftResult)
     } else {
-      targetItem = action.result!
+      index = state.items.findIndex((i) => i.base.id === action.id!)
     }
 
-    for (const item of state.items) {
-      if (item === targetItem) {
-        item.isLoading = action.loading!
-      }
+    if (index > -1) {
+      state.items[index].base.isLoading = action.loading!
     }
 
-    state.items = [...state.items]
+    return update(state, index)
+  } else if (action.type === ActionType.SET_COMPOSABLE_ITEM_ID) {
+    state.selectedComposableItemId = action.id ?? null
     return { ...state }
-  } else if (action.type === ActionType.SET_COMPOSABLE_ITEM) {
-    state.selectedComposableItem = action.composableItem ?? null
-    return { ...state }
-  } else if (action.type === ActionType.SET_RESULT) {
-    state.selectedResult = action.result ?? null
+  } else if (action.type === ActionType.SET_RESULT_ID) {
+    state.selectedResultId = action.id ?? null
     return { ...state }
   } else if (action.type === ActionType.IMPORT_WORKFLOW) {
     state.items = [
       ...state.items,
-      ...action.workflow!.sheets.map((sheet) => new Sheet({
-        id: generateWorkspaceItemId(),
-        name: sheet.name,
-        isCsv: sheet.isCsv,
-        sql: sheet.sql,
-        count: 0,
-        columns: [],
-        rows: [],
-        sorts: [],
-        presentationType: 'table'
+      ...action.workflow!.sheets.map((sheet) => ({
+        base: new Sheet({
+          id: generateWorkspaceItemId(),
+          name: sheet.name,
+          isCsv: sheet.isCsv,
+          sql: sheet.sql,
+          count: 0,
+          columns: [],
+          rows: [],
+          sorts: [],
+          presentationType: 'table'
+        })
       }))
     ]
     return { ...state }
   } else if (action.type === ActionType.DISCARD_DRAFT_SQL) {
-    const draftSql = action.draftSql!
-
-    state.items = state.items.filter((i) => i.id !== draftSql.id)
+    state.items = state.items.filter((i) => i.base.id !== action.id!)
     return { ...state }
   } else if (action.type === ActionType.SET_PRESENTATION_TYPE) {
-    const item = action.result!
     const presentationType = action.presentationType!
+    const index = state.items.findIndex((i) => i.base.id === action.id!)
 
-    item.presentationType = presentationType
+    if (index > -1) {
+      const base = state.items[index].base
 
-    state.items = [...state.items]
-    return { ...state }
+      if (base instanceof Result) {
+        base.presentationType = presentationType
+      }
+    }
+
+    return update(state, index)
   } else if (action.type === ActionType.SET_CHART_OPTIONS) {
-    const item = action.result!
     const chartOptions = action.chartOptions!
+    const index = state.items.findIndex((i) => i.base.id === action.id!)
 
-    item.chartOptions = chartOptions
+    if (index > -1) {
+      const base = state.items[index].base
 
-    state.items = [...state.items]
-    return { ...state }
+      if (base instanceof Result) {
+        base.chartOptions = chartOptions
+      }
+    }
+
+    return update(state, index)
   }
 
   return state
 }
 
-export const WorkspaceContext = React.createContext<WorkspaceState>({ items: [], selectedComposableItem: null, selectedResult: null })
+export const WorkspaceContext = React.createContext<WorkspaceState>({ items: [], selectedComposableItemId: null, selectedResultId: null })
 export const DispatchContext = React.createContext<React.Dispatch<Action> | null>(null)
 
 export function useWorkspaceContext (): WorkspaceState {
@@ -197,41 +207,37 @@ export class StateChangeApi {
     this.dispatch({ type: ActionType.TOGGLE_LOADING, loading: false, targetDraftResult: true })
   }
 
-  public startLoading (item: WorkspaceItem | null): void {
-    if (item && item instanceof Result) {
-      this.dispatch({ type: ActionType.TOGGLE_LOADING, result: item, loading: true })
-    }
+  public startLoading (id: string | null): void {
+    this.dispatch({ type: ActionType.TOGGLE_LOADING, id, loading: true })
   }
 
-  public stopLoading (item: WorkspaceItem | null): void {
-    if (item && item instanceof Result) {
-      this.dispatch({ type: ActionType.TOGGLE_LOADING, result: item, loading: false })
-    }
+  public stopLoading (id: string | null): void {
+    this.dispatch({ type: ActionType.TOGGLE_LOADING, id, loading: false })
   }
 
-  public addOrReplaceResult (result: Result): void {
-    this.dispatch({ type: ActionType.ADD_OR_REPLACE_RESULT, result })
+  public addOrReplaceResult (newResult: Result): void {
+    this.dispatch({ type: ActionType.ADD_OR_REPLACE_RESULT, newResult })
   }
 
-  public setSelectedComposableItem (item: WorkspaceItem | null): void {
-    this.dispatch({ type: ActionType.SET_COMPOSABLE_ITEM, composableItem: item })
+  public setSelectedComposableItemId (id: string | null): void {
+    this.dispatch({ type: ActionType.SET_COMPOSABLE_ITEM_ID, id })
   }
 
-  public setSelectedResult (result: Result | null): void {
-    this.dispatch({ type: ActionType.SET_RESULT, result })
+  public setSelectedResultId (id: string | null): void {
+    this.dispatch({ type: ActionType.SET_RESULT_ID, id })
   }
 
-  public deleteComposableItem (item: WorkspaceItem): void {
+  public deleteComposableItemId (id: string): void {
     this.dispatch({
       type: ActionType.DELETE,
-      item
+      id
     })
   }
 
-  public rename (item: WorkspaceItem, newName: string): void {
+  public rename (id: string, newName: string): void {
     this.dispatch({
       type: ActionType.RENAME,
-      item,
+      id,
       newName
     })
   }
@@ -240,15 +246,15 @@ export class StateChangeApi {
     this.dispatch({ type: ActionType.IMPORT_WORKFLOW, workflow })
   }
 
-  public discardDraftSql (draftSql: DraftSql): void {
-    this.dispatch({ type: ActionType.DISCARD_DRAFT_SQL, draftSql })
+  public discardDraftSql (id: string): void {
+    this.dispatch({ type: ActionType.DISCARD_DRAFT_SQL, id })
   }
 
-  public setPresentationType (result: Result, presentationType: PresentationType): void {
-    this.dispatch({ type: ActionType.SET_PRESENTATION_TYPE, result, presentationType })
+  public setPresentationType (id: string, presentationType: PresentationType): void {
+    this.dispatch({ type: ActionType.SET_PRESENTATION_TYPE, id, presentationType })
   }
 
-  public setChartOptions (result: Result, chartOptions: ChartOptions): void {
-    this.dispatch({ type: ActionType.SET_CHART_OPTIONS, result, chartOptions })
+  public setChartOptions (id: string, chartOptions: ChartOptions | null): void {
+    this.dispatch({ type: ActionType.SET_CHART_OPTIONS, id, chartOptions })
   }
 }

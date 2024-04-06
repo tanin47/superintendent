@@ -11,27 +11,15 @@ import 'codemirror/addon/comment/comment'
 import 'codemirror/keymap/vim.js'
 import './Editor.scss'
 import { EditorModeChannel, type EditorMode } from '../../types'
-import { type RunSqlMode, type Result, DraftSheetName, DraftSql, Sheet, DraftResult, generateWorkspaceItemId, type WorkspaceItem } from './types'
+import { type RunSqlMode, type Result, DraftSheetName, DraftSql, Sheet, DraftResult, generateWorkspaceItemId } from './types'
 import { format } from 'sql-formatter'
 import Button from './Button'
 import { altOptionChar, ctrlCmdChar } from './constants'
 import * as dialog from './dialog'
 import { useFloating, useClientPoint, useInteractions, useDismiss, useTransitionStyles, shift } from '@floating-ui/react'
 import { getInitialEditorMode, query } from '../api'
-import { StateChangeApi, useDispatch, useWorkspaceContext } from './WorkspaceContext'
+import { StateChangeApi, type WorkspaceItemWrapper, useDispatch, useWorkspaceContext } from './WorkspaceContext'
 import { type RenameDialogInfo } from './RenameDialog'
-
-export interface Ref {
-  getValue: () => string
-  setValue: (newValue: string) => void
-  addText: (text: string) => void
-  focus: () => void
-}
-
-interface Props {
-  initialValue?: string | null
-  onRenamingSheet: (info: RenameDialogInfo) => void
-}
 
 function getAutocompleteWord (s: string): string {
   if (s.includes('.') || s.includes('-') || s.includes(' ') || s.match(/^[0-9]/) !== null) {
@@ -135,14 +123,17 @@ interface ContextMenuOpenInfo {
   clientY: number
 }
 
-export default React.forwardRef<Ref, Props>(function Editor ({
-  initialValue,
+export default function Editor ({
+  editingItem,
   onRenamingSheet
-}: Props, ref): JSX.Element {
+}: {
+  editingItem: WorkspaceItemWrapper | null
+  onRenamingSheet: (info: RenameDialogInfo) => void
+}): JSX.Element {
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
   const codeMirrorInstance = React.useRef<any>(null)
   const [isQueryLoading, setIsQueryLoading] = React.useState<boolean>(false)
-  const [shownComposableItem, setShownComposableItem] = React.useState<WorkspaceItem | null>(null)
+  const [shownComposableItem, setShownComposableItem] = React.useState<WorkspaceItemWrapper | null>(null)
   const [shouldShowDraftNotice, setShouldShowDraftNotice] = React.useState<boolean>(false)
   const [shouldShowCsvNotice, setShouldShowCsvNotice] = React.useState<boolean>(false)
   const [contextMenuOpenInfo, setContextMenuOpenInfo] = React.useState<ContextMenuOpenInfo | null>(null)
@@ -163,7 +154,7 @@ export default React.forwardRef<Ref, Props>(function Editor ({
 
   React.useEffect(
     () => {
-      if (workspaceState.selectedComposableItem === null) {
+      if (editingItem === null) {
         codeMirrorInstance.current?.setOption('readOnly', false)
         setShouldShowDraftNotice(false)
         setShouldShowCsvNotice(false)
@@ -172,7 +163,7 @@ export default React.forwardRef<Ref, Props>(function Editor ({
         return
       }
 
-      if (!workspaceState.selectedComposableItem || shownComposableItem === workspaceState.selectedComposableItem) { return }
+      if (!editingItem || shownComposableItem?.base === editingItem.base) { return }
 
       codeMirrorInstance.current.save()
 
@@ -180,56 +171,40 @@ export default React.forwardRef<Ref, Props>(function Editor ({
       const selections = codeMirrorInstance.current.listSelections()
 
       if (shownComposableItem) {
-        shownComposableItem.editorState = {
+        shownComposableItem.base.editorState = {
           cursor,
           selections,
           draft: codeMirrorInstance.current.getValue() ?? ''
         }
       }
 
-      if (workspaceState.selectedComposableItem?.editorState?.draft && workspaceState.selectedComposableItem?.editorState?.draft.trim() !== workspaceState.selectedComposableItem.sql.trim()) {
-        codeMirrorInstance.current.setValue(workspaceState.selectedComposableItem?.editorState?.draft)
+      if (editingItem?.base.editorState?.draft && editingItem?.base.editorState?.draft.trim() !== editingItem.base.sql.trim()) {
+        codeMirrorInstance.current.setValue(editingItem?.base.editorState?.draft)
 
-        if (!(workspaceState.selectedComposableItem instanceof DraftSql)) {
+        if (!(editingItem.base instanceof DraftSql)) {
           setShouldShowDraftNotice(true)
         }
       } else {
-        codeMirrorInstance.current.setValue(workspaceState.selectedComposableItem?.getIsCsv() ? '' : workspaceState.selectedComposableItem.sql)
+        codeMirrorInstance.current.setValue(editingItem?.base.getIsCsv() ? '' : editingItem.base.sql)
         setShouldShowDraftNotice(false)
       }
 
-      if (workspaceState.selectedComposableItem.editorState?.cursor && workspaceState.selectedComposableItem.editorState?.selections) {
-        codeMirrorInstance.current.setCursor(workspaceState.selectedComposableItem.editorState.cursor)
-        codeMirrorInstance.current.setSelections(workspaceState.selectedComposableItem.editorState.selections)
+      if (editingItem.base.editorState?.cursor && editingItem.base.editorState?.selections) {
+        codeMirrorInstance.current.setCursor(editingItem.base.editorState.cursor)
+        codeMirrorInstance.current.setSelections(editingItem.base.editorState.selections)
       } else {
         codeMirrorInstance.current.setCursor(cursor)
         codeMirrorInstance.current.setSelections(selections)
       }
 
       codeMirrorInstance.current.focus()
-      setShownComposableItem(workspaceState.selectedComposableItem)
+      setShownComposableItem(editingItem)
 
-      codeMirrorInstance.current.setOption('readOnly', workspaceState.selectedComposableItem?.getIsCsv() ? 'nocursor' : false)
-      setShouldShowCsvNotice(workspaceState.selectedComposableItem?.getIsCsv())
+      codeMirrorInstance.current.setOption('readOnly', editingItem?.base.getIsCsv() ? 'nocursor' : false)
+      setShouldShowCsvNotice(editingItem?.base.getIsCsv())
     },
-    [workspaceState.selectedComposableItem, shownComposableItem]
+    [editingItem, shownComposableItem]
   )
-
-  React.useImperativeHandle(ref, () => ({
-    getValue: () => {
-      codeMirrorInstance.current.save()
-      return codeMirrorInstance.current.getValue() ?? ''
-    },
-    setValue: (newValue: string) => {
-      codeMirrorInstance.current.setValue(newValue)
-    },
-    addText: (text: string) => {
-      codeMirrorInstance.current.replaceSelection(text)
-    },
-    focus: () => {
-      codeMirrorInstance.current.focus()
-    }
-  }))
 
   const formatSql = React.useCallback(
     () => {
@@ -243,6 +218,9 @@ export default React.forwardRef<Ref, Props>(function Editor ({
           }
         )
       )
+      const lastLine = codeMirrorInstance.current.lastLine()
+      const lastCharIndex = codeMirrorInstance.current.getLine(lastLine).length
+      codeMirrorInstance.current.setCursor({ line: lastLine, ch: lastCharIndex })
     },
     [codeMirrorInstance]
   )
@@ -250,8 +228,8 @@ export default React.forwardRef<Ref, Props>(function Editor ({
   const revertSql = React.useCallback(
     () => {
       if (!shownComposableItem) { return }
-      codeMirrorInstance.current.setValue(shownComposableItem.sql)
-      shownComposableItem.editorState = {}
+      codeMirrorInstance.current.setValue(shownComposableItem.base.sql)
+      shownComposableItem.base.editorState = {}
       setShouldShowDraftNotice(false)
       codeMirrorInstance.current.focus()
     },
@@ -290,7 +268,7 @@ export default React.forwardRef<Ref, Props>(function Editor ({
         case 'partial-new':
           break
         case 'partial-draft':
-          replace = (workspaceState.items.find((i) => i instanceof DraftResult) as DraftResult) ?? new DraftResult({
+          replace = (workspaceState.items.find((i) => i.base instanceof DraftResult)?.base as DraftResult) ?? new DraftResult({
             id: generateWorkspaceItemId(),
             name: DraftSheetName,
             sql,
@@ -303,8 +281,8 @@ export default React.forwardRef<Ref, Props>(function Editor ({
           stateChangeApi.startLoadingDraftResult()
           break
         case 'default':
-          replace = workspaceState.selectedComposableItem instanceof DraftSql ? null : (workspaceState.selectedComposableItem as Result) ?? null
-          stateChangeApi.startLoading(workspaceState.selectedComposableItem)
+          replace = editingItem?.base instanceof DraftSql ? null : (editingItem?.base as Result) ?? null
+          stateChangeApi.startLoading(editingItem?.base.id ?? null)
           break
         default:
           throw new Error()
@@ -315,15 +293,15 @@ export default React.forwardRef<Ref, Props>(function Editor ({
         const sheet = await query(sql, replace)
 
         stateChangeApi.addOrReplaceResult(sheet)
-        stateChangeApi.setSelectedResult(sheet)
+        stateChangeApi.setSelectedResultId(sheet.id)
 
         if (mode === 'default') {
           setShouldShowDraftNotice(false)
 
-          if (workspaceState.selectedComposableItem instanceof DraftSql) {
-            stateChangeApi.discardDraftSql(workspaceState.selectedComposableItem)
+          if (editingItem?.base instanceof DraftSql) {
+            stateChangeApi.discardDraftSql(editingItem.base.id)
           }
-          stateChangeApi.setSelectedComposableItem(sheet)
+          stateChangeApi.setSelectedComposableItemId(sheet.id)
         }
 
         if (!replace || replace.name !== sheet.name) {
@@ -341,7 +319,7 @@ export default React.forwardRef<Ref, Props>(function Editor ({
             stateChangeApi.stopLoadingDraftResult()
             break
           case 'default':
-            stateChangeApi.stopLoading(workspaceState.selectedComposableItem)
+            stateChangeApi.stopLoading(editingItem?.base.id ?? null)
             break
           default:
             // eslint-disable-next-line no-unsafe-finally
@@ -349,14 +327,14 @@ export default React.forwardRef<Ref, Props>(function Editor ({
         }
       }
     },
-    [isQueryLoading, onRenamingSheet, stateChangeApi, workspaceState.items, workspaceState.selectedComposableItem]
+    [isQueryLoading, onRenamingSheet, stateChangeApi, workspaceState.items, editingItem]
   )
 
   React.useEffect(() => {
     codeMirrorInstance.current = CodeMirror.fromTextArea(
       textareaRef.current!,
       {
-        value: initialValue ?? '',
+        value: '',
         mode: 'text/x-sql',
         indentWithTabs: false,
         smartIndent: true,
@@ -413,7 +391,7 @@ export default React.forwardRef<Ref, Props>(function Editor ({
       })
       event.preventDefault()
     })
-  }, [initialValue, editorMode])
+  }, [editorMode])
 
   React.useEffect(() => {
     if (!codeMirrorInstance.current) { return }
@@ -423,28 +401,28 @@ export default React.forwardRef<Ref, Props>(function Editor ({
   React.useEffect(() => {
     if (!codeMirrorInstance.current) { return }
 
-    const relevantResults = workspaceState.items.filter((s) => s instanceof Sheet) as Result[]
+    const relevantResults = workspaceState.items.filter((s) => s.base instanceof Sheet)
 
     const tables = {}
     const allColumns = new Set<string>()
 
     for (const sheet of relevantResults) {
-      for (const column of sheet.columns) {
+      for (const column of (sheet.base as Sheet).columns) {
         allColumns.add(getAutocompleteWord(column.name))
       }
     }
 
     for (const sheet of relevantResults) {
-      tables[getAutocompleteWord(sheet.name)] = []
+      tables[getAutocompleteWord((sheet.base as Sheet).name)] = []
     }
 
     if (relevantResults.length > 0) {
-      tables[getAutocompleteWord(relevantResults[0].name)] = Array.from(allColumns)
+      tables[getAutocompleteWord((relevantResults[0].base as Sheet).name)] = Array.from(allColumns)
     }
 
     codeMirrorInstance.current.setOption('hintOptions', {
       tables,
-      defaultTable: relevantResults[0] ? getAutocompleteWord(relevantResults[0].name) : null,
+      defaultTable: relevantResults[0] ? getAutocompleteWord((relevantResults[0].base as Sheet).name) : null,
       closeOnUnfocus: true
     })
   }, [workspaceState.items])
@@ -581,4 +559,4 @@ export default React.forwardRef<Ref, Props>(function Editor ({
       </div>
     </>
   )
-})
+}

@@ -2,10 +2,10 @@ import React from 'react'
 import Modal from 'react-modal'
 import './AddCsvModal.scss'
 import { addCsv, convertFileList, hasValidLicense } from '../api'
-import { type Sheet } from './types'
+import { type WorkspaceItem, type Sheet } from './types'
 import { type Format } from '../../types'
 import { ctrlCmdChar } from './constants'
-import { StateChangeApi, useDispatch } from './WorkspaceContext'
+import { StateChangeApi, type WorkspaceItemWrapper, useDispatch } from './WorkspaceContext'
 import { DateTime } from 'luxon'
 
 type Status = 'draft' | 'loading' | 'added' | 'errored'
@@ -15,7 +15,7 @@ interface File {
   path: string
   withHeader: boolean
   format: Format
-  replace: Sheet | null
+  replace: WorkspaceItem | null
   status: Status
 }
 
@@ -41,15 +41,15 @@ function FileItem ({
   onDeleted
 }: {
   file: File
-  csvs: Sheet[]
+  csvs: WorkspaceItemWrapper[]
   disabled: boolean
   onWithHeaderChanged: (newWithHeader: boolean) => void
   onFormatChanged: (newFormat: Format) => void
-  onReplaceChanged: (newReplace: Sheet | null) => void
+  onReplaceChanged: (newReplace: WorkspaceItem | null) => void
   onDeleted: () => void
 }): JSX.Element {
   const [format, setFormat] = React.useState(file.format)
-  const [replace, setReplace] = React.useState<Sheet | null>(null)
+  const [replace, setReplace] = React.useState<WorkspaceItem | null>(null)
   const [withHeader, setWithHeader] = React.useState(file.withHeader)
 
   let icon = <i className="fas fa-file draft icon" />
@@ -124,23 +124,23 @@ function FileItem ({
                 value={replace?.id ?? ''}
                 onChange={(event) => {
                   const replaceId = event.target.value
-                  const replace = csvs.find((c) => c.id === replaceId) ?? null
-                  setReplace(replace)
-                  onReplaceChanged(replace)
+                  const replace = csvs.find((c) => c.base.id === replaceId) ?? null
+                  setReplace(replace?.base ?? null)
+                  onReplaceChanged(replace?.base ?? null)
                 }}
                 disabled={disabled || format === 'super'}
                 data-testid="add-csv-sheet-option"
               >
                 <option value="" key="">as a new sheet</option>
                 {csvs
-                  .filter((s) => s.isCsv)
+                  .filter((s) => s.base.getIsCsv())
                   .map((s) => {
                     return (
                       <option
-                        value={s.id}
-                        key={s.id}
+                        value={s.base.id}
+                        key={s.base.id}
                       >
-                        Replace {s.name}
+                        Replace {s.base.name}
                       </option>
                     )
                   })
@@ -165,7 +165,7 @@ export default React.forwardRef(function AddCsv ({
   onGoToLicense
 }: {
   isOpen: boolean
-  csvs: Sheet[]
+  csvs: WorkspaceItemWrapper[]
   onClose: () => void
   onGoToLicense: () => void
 }, ref: React.ForwardedRef<Ref>): JSX.Element {
@@ -202,9 +202,9 @@ export default React.forwardRef(function AddCsv ({
       })
 
       try {
-        const sheet = await addCsv(file.path, file.withHeader, file.format, file.replace)
+        const sheet = await addCsv(file.path, file.withHeader, file.format, file.replace as Sheet)
         stateChangeApi.addOrReplaceResult(sheet)
-        stateChangeApi.setSelectedResult(sheet)
+        stateChangeApi.setSelectedResultId(sheet.id)
 
         setFiles((prevFiles) => {
           prevFiles[index] = {

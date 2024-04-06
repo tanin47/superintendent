@@ -21,7 +21,7 @@ import {
 import { type Result, type ChartOptions, type ChartType, type LabelTimestampFormat, LabelTimestampFormats } from './types'
 import React from 'react'
 import './Chart.scss'
-import { StateChangeApi, useDispatch } from './WorkspaceContext'
+import { StateChangeApi, type WorkspaceItemWrapper, useDispatch } from './WorkspaceContext'
 import { type ColumnType } from '../../types'
 import { DateTime } from 'luxon'
 
@@ -111,10 +111,12 @@ function computeLabelColumnTimestamp (result: Result, labelColumnIndex: number):
 function Canvas ({
   result
 }: {
-  result: Result
+  result: WorkspaceItemWrapper
 }): JSX.Element {
   const chartRef = React.useRef<HTMLCanvasElement | null>(null)
   const instance = React.useRef<ChartJs | null>(null)
+
+  const _result = result.base as Result
 
   React.useEffect(
     () => {
@@ -123,11 +125,11 @@ function Canvas ({
 
       instance.current?.destroy()
 
-      const options = result.chartOptions
+      const options = _result.chartOptions
       if (!options) { return }
 
-      const labelColumnIndex = options.labelColumnIndex
-      if (labelColumnIndex === null) { return }
+      const labelColumnIndex = _result.columns.findIndex((c) => c.name === options.labelColumnName)
+      if (labelColumnIndex < 0) { return }
 
       let type: ChartJsType
       let stacked: boolean = false
@@ -141,25 +143,27 @@ function Canvas ({
 
       const labels: any[] = []
 
-      for (let i = 0; i < Math.min(MAX_ROWS, result.rows.length); i++) {
-        labels.push(format(result.rows[i][labelColumnIndex], result.columns[labelColumnIndex].tpe, options.labelColumnTimestampFormat))
+      for (let i = 0; i < Math.min(MAX_ROWS, _result.rows.length); i++) {
+        labels.push(format(_result.rows[i][labelColumnIndex], _result.columns[labelColumnIndex].tpe, options.labelColumnTimestampFormat))
       }
+
+      const datasetColumnIndices = options.datasetColumnNames.map((name) => _result.columns.findIndex((c) => c.name === name)).filter((index) => index >= 0)
 
       const config = {
         type,
         data: {
           labels,
-          datasets: options.datasetColumnIndices
+          datasets: datasetColumnIndices
             .filter((columnIndex) => columnIndex !== null)
             .map((columnIndex) => {
               const data: any[] = []
 
-              for (let i = 0; i < Math.min(MAX_ROWS, result.rows.length); i++) {
-                data.push(format(result.rows[i][columnIndex!], result.columns[columnIndex!].tpe, options.labelColumnTimestampFormat))
+              for (let i = 0; i < Math.min(MAX_ROWS, _result.rows.length); i++) {
+                data.push(format(_result.rows[i][columnIndex], _result.columns[columnIndex].tpe, options.labelColumnTimestampFormat))
               }
 
               return {
-                label: result.columns[columnIndex!].name,
+                label: _result.columns[columnIndex].name,
                 data
               }
             })
@@ -184,7 +188,7 @@ function Canvas ({
 
       instance.current = new ChartJs(ctx, config)
     },
-    [result, result.chartOptions]
+    [_result.chartOptions, _result.columns, _result.rows, result]
   )
 
   return (
@@ -192,7 +196,7 @@ function Canvas ({
   )
 }
 
-function isEqual (a: Array<number | null>, b: Array<number | null>): boolean {
+function isEqual (a: string[], b: string[]): boolean {
   if (a.length !== b.length) { return false }
 
   for (let i = 0; i < a.length; i++) {
@@ -203,95 +207,116 @@ function isEqual (a: Array<number | null>, b: Array<number | null>): boolean {
 }
 
 const VALID_LABEL_TYPES_FOR_LINE = new Set<ColumnType>(['bigint', 'double', 'timestamp'])
+const VALID_DATASET_TYPES = new Set<ColumnType>(['bigint', 'double'])
 
 export default function Chart ({
   result
 }: {
-  result: Result
+  result: WorkspaceItemWrapper
 }): JSX.Element {
   const dispatch = useDispatch()
   const stateChangeApi = React.useMemo(() => new StateChangeApi(dispatch), [dispatch])
 
   const [form, setForm] = React.useState<ChartOptions>({
     type: 'line',
-    labelColumnIndex: 0,
+    labelColumnName: '',
     labelColumnTimestampFormat: 'month',
-    datasetColumnIndices: [1],
-    minDatasetRange: null,
-    maxDatasetRange: null
+    datasetColumnNames: [],
+    processedColumnNames: new Set()
   })
+
+  const _result = result.base as Result
 
   React.useEffect(
     () => {
-      if (result.chartOptions === null) {
+      if (_result.chartOptions === null) {
         const labelColumnIndex = 0
         let type: ChartType = 'line'
         let labelColumnTimestampFormat: LabelTimestampFormat = 'month'
-        const datasetColumnIndices: Array<number | null> = []
+        const datasetColumnNames: string[] = []
 
-        if (result.columns.length >= 1 && !VALID_LABEL_TYPES_FOR_LINE.has(result.columns[0].tpe)) {
+        if (_result.columns.length >= 1 && !VALID_LABEL_TYPES_FOR_LINE.has(_result.columns[0].tpe)) {
           type = 'bar'
         }
 
-        if (result.columns.length >= 1 && result.rows.length >= 1 && result.columns[labelColumnIndex].tpe === 'timestamp') {
-          labelColumnTimestampFormat = computeLabelColumnTimestamp(result, labelColumnIndex)
+        if (_result.columns.length >= 1 && _result.rows.length >= 1 && _result.columns[labelColumnIndex].tpe === 'timestamp') {
+          labelColumnTimestampFormat = computeLabelColumnTimestamp(_result, labelColumnIndex)
         }
 
-        for (let i = 1; i < result.columns.length; i++) {
-          datasetColumnIndices.push(i)
+        for (let i = 1; i < _result.columns.length; i++) {
+          if (VALID_DATASET_TYPES.has(_result.columns[i].tpe)) {
+            datasetColumnNames.push(_result.columns[i].name)
+          }
         }
 
         stateChangeApi.setChartOptions(
-          result,
+          _result.id,
           {
             type,
-            labelColumnIndex,
+            labelColumnName: _result.columns[labelColumnIndex].name,
             labelColumnTimestampFormat,
-            datasetColumnIndices,
-            minDatasetRange: null,
-            maxDatasetRange: null
+            datasetColumnNames,
+            processedColumnNames: new Set(_result.columns.map((c) => c.name))
           }
         )
       } else {
-        let changed = false
-        const options = result.chartOptions
+        const options = _result.chartOptions
+        let changedOptions = false
 
-        if (result.chartOptions.type !== form.type) {
-          form.type = options.type
-          changed = true
+        for (const column of _result.columns) {
+          if (!options.processedColumnNames.has(column.name) && column.name !== options.labelColumnName && VALID_DATASET_TYPES.has(column.tpe)) {
+            options.datasetColumnNames.push(column.name)
+            changedOptions = true
+          }
         }
 
-        if (options.labelColumnIndex !== form.labelColumnIndex) {
-          form.labelColumnIndex = options.labelColumnIndex
-          changed = true
+        options.processedColumnNames = new Set(_result.columns.map((c) => c.name))
+
+        if (changedOptions) {
+          stateChangeApi.setChartOptions(
+            _result.id,
+            {
+              ...options
+            }
+          )
+          return
+        }
+
+        let changedForm = false
+
+        if (_result.columns.find((c) => c.name === form.labelColumnName) === null) {
+          stateChangeApi.setChartOptions(_result.id, null)
+          return
+        }
+
+        if (_result.chartOptions.type !== form.type) {
+          form.type = options.type
+          changedForm = true
+        }
+
+        if (options.labelColumnName !== form.labelColumnName) {
+          form.labelColumnName = options.labelColumnName
+          changedForm = true
         }
 
         if (options.labelColumnTimestampFormat !== form.labelColumnTimestampFormat) {
           form.labelColumnTimestampFormat = options.labelColumnTimestampFormat
-          changed = true
+          changedForm = true
         }
 
-        if (!isEqual(options.datasetColumnIndices, form.datasetColumnIndices)) {
-          form.datasetColumnIndices = [...options.datasetColumnIndices]
-          changed = true
+        if (!isEqual(options.datasetColumnNames, form.datasetColumnNames)) {
+          form.datasetColumnNames = [...options.datasetColumnNames]
+          changedForm = true
         }
 
-        if (options.minDatasetRange !== form.minDatasetRange) {
-          form.minDatasetRange = options.minDatasetRange
-          changed = true
-        }
+        form.processedColumnNames = options.processedColumnNames
 
-        if (options.maxDatasetRange !== form.maxDatasetRange) {
-          form.maxDatasetRange = options.maxDatasetRange
-          changed = true
-        }
-
-        if (changed) {
+        if (changedForm) {
           setForm({ ...form })
         }
       }
     },
-    [form, result, result.chartOptions, stateChangeApi]
+    [_result, form, result, stateChangeApi]
   )
 
   return (
@@ -301,7 +326,7 @@ export default function Chart ({
           <div className="config-area">
             <table>
               <tbody>
-                {result.count > MAX_ROWS && (
+                {_result.count > MAX_ROWS && (
                   <tr className="control">
                     <td className="value" colSpan={2}>
                       <div className="warning">
@@ -318,7 +343,7 @@ export default function Chart ({
                     <div className="select-box">
                       <select
                         value={form.type}
-                        onChange={(event) => { stateChangeApi.setChartOptions(result, { ...form, type: event.target.value as ChartType }) }}
+                        onChange={(event) => { stateChangeApi.setChartOptions(_result.id, { ...form, type: event.target.value as ChartType }) }}
                       >
                         <option value="line">Line</option>
                         <option value="bar">Bar</option>
@@ -336,49 +361,50 @@ export default function Chart ({
                     <div className="line">
                       <div className="select-box">
                         <select
-                          value={form.labelColumnIndex ?? 'none'}
+                          value={form.labelColumnName}
                           onChange={(event) => {
-                            const value = event.target.value
                             stateChangeApi.setChartOptions(
-                              result,
+                              _result.id,
                               {
                                 ...form,
-                                labelColumnIndex: value === 'none' ? null : Number(value)
+                                labelColumnName: event.target.value
                               }
                             )
                           }}
                         >
-                          <option value="none">-- Select --</option>
-                          {result.columns.map((col, index) => {
+                          <option value="">-- Select --</option>
+                          {_result.columns.map((col, index) => {
                             return (
-                              <option key={index} value={index}>{col.name}</option>
+                              <option key={index} value={col.name}>{col.name}</option>
                             )
                           })}
                         </select>
                       </div>
                     </div>
-                    <div className="line">
-                      <div className="select-box">
-                        <select
-                          value={form.labelColumnTimestampFormat}
-                          onChange={(event) => {
-                            stateChangeApi.setChartOptions(
-                              result,
-                              {
-                                ...form,
-                                labelColumnTimestampFormat: event.target.value as LabelTimestampFormat
-                              }
-                            )
-                          }}
-                        >
-                          {LabelTimestampFormats.map((format) => {
-                            return (
-                              <option key={format} value={format}>Formatted to {format} (UTC)</option>
-                            )
-                          })}
-                        </select>
+                    {_result.columns.find((c) => c.name === form.labelColumnName)?.tpe === 'timestamp' && (
+                      <div className="line">
+                        <div className="select-box">
+                          <select
+                            value={form.labelColumnTimestampFormat}
+                            onChange={(event) => {
+                              stateChangeApi.setChartOptions(
+                                _result.id,
+                                {
+                                  ...form,
+                                  labelColumnTimestampFormat: event.target.value as LabelTimestampFormat
+                                }
+                              )
+                            }}
+                          >
+                            {LabelTimestampFormats.map((format) => {
+                              return (
+                                <option key={format} value={format}>Formatted to {format} (UTC)</option>
+                              )
+                            })}
+                          </select>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </td>
                 </tr>
                 <tr className="control">
@@ -386,23 +412,22 @@ export default function Chart ({
                     Y
                   </td>
                   <td className="value">
-                    {form.datasetColumnIndices.map((datasetColumnIndex, index) => {
+                    {form.datasetColumnNames.map((datasetColumnName, index) => {
                       return (
                         <div key={index} className="line">
                           <div className="select-box">
                             <select
-                              value={datasetColumnIndex ?? 'none'}
+                              value={datasetColumnName}
                               onChange={(event) => {
-                                const value = event.target.value
-                                form.datasetColumnIndices[index] = value === 'none' ? null : Number(value)
-                                form.datasetColumnIndices = [...form.datasetColumnIndices]
-                                stateChangeApi.setChartOptions(result, { ...form })
+                                form.datasetColumnNames[index] = event.target.value
+                                form.datasetColumnNames = [...form.datasetColumnNames]
+                                stateChangeApi.setChartOptions(_result.id, { ...form })
                               }}
                             >
-                              <option value="none">-- Select --</option>
-                              {result.columns.map((col, index) => {
+                              <option value="">-- Select --</option>
+                              {_result.columns.map((col, index) => {
                                 return (
-                                  <option key={index} value={`${index}`}>{col.name}</option>
+                                  <option key={index} value={col.name}>{col.name}</option>
                                 )
                               })}
                             </select>
@@ -410,9 +435,8 @@ export default function Chart ({
                           <i
                             className="fas fa-trash-alt"
                             onClick={() => {
-                              form.datasetColumnIndices.splice(index, 1)
-                              form.datasetColumnIndices = [...form.datasetColumnIndices]
-                              stateChangeApi.setChartOptions(result, { ...form })
+                              form.datasetColumnNames = form.datasetColumnNames.filter((c) => c !== datasetColumnName)
+                              stateChangeApi.setChartOptions(_result.id, { ...form })
                             }}
                           ></i>
                         </div>
@@ -422,9 +446,9 @@ export default function Chart ({
                       <span
                         className="add-dataset-button"
                         onClick={() => {
-                          form.datasetColumnIndices.push(null)
-                          form.datasetColumnIndices = [...form.datasetColumnIndices]
-                          stateChangeApi.setChartOptions(result, { ...form })
+                          form.datasetColumnNames.push('')
+                          form.datasetColumnNames = [...form.datasetColumnNames]
+                          stateChangeApi.setChartOptions(_result.id, { ...form })
                         }}
                       >
                         + Add a dataset
@@ -432,50 +456,6 @@ export default function Chart ({
                     </div>
                   </td>
                 </tr>
-                {/* <tr className="control">
-                  <td className="label">
-                    Min Y
-                  </td>
-                  <td className="value">
-                    <input
-                      type="text"
-                      placeholder="min"
-                      value={form.minDatasetRange ?? ''}
-                      onChange={(event) => {
-                        const value = event.target.value
-                        stateChangeApi.setChartOptions(
-                          result,
-                          {
-                            ...form,
-                            minDatasetRange: value === '' ? null : Number(value)
-                          }
-                        )
-                      }}
-                    />
-                  </td>
-                </tr>
-                <tr className="control">
-                  <td className="label">
-                    Max Y
-                  </td>
-                  <td className="value">
-                    <input
-                      type="text"
-                      placeholder="max"
-                      value={form.maxDatasetRange ?? ''}
-                      onChange={(event) => {
-                        const value = event.target.value
-                        stateChangeApi.setChartOptions(
-                          result,
-                          {
-                            ...form,
-                            maxDatasetRange: value === '' ? null : Number(value)
-                          }
-                        )
-                      }}
-                    />
-                  </td>
-                </tr> */}
               </tbody>
             </table>
           </div>
