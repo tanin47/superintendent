@@ -1,5 +1,5 @@
 import React from 'react'
-import { Result, DraftSql, Sheet, generateWorkspaceItemId, DraftResult, type PresentationType, type ChartOptions } from './types'
+import { type Result, DraftSql, Sheet, generateWorkspaceItemId, DraftResult, type PresentationType, type ChartOptions, type SheetEditorState } from './types'
 import { drop } from '../api'
 import { type ExportedWorkflow } from '../../types'
 
@@ -26,7 +26,8 @@ export enum ActionType {
   IMPORT_WORKFLOW = 'import_workflow',
   DISCARD_DRAFT_SQL = 'discard_draft_sql',
   SET_PRESENTATION_TYPE = 'set_presentation_type',
-  SET_CHART_OPTIONS = 'set_chart_options'
+  SET_CHART_OPTIONS = 'set_chart_options',
+  SET_EDITOR_STATE = 'set_editor_state'
 }
 
 export interface Action {
@@ -40,11 +41,12 @@ export interface Action {
   sql?: string
   presentationType?: PresentationType
   chartOptions?: ChartOptions | null
+  editorState?: SheetEditorState | null
 }
 
-function update (state: WorkspaceState, index: number | null = null): WorkspaceState {
-  if (index !== null && index >= 0 && index < state.results.length) {
-    state.results[index] = { ...state.results[index] }
+function update (state: WorkspaceState, resultIndex: number | null = null): WorkspaceState {
+  if (resultIndex !== null && resultIndex >= 0 && resultIndex < state.results.length) {
+    state.results[resultIndex] = { ...state.results[resultIndex] }
   }
 
   state.results = [...state.results]
@@ -159,27 +161,38 @@ export function reduce (state: WorkspaceState, action: Action): WorkspaceState {
     const index = state.results.findIndex((i) => i.base.id === action.id!)
 
     if (index > -1) {
-      const base = state.results[index].base
-
-      if (base instanceof Result) {
-        base.presentationType = presentationType
-      }
+      state.results[index].base.presentationType = presentationType
     }
 
     return update(state, index)
   } else if (action.type === ActionType.SET_CHART_OPTIONS) {
-    const chartOptions = action.chartOptions!
+    const chartOptions = action.chartOptions ?? null
     const index = state.results.findIndex((i) => i.base.id === action.id!)
 
     if (index > -1) {
-      const base = state.results[index].base
-
-      if (base instanceof Result) {
-        base.chartOptions = chartOptions
-      }
+      state.results[index].base.chartOptions = chartOptions
     }
 
     return update(state, index)
+  } else if (action.type === ActionType.SET_EDITOR_STATE) {
+    const editorState = action.editorState ?? null
+    const resultIndex = state.results.findIndex((i) => i.base.id === action.id!)
+
+    if (resultIndex > -1) {
+      state.results[resultIndex].base.editorState = editorState
+      return update(state, resultIndex)
+    }
+
+    const draftSqlIndex = state.draftSqls.findIndex((i) => i.base.id === action.id!)
+
+    if (draftSqlIndex > -1) {
+      state.draftSqls[draftSqlIndex].base.editorState = editorState
+      state.draftSqls[draftSqlIndex] = { ...state.draftSqls[draftSqlIndex] }
+      state.draftSqls = [...state.draftSqls]
+      return { ...state }
+    }
+
+    return state
   }
 
   return state
@@ -271,5 +284,9 @@ export class StateChangeApi {
 
   public setChartOptions (id: string, chartOptions: ChartOptions | null): void {
     this.dispatch({ type: ActionType.SET_CHART_OPTIONS, id, chartOptions })
+  }
+
+  public setEditorState (id: string, editorState: SheetEditorState | null): void {
+    this.dispatch({ type: ActionType.SET_EDITOR_STATE, id, editorState })
   }
 }

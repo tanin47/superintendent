@@ -133,8 +133,9 @@ export default function Editor ({
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
   const codeMirrorInstance = React.useRef<any>(null)
   const [isQueryLoading, setIsQueryLoading] = React.useState<boolean>(false)
-  const [shownComposableItem, setShownComposableItem] = React.useState<ObjectWrapper<ComposableItem> | null>(null)
+  const [shownComposableItemId, setShownComposableItemId] = React.useState<string | null>(null)
   const [shouldShowDraftNotice, setShouldShowDraftNotice] = React.useState<boolean>(false)
+  const [shouldSkipSavingDraft, setShouldSkipSavingDraft] = React.useState<boolean>(false)
   const [shouldShowCsvNotice, setShouldShowCsvNotice] = React.useState<boolean>(false)
   const [contextMenuOpenInfo, setContextMenuOpenInfo] = React.useState<ContextMenuOpenInfo | null>(null)
   const [editorMode, setEditorMode] = React.useState<EditorMode>(getInitialEditorMode())
@@ -158,24 +159,28 @@ export default function Editor ({
         codeMirrorInstance.current?.setOption('readOnly', false)
         setShouldShowDraftNotice(false)
         setShouldShowCsvNotice(false)
-        setShownComposableItem(null)
+        setShownComposableItemId(null)
         setTimeout(() => { codeMirrorInstance.current.focus() }, 10)
         return
       }
 
-      if (!editingItem || shownComposableItem?.base === editingItem.base) { return }
+      if (!editingItem || shownComposableItemId === editingItem.base.id) { return }
 
       codeMirrorInstance.current.save()
 
       const cursor = codeMirrorInstance.current.getCursor()
       const selections = codeMirrorInstance.current.listSelections()
 
-      if (shownComposableItem) {
-        shownComposableItem.base.editorState = {
-          cursor,
-          selections,
-          draft: codeMirrorInstance.current.getValue() ?? ''
-        }
+      setShouldSkipSavingDraft(false)
+      if (shownComposableItemId && !shouldSkipSavingDraft) {
+        stateChangeApi.setEditorState(
+          shownComposableItemId,
+          {
+            cursor,
+            selections,
+            draft: codeMirrorInstance.current.getValue() ?? ''
+          }
+        )
       }
 
       if (editingItem?.base.editorState?.draft && editingItem?.base.editorState?.draft.trim() !== editingItem.base.sql.trim()) {
@@ -198,12 +203,12 @@ export default function Editor ({
       }
 
       codeMirrorInstance.current.focus()
-      setShownComposableItem(editingItem)
+      setShownComposableItemId(editingItem.base.id)
 
       codeMirrorInstance.current.setOption('readOnly', editingItem?.base.isCsv ? 'nocursor' : false)
       setShouldShowCsvNotice(editingItem?.base.isCsv ?? false)
     },
-    [editingItem, shownComposableItem]
+    [editingItem, shouldSkipSavingDraft, shownComposableItemId, stateChangeApi]
   )
 
   const formatSql = React.useCallback(
@@ -225,15 +230,24 @@ export default function Editor ({
     [codeMirrorInstance]
   )
 
+  const makeNewSql = React.useCallback(
+    () => {
+      setShouldSkipSavingDraft(true)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      stateChangeApi.makeDraftSql(codeMirrorInstance.current?.getValue() ?? '')
+    },
+    [stateChangeApi]
+  )
+
   const revertSql = React.useCallback(
     () => {
-      if (!shownComposableItem) { return }
-      codeMirrorInstance.current.setValue(shownComposableItem.base.sql)
-      shownComposableItem.base.editorState = {}
+      if (!editingItem) { return }
+      codeMirrorInstance.current.setValue(editingItem.base.sql)
+      editingItem.base.editorState = {}
       setShouldShowDraftNotice(false)
       codeMirrorInstance.current.focus()
     },
-    [shownComposableItem]
+    [editingItem]
   )
 
   const runSql = React.useCallback(
@@ -297,6 +311,7 @@ export default function Editor ({
 
         if (mode === 'default') {
           setShouldShowDraftNotice(false)
+          setShouldSkipSavingDraft(true)
 
           if (editingItem?.base instanceof DraftSql) {
             stateChangeApi.discardDraftSql(editingItem.base.id)
@@ -433,8 +448,7 @@ export default function Editor ({
         if (!(event instanceof KeyboardEvent)) { return true }
 
         if (event.code === 'KeyN' && (event.metaKey || event.ctrlKey)) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-          stateChangeApi.makeDraftSql(codeMirrorInstance.current?.getValue() ?? '')
+          makeNewSql()
           return false
         }
 
@@ -466,7 +480,7 @@ export default function Editor ({
         document.removeEventListener('keydown', handler)
       }
     },
-    [runSql, formatSql, stateChangeApi]
+    [runSql, formatSql, makeNewSql]
   )
 
   return (
@@ -505,8 +519,7 @@ export default function Editor ({
             </Button>
             <span className="separator" />
             <Button
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-              onClick={() => { stateChangeApi.makeDraftSql(codeMirrorInstance.current?.getValue() ?? '') }}
+              onClick={() => { makeNewSql() }}
               icon={<i className="fas fa-plus-square"/>}
               testId="new-sql"
             >

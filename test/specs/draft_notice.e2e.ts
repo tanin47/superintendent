@@ -26,7 +26,7 @@ describe('draft notice', () => {
     await expect($('[data-testid="draft-notice"]')).not.toExist()
   })
 
-  it('new lines do not trigger the draft notice', async () => {
+  it('revert', async () => {
     await clearEditor()
     await fillEditor('select 1, 2, 3')
     await expect($('.CodeMirror')).toHaveText('1\nselect 1, 2, 3')
@@ -37,5 +37,17 @@ describe('draft notice', () => {
     await $('[data-testid="draft-notice"] .link').click()
 
     await expect($('.CodeMirror')).toHaveText('1\nselect 1, 2')
+  })
+
+  it("makes new SQL doesn't trigger draft notice", async () => {
+    await fillEditor('select 1, 2, 4')
+    await browser.pause(100000)
+    await $('[data-testid="new-sql"]').click()
+
+    await expect($('[data-testid="project-item-draft-3"]')).toHaveElementClass(expect.stringContaining('selected'))
+
+    await $('[data-testid="project-item-albatross"] span').click()
+    await expect($('.CodeMirror')).toHaveText('1\nselect 1, 2')
+    await expect($('[data-testid="draft-notice"]')).not.toExist()
   })
 })
