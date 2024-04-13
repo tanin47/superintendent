@@ -8,6 +8,7 @@ export const ExportWorkflowChannel = 'export-workflow'
 export const ImportWorkflowChannel = 'import-workflow'
 
 export const EditorModeChannel = 'editor-mode-changed'
+export const GoToPurchaseLicense = 'go-to-purchase-license'
 
 export type SortDirection = 'asc' | 'desc' | 'none'
 export interface Sort { name: string, direction: SortDirection }

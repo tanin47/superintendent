@@ -1,7 +1,11 @@
 import { $, expect } from '@wdio/globals'
-import { clearEditor, expectDefaultEditorText, getSelectedText, getTabs } from './helpers'
+import { clearEditor, expectDefaultEditorText, getSelectedText, getTabs, setValidLicense } from './helpers'
 
 describe('A simple scenario', () => {
+  beforeEach(async () => {
+    await setValidLicense()
+  })
+
   it('select 1', async () => {
     await $('.CodeMirror').click()
     await browser.keys('select 1')

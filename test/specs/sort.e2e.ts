@@ -1,7 +1,11 @@
 import { $, expect } from '@wdio/globals'
-import { expectDefaultEditorText, fillEditor } from './helpers'
+import { expectDefaultEditorText, fillEditor, setValidLicense } from './helpers'
 
 describe('Sort', () => {
+  beforeEach(async () => {
+    await setValidLicense()
+  })
+
   it('sort 1 column', async () => {
     await $('[data-testid="add-files"]').click()
     await $('[data-testid="input-file"]').clearValue()

@@ -1,6 +1,7 @@
 import React, { type ReactElement } from 'react'
 import './index.scss'
-import { checkIfLicenseIsValid } from '../api'
+import { checkIfLicenseIsValid, hasValidLicense } from '../api'
+import { DateTime } from 'luxon'
 
 export default function CheckLicenseForm ({
   onGoToWorkspace
@@ -13,8 +14,7 @@ export default function CheckLicenseForm ({
 
   const placeholder = React.useMemo(() => [
     '---- Superintendent license ----',
-    'Type: Trial',
-    'Name: Super Intendant',
+    'Name: Tanin Na Nakorn',
     'Email: support@superintendent.app',
     'Key0: SomeKey0',
     'Key1:',
@@ -22,6 +22,8 @@ export default function CheckLicenseForm ({
     'SomeKeyLine2',
     '---- End of Superintendent license ----'
   ].join('\n'), [])
+
+  const licenseValidity = hasValidLicense()
 
   return (
     <div id="checkLicenseForm">
@@ -49,11 +51,17 @@ export default function CheckLicenseForm ({
           </div>
         </div>
         <div className="cta">
+          {licenseValidity.state === 'valid' && (
+            <div className="valid-license">
+              You do not need to buy another license. You currently have a license that will expire on {licenseValidity.expiredAt ? DateTime.fromJSDate(licenseValidity.expiredAt).toLocaleString(DateTime.DATE_MED) : '[unknown]'}.
+            </div>
+          )}
           {errorMessage != null && (
             <div className="error-message">{errorMessage}</div>
           )}
           <div className="button-panel">
             <button
+              data-testid="submit-button"
               disabled={isLoading}
               onClick={() => {
                 const result = checkIfLicenseIsValid(licenseKey)
@@ -68,6 +76,7 @@ export default function CheckLicenseForm ({
               Submit
             </button>
             <button
+              data-testid="cancel-button"
               disabled={isLoading}
               onClick={() => { onGoToWorkspace() }}
             >

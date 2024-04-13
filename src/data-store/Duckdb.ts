@@ -107,7 +107,7 @@ export class Duckdb extends Datastore {
     }
   }
 
-  async addCsv (filePath: string, withHeader: boolean, separator: string, replace: string, hasValidLicense: boolean): Promise<QueryResult> {
+  async addCsv (filePath: string, withHeader: boolean, separator: string, replace: string): Promise<QueryResult> {
     let table = this.getTableName(path.parse(filePath).name)
     const detectionResult = await this.detectColumns(filePath, withHeader, separator)
     const columnsParam = `{${detectionResult.columns.map((c) => `'${c.name}': '${c.tpe}'`).join(', ')}}`
@@ -126,9 +126,7 @@ export class Duckdb extends Datastore {
       readCsvOptions.push(`timestampformat = '${detectionResult.timestampFormat}'`)
     }
 
-    const limitClause = hasValidLicense ? '' : 'LIMIT 10000'
-
-    await this.db.exec(`CREATE TABLE "${table}" AS FROM read_csv(${readCsvOptions.join(', ')}) ${limitClause}`)
+    await this.db.exec(`CREATE TABLE "${table}" AS FROM read_csv(${readCsvOptions.join(', ')})`)
 
     if (replace && replace !== '' && table !== replace) {
       await this.drop(replace)

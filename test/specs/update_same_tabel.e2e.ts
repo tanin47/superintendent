@@ -1,7 +1,11 @@
 import { $, expect } from '@wdio/globals'
-import { fillEditor } from './helpers'
+import { fillEditor, setValidLicense } from './helpers'
 
 describe('A simple scenario', () => {
+  beforeEach(async () => {
+    await setValidLicense()
+  })
+
   it('updates the same table over and over', async () => {
     await fillEditor("select 'test'")
     await $('[data-testid="run-sql"]').click()

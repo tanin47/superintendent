@@ -1,9 +1,9 @@
 import { $, expect } from '@wdio/globals'
+import { selectMenu } from './helpers'
 
 describe('Incorrect license', () => {
   it('uses a incorrect license', async () => {
-    await $('[data-testid="add-files"]').click()
-    await $('.license-notice.free .click').click()
+    await selectMenu('File', 'Enter a license')
 
     const license = '---- Superintendent license ----\n' +
           'Email: tanin47@gmail.com\n' +

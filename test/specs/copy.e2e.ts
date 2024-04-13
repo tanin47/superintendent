@@ -1,8 +1,12 @@
 import { browser, $, expect } from '@wdio/globals'
 import { Key } from 'webdriverio'
-import { clearEditor } from './helpers'
+import { clearEditor, setValidLicense } from './helpers'
 
 describe('A simple scenario', () => {
+  beforeEach(async () => {
+    await setValidLicense()
+  })
+
   it('BUG: it does not add new line at the end', async () => {
     await $('.CodeMirror').click()
     await browser.keys("select 'test', 'testagain'")

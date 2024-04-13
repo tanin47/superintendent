@@ -31,8 +31,8 @@ declare global {
       on: (channel: string, listener: (event: Electron.IpcRendererEvent, ...args: any[]) => void) => () => void
     }
     storeApi: {
-      get: (key: string) => string | null | undefined
-      set: (key: string, value: string) => void
+      get: (key: string) => any | null | undefined
+      set: (key: string, value: any) => void
     }
     cryptoApi: {
       verify: (algorithm: string, input: string, publicKey: string, signature: string) => boolean

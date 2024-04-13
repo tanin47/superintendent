@@ -1,6 +1,11 @@
 import { $, expect } from '@wdio/globals'
+import { setValidLicense } from './helpers'
 
 describe('Change column type', () => {
+  beforeEach(async () => {
+    await setValidLicense()
+  })
+
   it('imports a csv', async () => {
     await $('.CodeMirror').click()
     await $('[data-testid="add-files"]').click()

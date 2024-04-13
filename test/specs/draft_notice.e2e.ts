@@ -1,7 +1,11 @@
 import { $, expect } from '@wdio/globals'
-import { clearEditor, fillEditor } from './helpers'
+import { clearEditor, fillEditor, setValidLicense } from './helpers'
 
 describe('draft notice', () => {
+  beforeEach(async () => {
+    await setValidLicense()
+  })
+
   it('new lines do not trigger the draft notice', async () => {
     await clearEditor()
     await fillEditor('select 1, 2')

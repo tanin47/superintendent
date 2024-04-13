@@ -2,10 +2,11 @@ import { $, expect } from '@wdio/globals'
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
+import { setValidLicense } from './helpers'
 
 describe('Change column type', () => {
   let csvFile: string | null = null
-  beforeEach(() => {
+  beforeEach(async () => {
     const tmpdir = fs.mkdtempSync(path.join(os.tmpdir(), 'superintendent-test'))
     csvFile = path.join(tmpdir, 'test.csv')
 
@@ -16,6 +17,8 @@ describe('Change column type', () => {
     stream.write('b,2000\n')
     stream.write('c,1500\n')
     stream.write('d,3000\n')
+
+    await setValidLicense()
   })
 
   afterEach(() => {

@@ -7,7 +7,8 @@ import {
   type EditorMode, EditorModeChannel,
   type ExportDelimiter,
   ExportDelimiters, type ExportedWorkflow, ExportWorkflowChannel,
-  type Format, ImportWorkflowChannel, type Sort, type ColumnType
+  type Format, ImportWorkflowChannel, type Sort, type ColumnType,
+  GoToPurchaseLicense
 } from './types'
 import fs from 'fs'
 import { getRandomBird } from './data-store/Birds'
@@ -233,17 +234,24 @@ export default class Main {
           },
           { type: 'separator' },
           {
-            label: 'Save Workflow',
+            label: 'Save Workspace',
             accelerator: process.platform === 'darwin' ? 'Cmd+S' : 'Ctrl+S',
             click: () => {
               void Main.initExportWorkflow(Main.getFocusedSpace())
             }
           },
           {
-            label: 'Load Workflow',
+            label: 'Load Workspace',
             accelerator: process.platform === 'darwin' ? 'Cmd+L' : 'Ctrl+L',
             click: () => {
               void Main.initImportWorkflow()
+            }
+          },
+          { type: 'separator' },
+          {
+            label: 'Enter a license',
+            click: () => {
+              Main.getFocusedSpace().window.webContents.send(GoToPurchaseLicense)
             }
           }
         ]
@@ -481,8 +489,29 @@ export default class Main {
     }
   }
 
+  static showPurchaseNotice (): void {
+    const choice = dialog.showMessageBoxSync(
+      Main.getFocusedSpace().window,
+      {
+        type: 'info',
+        buttons: ['Purchase a license', 'Close'],
+        defaultId: 0,
+        title: 'Evaluation',
+        message: 'You are evaluating Superintendent.app and may continue evaluating it for free.\n\nHowever, you must purchase a license for continued use.'
+      }
+    )
+
+    if (choice === 0) {
+      Main.getFocusedSpace().window.webContents.send(GoToPurchaseLicense)
+    }
+  }
+
   private static async onReady (): Promise<void> {
     Store.initRenderer()
+
+    ipcMain.handle('show-purchase-notice', async () => {
+      this.showPurchaseNotice()
+    })
 
     ipcMain.handle('query', async (event, sql: string, table: string | null) => {
       return await Main.wrapResponse(Main.getSpace(event).db.query(sql, table))
@@ -522,7 +551,7 @@ export default class Main {
       return await Main.wrapResponse(Main.getSpace(event).db.changeColumnType(tableName, columnName, newColumnType, timestampFormat))
     })
 
-    ipcMain.handle('add-csv', async (event, path: string, withHeader: boolean, format: Format, replace: string, hasValidLicense: boolean) => {
+    ipcMain.handle('add-csv', async (event, path: string, withHeader: boolean, format: Format, replace: string) => {
       let separator: string
 
       if (format === 'comma') {
@@ -543,7 +572,7 @@ export default class Main {
         throw new Error()
       }
 
-      return await Main.wrapResponse(Main.getSpace(event).db.addCsv(path, withHeader, separator, replace, hasValidLicense))
+      return await Main.wrapResponse(Main.getSpace(event).db.addCsv(path, withHeader, separator, replace))
     })
 
     ipcMain.handle('download-csv', async (event, table: string) => {

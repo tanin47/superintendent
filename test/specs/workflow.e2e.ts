@@ -1,14 +1,16 @@
 import { $, browser, expect } from '@wdio/globals'
-import { fillEditor, getTabs, getWindowHandles } from './helpers'
+import { fillEditor, getTabs, getWindowHandles, setValidLicense } from './helpers'
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
 
 describe('Workflow', () => {
   let workflowFile: string
-  beforeAll(async () => {
+  beforeEach(async () => {
     const tmpdir = fs.mkdtempSync(path.join(os.tmpdir(), 'superintendent-test'))
     workflowFile = path.join(tmpdir, 'test.super')
+
+    await setValidLicense()
   })
 
   it('builds workflow', async () => {
@@ -51,7 +53,7 @@ describe('Workflow', () => {
     await browser.electron.execute(
       async (electron) => {
         const fileMenu = electron.Menu.getApplicationMenu()!.items.find((i) => i.label === 'File')!
-        const saveWorkflowMenu = fileMenu.submenu!.items.find((i) => i.label === 'Save Workflow')!
+        const saveWorkflowMenu = fileMenu.submenu!.items.find((i) => i.label === 'Save Workspace')!
         saveWorkflowMenu.click()
       }
     )
@@ -65,7 +67,7 @@ describe('Workflow', () => {
     await browser.electron.execute(
       async (electron) => {
         const fileMenu = electron.Menu.getApplicationMenu()!.items.find((i) => i.label === 'File')!
-        const loadWorkflowMenu = fileMenu.submenu!.items.find((i) => i.label === 'Load Workflow')!
+        const loadWorkflowMenu = fileMenu.submenu!.items.find((i) => i.label === 'Load Workspace')!
         loadWorkflowMenu.click()
       }
     )

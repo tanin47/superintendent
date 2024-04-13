@@ -1,10 +1,14 @@
 import { browser, $, expect } from '@wdio/globals'
-import { fillEditor } from './helpers'
+import { fillEditor, setValidLicense } from './helpers'
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
 
 describe('A simple scenario', () => {
+  beforeEach(async () => {
+    await setValidLicense()
+  })
+
   it('builds data', async () => {
     await fillEditor("select 'test', 'testagain'")
     await $('[data-testid="run-sql"]').click()

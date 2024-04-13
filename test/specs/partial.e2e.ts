@@ -1,6 +1,11 @@
 import { $, expect } from '@wdio/globals'
+import { setValidLicense } from './helpers'
 
 describe('Change column type', () => {
+  beforeEach(async () => {
+    await setValidLicense()
+  })
+
   it('create a table', async () => {
     await $('.CodeMirror').click()
     await browser.keys("select * from (select 123, '2022-10-04', 3.14) order by 1 desc")

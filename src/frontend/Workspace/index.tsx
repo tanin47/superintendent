@@ -1,7 +1,7 @@
 import React, { type ReactElement } from 'react'
 import './index.scss'
 import { downloadCsv } from '../api'
-import { type ExportedWorkflow, ImportWorkflowChannel } from '../../types'
+import { type ExportedWorkflow, ImportWorkflowChannel, GoToPurchaseLicense } from '../../types'
 import { type ComposableItem, type Result } from './types'
 import SheetSection from './SheetSection'
 import Button from './Button'
@@ -50,17 +50,34 @@ export default function Workspace ({
     [stateChangeApi]
   )
 
-  React.useEffect(() => {
-    const callback = (event, workflow: ExportedWorkflow): void => {
-      stateChangeApi.importWorkflow(workflow)
-    }
-    const removeListener = window.ipcRenderer.on(ImportWorkflowChannel, callback);
-    (window as any).importWorkflowHookIsLoaded = true
+  React.useEffect(
+    () => {
+      const callback = (): void => {
+        onGoToLicense()
+      }
+      const removeListener = window.ipcRenderer.on(GoToPurchaseLicense, callback)
 
-    return () => {
-      removeListener()
-    }
-  }, [stateChangeApi])
+      return () => {
+        removeListener()
+      }
+    },
+    [onGoToLicense]
+  )
+
+  React.useEffect(
+    () => {
+      const callback = (event, workflow: ExportedWorkflow): void => {
+        stateChangeApi.importWorkflow(workflow)
+      }
+      const removeListener = window.ipcRenderer.on(ImportWorkflowChannel, callback);
+      (window as any).importWorkflowHookIsLoaded = true
+
+      return () => {
+        removeListener()
+      }
+    },
+    [stateChangeApi]
+  )
   const [isDownloadCsvLoading, setIsDownloadCsvLoading] = React.useState<boolean>(false)
 
   const [editorHeight, setEditorHeight] = React.useState<number>(250)

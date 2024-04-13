@@ -1,9 +1,9 @@
 import { $, expect } from '@wdio/globals'
+import { selectMenu } from './helpers'
 
 describe('Expired license', () => {
   it('uses a expired license', async () => {
-    await $('[data-testid="add-files"]').click()
-    await $('.license-notice.free .click').click()
+    await selectMenu('File', 'Enter a license')
 
     const license = '---- Superintendent license ----\n' +
           'Name: tanin\n' +

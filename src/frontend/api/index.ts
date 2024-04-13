@@ -32,6 +32,16 @@ export function convertFileList (fileList: FileList | null): string[] {
   return results
 }
 
+export const PURCHASE_NOTICE_SHOWN_AT_KEY = 'purchaseNoticeShownAt'
+
+export function getPurchaseNoticeShownAt (): number | null {
+  return window.storeApi.get(PURCHASE_NOTICE_SHOWN_AT_KEY) as (number | undefined) ?? null
+}
+
+export function setPurchaseNoticeShownAt (): void {
+  window.storeApi.set(PURCHASE_NOTICE_SHOWN_AT_KEY, new Date().getTime())
+}
+
 export interface CheckIfLicenseIsValidResult {
   success: boolean
   errorMessage?: string | null
@@ -128,6 +138,7 @@ export interface LicenseKeyValidity {
   expiredAt: Date | null
 }
 
+export const LICENSE_KEY = 'license-key'
 let cachedHasValidLicense: LicenseKeyValidity | null = null
 export function hasValidLicense (forceCheck: boolean = false): LicenseKeyValidity {
   if (!forceCheck) {
@@ -138,7 +149,7 @@ export function hasValidLicense (forceCheck: boolean = false): LicenseKeyValidit
     }
   }
 
-  const licenseKey = window.storeApi.get('license-key')
+  const licenseKey = window.storeApi.get(LICENSE_KEY) as string | null | undefined
   const result = checkIfLicenseIsValid(licenseKey)
 
   cachedHasValidLicense = {
@@ -164,7 +175,7 @@ export function checkIfLicenseIsValid (licenseKey: string | null | undefined): C
       }
     }
 
-    window.storeApi.set('license-key', licenseKey)
+    window.storeApi.set(LICENSE_KEY, licenseKey)
     cachedHasValidLicense = {
       state: 'valid',
       expiredAt: extractLicenseExpiredAt(licenseKey)
@@ -177,6 +188,19 @@ export function checkIfLicenseIsValid (licenseKey: string | null | undefined): C
       success: false,
       errorMessage: 'The license key is not valid. Please contact support@superintendent.app.'
     }
+  }
+}
+
+export async function maybeShowPurchaseNotice (): Promise<void> {
+  if (hasValidLicense().state === 'valid') { return }
+
+  const latest = getPurchaseNoticeShownAt()
+
+  const now = new Date().getTime()
+
+  if (latest === null || (now - latest) > (12 * 60 * 60 * 1000)) { // 12 hours
+    setPurchaseNoticeShownAt()
+    await window.ipcRenderer.invoke('show-purchase-notice')
   }
 }
 
@@ -249,9 +273,10 @@ export async function copy (table: string, selection: CopySelection): Promise<bo
 
 export async function addCsv (path: string, withHeader: boolean, format: string, replace: Sheet | null): Promise<Sheet> {
   return await window.ipcRenderer
-    .invoke('add-csv', path, withHeader, format, replace?.name, hasValidLicense()?.state === 'valid')
+    .invoke('add-csv', path, withHeader, format, replace?.name)
     .then((result) => {
       if (result.success === true) {
+        void maybeShowPurchaseNotice()
         if (replace) {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
           replace.update(result.data, false)
