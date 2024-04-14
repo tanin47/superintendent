@@ -23,7 +23,6 @@ export enum ActionType {
   DELETE_RESULT = 'delete_result',
   SET_COMPOSABLE_ITEM_ID = 'set_composable_item_id',
   SET_RESULT_ID = 'set_result_id',
-  IMPORT_WORKFLOW = 'import_workflow',
   DISCARD_DRAFT_SQL = 'discard_draft_sql',
   SET_PRESENTATION_TYPE = 'set_presentation_type',
   SET_CHART_OPTIONS = 'set_chart_options',
@@ -37,7 +36,6 @@ export interface Action {
   newResult?: Result | null
   loading?: boolean
   targetDraftResult?: boolean
-  workflow?: ExportedWorkflow
   sql?: string
   presentationType?: PresentationType
   chartOptions?: ChartOptions | null
@@ -95,7 +93,7 @@ export function reduce (state: WorkspaceState, action: Action): WorkspaceState {
   } else if (action.type === ActionType.MAKE_DRAFT_SQL) {
     const draftSql: DraftSql = new DraftSql({
       id: generateWorkspaceItemId(),
-      name: `draft-${draftSqlNumberRunner++}`,
+      name: action.newName ?? `draft-${draftSqlNumberRunner++}`,
       sql: action.sql!,
       isCsv: false
     })
@@ -134,24 +132,6 @@ export function reduce (state: WorkspaceState, action: Action): WorkspaceState {
     return { ...state }
   } else if (action.type === ActionType.SET_RESULT_ID) {
     state.selectedResultId = action.id ?? null
-    return { ...state }
-  } else if (action.type === ActionType.IMPORT_WORKFLOW) {
-    state.results = [
-      ...state.results,
-      ...action.workflow!.sheets.map((sheet) => ({
-        base: new Sheet({
-          id: generateWorkspaceItemId(),
-          name: sheet.name,
-          isCsv: sheet.isCsv,
-          sql: sheet.sql,
-          count: 0,
-          columns: [],
-          rows: [],
-          sorts: [],
-          presentationType: 'table'
-        })
-      }))
-    ]
     return { ...state }
   } else if (action.type === ActionType.DISCARD_DRAFT_SQL) {
     state.draftSqls = state.draftSqls.filter((i) => i.base.id !== action.id!)
@@ -271,7 +251,26 @@ export class StateChangeApi {
   }
 
   public importWorkflow (workflow: ExportedWorkflow): void {
-    this.dispatch({ type: ActionType.IMPORT_WORKFLOW, workflow })
+    workflow.results.forEach((result) => {
+      this.dispatch({
+        type: ActionType.ADD_OR_REPLACE_RESULT,
+        newResult: new Sheet({
+          count: 0,
+          columns: [],
+          rows: [],
+          ...result,
+          id: generateWorkspaceItemId()
+        })
+      })
+    })
+
+    workflow.draftSqls.forEach((draftSql) => {
+      this.dispatch({
+        type: ActionType.MAKE_DRAFT_SQL,
+        newName: draftSql.name,
+        sql: draftSql.draft ?? draftSql.sql
+      })
+    })
   }
 
   public discardDraftSql (id: string): void {

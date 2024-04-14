@@ -1,3 +1,5 @@
+import { type ChartOptions, type PresentationType } from './frontend/Workspace/types'
+
 export type EditorMode = 'default' | 'vim'
 
 export type Format = 'comma' | 'tab' | 'pipe' | 'semicolon' | 'colon' | 'tilde' | 'super'
@@ -6,6 +8,7 @@ export const ExportDelimiters = ['comma', 'tab', 'pipe', 'semicolon', 'colon', '
 export type ExportDelimiter = typeof ExportDelimiters[number]
 export const ExportWorkflowChannel = 'export-workflow'
 export const ImportWorkflowChannel = 'import-workflow'
+export const StartImportingWorkflowChannel = 'start-importing-workflow'
 
 export const EditorModeChannel = 'editor-mode-changed'
 export const GoToPurchaseLicense = 'go-to-purchase-license'
@@ -24,14 +27,25 @@ export interface CopySelection {
   includeColumnNames: boolean
 }
 
-export interface WorkflowSheet {
+export interface WorkflowResult {
   name: string
   sql: string
+  sorts: Sort[]
   isCsv: boolean
+  draft: string | null
+  presentationType: PresentationType
+  chartOptions: ChartOptions | null
+}
+
+export interface WorkflowDraftSql {
+  name: string
+  sql: string
+  draft: string | null
 }
 
 export interface ExportedWorkflow {
-  sheets: WorkflowSheet[]
+  results: WorkflowResult[]
+  draftSqls: WorkflowDraftSql[]
 }
 
 export interface QueryColumn {
@@ -47,4 +61,8 @@ export interface QueryResult {
   columns: QueryColumn[]
   rows: QueryRow[]
   count: number
+}
+
+export interface ExportWorkflowResponse {
+  file: string
 }

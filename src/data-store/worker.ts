@@ -55,5 +55,14 @@ expose({
   },
   async reserveTableName (name: string): Promise<void> {
     await datastore!.reserveTableName(name)
+  },
+  async import (dirPath: string): Promise<void> {
+    await datastore!.import(dirPath)
+  },
+  async export (dirPath: string): Promise<void> {
+    await datastore!.export(dirPath)
+  },
+  async loadTable (table: string): Promise<QueryResult> {
+    return await datastore!.loadTable(table)
   }
 })

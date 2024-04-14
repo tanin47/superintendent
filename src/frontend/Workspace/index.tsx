@@ -1,7 +1,7 @@
 import React, { type ReactElement } from 'react'
 import './index.scss'
-import { downloadCsv } from '../api'
-import { type ExportedWorkflow, ImportWorkflowChannel, GoToPurchaseLicense } from '../../types'
+import { downloadCsv, exportWorkflow } from '../api'
+import { type ExportedWorkflow, ImportWorkflowChannel, GoToPurchaseLicense, ExportWorkflowChannel, StartImportingWorkflowChannel } from '../../types'
 import { type ComposableItem, type Result } from './types'
 import SheetSection from './SheetSection'
 import Button from './Button'
@@ -41,6 +41,48 @@ export default function Workspace ({
     [workspaceState]
   )
 
+  React.useEffect(() => {
+    const callback = (event, { file }: { file: string }): void => {
+      dialog.showLoading('Saving the workspace...', 'This might take a while if the data is large.')
+
+      const workflow: ExportedWorkflow = { results: [], draftSqls: [] }
+
+      workspaceState.results.forEach((result) => {
+        workflow.results.push({
+          name: result.base.name,
+          sql: result.base.sql,
+          isCsv: result.base.isCsv,
+          sorts: result.base.sorts,
+          draft: result.base.editorState?.draft ?? null,
+          presentationType: result.base.presentationType,
+          chartOptions: result.base.chartOptions
+        })
+      })
+
+      workspaceState.draftSqls.forEach((draftSql) => {
+        workflow.draftSqls.push({
+          name: draftSql.base.name,
+          sql: draftSql.base.sql,
+          draft: draftSql.base.editorState?.draft ?? null
+        })
+      })
+
+      void exportWorkflow(file, workflow)
+        .then((resp) => {
+          dialog.showSuccess('Succeeded', `The workspace has been saved at: ${resp.file}`)
+        })
+        .catch((err) => {
+          dialog.showError('Saving the workspace failed', err as string)
+        })
+    }
+
+    const removeListener = window.ipcRenderer.on(ExportWorkflowChannel, callback)
+
+    return () => {
+      removeListener()
+    }
+  }, [workspaceState])
+
   const [renamingInfo, setRenamingInfo] = React.useState<RenameDialogInfo | null>(null)
 
   React.useEffect(
@@ -66,13 +108,22 @@ export default function Workspace ({
 
   React.useEffect(
     () => {
+      const removeStartImportingListener = window.ipcRenderer.on(
+        StartImportingWorkflowChannel,
+        () => {
+          dialog.showLoading('Loading the workspace...', 'This might take a while if the data is large.')
+        }
+      )
+
       const callback = (event, workflow: ExportedWorkflow): void => {
         stateChangeApi.importWorkflow(workflow)
+        dialog.close()
       }
       const removeListener = window.ipcRenderer.on(ImportWorkflowChannel, callback);
       (window as any).importWorkflowHookIsLoaded = true
 
       return () => {
+        removeStartImportingListener()
         removeListener()
       }
     },
@@ -98,8 +149,7 @@ export default function Workspace ({
               dialog.showSuccess('Exported!', `The sheet has been exported to: ${filePath}`)
             })
             .catch((err) => {
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-              dialog.showError('Found an error!', err.message)
+              dialog.showError('Exporting failed', err.message as string)
             })
             .finally(() => {
               setIsDownloadCsvLoading(false)

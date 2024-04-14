@@ -425,4 +425,20 @@ export class Duckdb extends Datastore {
   async reserveTableName (name: string): Promise<void> {
     await this._reserveTableName(name)
   }
+
+  async import (dirPath: string): Promise<void> {
+    await this.db.exec(`IMPORT DATABASE '${this.escapeValue(dirPath)}'`)
+  }
+
+  async export (dirPath: string): Promise<void> {
+    await this.db.exec(`EXPORT DATABASE '${this.escapeValue(dirPath)}' (FORMAT PARQUET, COMPRESSION ZSTD, ROW_GROUP_SIZE 100000)`)
+  }
+
+  async loadTable (table: string): Promise<QueryResult> {
+    return await this.queryAllFromTable(table, 'dontcare')
+  }
+
+  private escapeValue (s: string): string {
+    return s.replace(/'/g, "\\'")
+  }
 }

@@ -8,11 +8,14 @@ import {
   type ExportDelimiter,
   ExportDelimiters, type ExportedWorkflow, ExportWorkflowChannel,
   type Format, ImportWorkflowChannel, type Sort, type ColumnType,
-  GoToPurchaseLicense
+  GoToPurchaseLicense,
+  StartImportingWorkflowChannel
 } from './types'
 import fs from 'fs'
-import { getRandomBird } from './data-store/Birds'
 import path from 'path'
+import os from 'os'
+import archiver from 'archiver'
+import unzipper from 'unzipper'
 
 const ExportDelimiterLabels = {
   comma: 'Comma (,)',
@@ -102,60 +105,98 @@ export default class Main {
 
   private static async importWorkflow (file: string, space: Workspace | null = null): Promise<void> {
     let selectedSpace = space ?? Main.getFocusedSpace()
-    const data = fs.readFileSync(file, { encoding: 'utf8', flag: 'r' })
 
     // May switch windows
     const tables = await selectedSpace.db.getAllTables()
     if (tables.length > 0) {
       selectedSpace = await Main.makeWorkspace()
     }
+    selectedSpace.window.webContents.send(StartImportingWorkflowChannel)
 
-    const workflow: ExportedWorkflow = JSON.parse(data)
+    const tmpdir = fs.mkdtempSync(path.join(os.tmpdir(), 'superintendent-import'))
 
-    for await (const sheet of workflow.sheets) {
-      await selectedSpace.db.reserveTableName(sheet.name)
-    }
+    try {
+      await fs.createReadStream(file).pipe(unzipper.Extract({ path: tmpdir })).promise()
 
-    const promise = new Promise<void>((resolve) => {
-      // Wait for the new workspace to initialize.
-      const loadWorkflowFunc = async (): Promise<void> => {
-        const isLoaded = await selectedSpace.window.webContents.executeJavaScript('window.importWorkflowHookIsLoaded')
+      await selectedSpace.db.import(tmpdir)
 
-        if (isLoaded) {
-          selectedSpace.window.webContents.send(ImportWorkflowChannel, workflow)
-          resolve()
-        } else {
-          setTimeout(() => { void loadWorkflowFunc() }, 100)
+      const data = fs.readFileSync(path.join(tmpdir, 'workspace.json'), { encoding: 'utf8', flag: 'r' })
+      const workflow: ExportedWorkflow = JSON.parse(data)
+
+      for (let i = 0; i < workflow.results.length; i++) {
+        const result = workflow.results[i]
+        await selectedSpace.db.reserveTableName(result.name)
+        const newResult = await selectedSpace.db.loadTable(result.name)
+
+        workflow.results[i] = {
+          ...newResult,
+          ...result
         }
       }
-      void loadWorkflowFunc()
-    })
-    await promise
+
+      const promise = new Promise<void>((resolve) => {
+        // Wait for the new workspace to initialize.
+        const loadWorkflowFunc = async (): Promise<void> => {
+          const isLoaded = await selectedSpace.window.webContents.executeJavaScript('window.importWorkflowHookIsLoaded')
+
+          if (isLoaded) {
+            selectedSpace.window.webContents.send(ImportWorkflowChannel, workflow)
+            resolve()
+          } else {
+            setTimeout(() => { void loadWorkflowFunc() }, 100)
+          }
+        }
+        void loadWorkflowFunc()
+      })
+      await promise
+    } finally {
+      fs.rmSync(tmpdir, { recursive: true, force: true })
+    }
   }
 
   private static async initExportWorkflow (space: Workspace): Promise<void> {
-    space.window.webContents.send(ExportWorkflowChannel, 'abracadabra')
-  }
-
-  private static async exportWorkflow (space: Workspace, workflow: ExportedWorkflow): Promise<string> {
     const file = dialog.showSaveDialogSync(
       space.window,
       {
-        defaultPath: `workflow_${getRandomBird()}.super`,
+        defaultPath: `workspace_${new Date().toISOString().replace(/[^0-9]+/g, '-')}.super`,
         filters: [{ name: '.super', extensions: ['super'] }]
       }
     )
 
     if (!file) {
-      return await Promise.resolve('exit')
+      return
     }
 
-    const writer = fs.createWriteStream(file, { flags: 'w' })
+    space.window.webContents.send(ExportWorkflowChannel, { file })
+  }
 
-    writer.write(JSON.stringify(workflow, null, 2))
-    writer.close()
+  private static async exportWorkflow (
+    space: Workspace,
+    file: string,
+    workflow: ExportedWorkflow
+  ): Promise<{ file: string }> {
+    const tmpdir = fs.mkdtempSync(path.join(os.tmpdir(), 'superintendent-export'))
 
-    return await Promise.resolve('i will create as I speak')
+    try {
+      await space.db.export(tmpdir)
+
+      const workspaceFile = path.join(tmpdir, 'workspace.json')
+      const writer = fs.createWriteStream(workspaceFile, { flags: 'w' })
+      writer.write(JSON.stringify(workflow, null, 2))
+      writer.close()
+
+      const zipOutput = fs.createWriteStream(file)
+      const archive = archiver('zip', { zlib: { level: 0 } })
+      archive.pipe(zipOutput)
+
+      archive.directory(tmpdir, false)
+
+      await archive.finalize()
+
+      return { file }
+    } finally {
+      fs.rmSync(tmpdir, { recursive: true, force: true })
+    }
   }
 
   private static async wrapResponse (resp: Promise<any>): Promise<any> {
@@ -371,6 +412,12 @@ export default class Main {
                   click: async () => {
                     Main.store.delete('license-key')
                   }
+                },
+                {
+                  label: 'Clear the purchase notice shown at',
+                  click: async () => {
+                    Main.store.delete('purchaseNoticeShownAt')
+                  }
                 }
               ])
         ]
@@ -407,12 +454,13 @@ export default class Main {
           {
             type: 'question',
             buttons: ['Yes', 'No'],
+            defaultId: 1,
             title: 'Confirm',
             message: 'Are you sure you want to quit without saving the workflow?'
           }
         )
 
-        if (choice === 1) {
+        if (choice !== 0) {
           e.preventDefault()
           return
         }
@@ -531,8 +579,8 @@ export default class Main {
       )
     })
 
-    ipcMain.handle(ExportWorkflowChannel, async (event, workflow: ExportedWorkflow) => {
-      return await Main.wrapResponse(Main.exportWorkflow(Main.getSpace(event), workflow))
+    ipcMain.handle(ExportWorkflowChannel, async (event, file: string, workflow: ExportedWorkflow) => {
+      return await Main.wrapResponse(Main.exportWorkflow(Main.getSpace(event), file, workflow))
     })
 
     ipcMain.handle('load-more', async (event, table: string, offset: number) => {

@@ -1,5 +1,5 @@
 import { $, browser, expect } from '@wdio/globals'
-import { fillEditor, getTabs, getWindowHandles, setValidLicense } from './helpers'
+import { fillEditor, getEditorValue, getTabs, getWindowHandles, selectMenu, setValidLicense } from './helpers'
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
@@ -11,6 +11,10 @@ describe('Workflow', () => {
     workflowFile = path.join(tmpdir, 'test.super')
 
     await setValidLicense()
+  })
+
+  afterEach(async () => {
+    fs.rmSync(workflowFile, { force: true })
   })
 
   it('builds workflow', async () => {
@@ -43,6 +47,9 @@ describe('Workflow', () => {
       ' id\nname\nheight\n' +
       '1\n2\n3'
     )
+
+    await $('[data-testid="new-sql"]').click()
+    await fillEditor('select 1, 2, 3')
   })
 
   it('saves workflow', async () => {
@@ -50,13 +57,7 @@ describe('Workflow', () => {
     await dialog.showSaveDialogSync.mockReturnValue(workflowFile)
     await dialog.showOpenDialogSync.mockReturnValue([workflowFile])
 
-    await browser.electron.execute(
-      async (electron) => {
-        const fileMenu = electron.Menu.getApplicationMenu()!.items.find((i) => i.label === 'File')!
-        const saveWorkflowMenu = fileMenu.submenu!.items.find((i) => i.label === 'Save Workspace')!
-        saveWorkflowMenu.click()
-      }
-    )
+    await selectMenu('File', 'Save Workspace')
   })
 
   it('loads workflow', async () => {
@@ -64,13 +65,7 @@ describe('Workflow', () => {
     await expect(windowHandles.length).toEqual(1)
     const firstWindowHandle = windowHandles[0]!
 
-    await browser.electron.execute(
-      async (electron) => {
-        const fileMenu = electron.Menu.getApplicationMenu()!.items.find((i) => i.label === 'File')!
-        const loadWorkflowMenu = fileMenu.submenu!.items.find((i) => i.label === 'Load Workspace')!
-        loadWorkflowMenu.click()
-      }
-    )
+    await selectMenu('File', 'Load Workspace')
 
     await browser.waitUntil(async () => {
       windowHandles = await getWindowHandles()
@@ -83,23 +78,47 @@ describe('Workflow', () => {
   })
 
   it('populates the loaded workflow', async () => {
-    await $('[data-testid="add-files"]').click()
-    await $('[data-testid="input-file"]').clearValue()
-    await $('[data-testid="input-file"]').addValue(await browser.uploadFile('./test/specs/csv-samples/user.csv'))
-    await $('[data-testid="input-file"]').addValue(await browser.uploadFile('./test/specs/csv-samples/height.csv'))
+    const names = await $$('.project-panel .item .name').map(async (i) => await i.getText())
+    await expect(names).toEqual(['draft-1', 'draft-2', 'height', 'user', 'albatross'])
 
-    await $('[data-testid="add-csv-sheet-option"]').selectByVisibleText('Replace user')
-    await $$('[data-testid="add-csv-sheet-option"]')[1].selectByVisibleText('Replace height')
-    await $('[data-testid="import-all-files"]').click()
-
-    await $('[data-testid="project-item-albatross"]').click()
-    await $('[data-testid="run-sql"]').click()
+    await $('[data-testid="project-item-albatross"]').doubleClick()
+    await expect(await getEditorValue()).toEqual('select u.id, name, height from user u join height h on u.id = h.id order by u.id asc')
     await expect($('.sheet')).toHaveText(
       '1\ntanin\n170\n' +
       '2\njohn\n175\n' +
       '3\nrachel\n165\n' +
       ' id\nname\nheight\n' +
       '1\n2\n3'
+    )
+
+    await $('[data-testid="project-item-draft-2"]').click()
+    await expect(await getEditorValue()).toEqual('select 1, 2, 3')
+
+    await $('[data-testid="sheet-section-item-user"]').click()
+    await expect($('.sheet')).toHaveText(
+      '1\ntanin\n' +
+      '2\njohn\n' +
+      '3\nrachel\n' +
+      ' id\nname\n' +
+      '1\n2\n3'
+    )
+
+    await $('[data-testid="sheet-section-item-height"]').click()
+    await expect($('.sheet')).toHaveText(
+      '1\n170\n' +
+      '2\n175\n' +
+      '3\n165\n' +
+      ' id\nheight\n' +
+      '1\n2\n3'
+    )
+
+    await fillEditor('select * from albatross limit 1')
+    await $('[data-testid="run-sql"]').click()
+    await $('[data-testid="rename-button"]').click()
+    await expect($('.sheet')).toHaveText(
+      '1\ntanin\n170\n' +
+      ' id\nname\nheight\n' +
+      '1'
     )
   })
 })

@@ -35,11 +35,15 @@ export default function SheetSection ({
         changed = true
       }
 
+      if (selectedResult === null && tabs.length > 0) {
+        stateChangeApi.setSelectedResultId(tabs[0].resultId)
+      }
+
       if (changed) {
         setTabs([...tabs])
       }
     },
-    [selectedResult, tabs]
+    [selectedResult, stateChangeApi, tabs]
   )
 
   React.useEffect(

@@ -296,12 +296,12 @@ export async function addCsv (path: string, withHeader: boolean, format: string,
     })
 }
 
-export async function exportWorkflow (workflow: ExportedWorkflow): Promise<void> {
-  await window.ipcRenderer
-    .invoke(ExportWorkflowChannel, workflow)
+export async function exportWorkflow (file: string, workflow: ExportedWorkflow): Promise<{ file: string }> {
+  return await window.ipcRenderer
+    .invoke(ExportWorkflowChannel, file, workflow)
     .then((result) => {
       if (result.success) {
-        // do nothing
+        return result.data
       } else {
         throw result.message
       }

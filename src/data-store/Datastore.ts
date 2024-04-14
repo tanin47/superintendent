@@ -22,6 +22,9 @@ export abstract class Datastore {
   abstract changeColumnType (tableName: string, columnName: string, newColumnType: ColumnType, timestampFormat: string | null): Promise<QueryResult>
   abstract getAllTables (): Promise<string[]>
   abstract reserveTableName (name: string): Promise<void>
+  abstract loadTable (table: string): Promise<QueryResult>
+  abstract import (dirPath: string): Promise<void>
+  abstract export (dirPath: string): Promise<void>
 
   // The Sqlite is running on a different thread.
   // Even though this method doesn't require the async approach, we still need to call it through a worker.

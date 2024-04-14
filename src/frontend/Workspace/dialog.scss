@@ -1,0 +1,59 @@
+.dialog-title {
+  font-size: 18px;
+  display: flex !important;
+  align-items: center;
+  justify-content: start;
+  margin-top: 10px;
+  
+  i {
+    font-family: "Font Awesome 5 Free" !important;
+    margin-right: 8px;
+  }
+  .spinner {
+    font-size: 20px;
+    margin-right: 8px;
+    width: 16px;
+    height: 16px;
+  }
+
+  .success {
+    color: rgb(25, 135, 84);
+  }
+
+  .error {
+    color: rgb(220, 53, 69);
+  }
+}
+
+.dialog-content {
+  font-size: 13px !important;
+  text-align: left !important;
+  line-height: 20px !important;
+
+  .pre-text {
+    margin-bottom: 8px;
+  }
+
+  .error {
+    display: block;
+    padding: 4px;
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 12px;
+    background-color: #eee;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 100%;
+    max-height: 100px;
+    overflow: auto;
+    white-space: pre;
+    margin-bottom: 8px;
+  }
+
+  .post-text {
+
+  }
+}
+
+.dialog-button {
+  font-size: 13px !important;
+}

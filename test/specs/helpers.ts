@@ -60,6 +60,10 @@ export async function setValidLicense (): Promise<void> {
   await browser.executeScript(`window.storeApi.set('license-key', atob('${Buffer.from(TEST_VALID_LICENSE).toString('base64')}'))`, [])
 }
 
+export async function getEditorValue (): Promise<string> {
+  return await browser.executeScript("return document.querySelector('.CodeMirror').CodeMirror.getValue()", [])
+}
+
 export async function getWindowHandles (): Promise<string[]> {
   const original = await browser.getWindowHandle()
   const windowHandles = await browser.getWindowHandles()

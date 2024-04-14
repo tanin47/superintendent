@@ -153,6 +153,25 @@ export default function Editor ({
     }
   }, [setEditorMode])
 
+  const saveEditorState = React.useCallback(
+    () => {
+      if (!shownComposableItemId) { return }
+
+      const cursor = codeMirrorInstance.current.getCursor()
+      const selections = codeMirrorInstance.current.listSelections()
+
+      stateChangeApi.setEditorState(
+        shownComposableItemId,
+        {
+          cursor,
+          selections,
+          draft: codeMirrorInstance.current.getValue() ?? ''
+        }
+      )
+    },
+    [shownComposableItemId, stateChangeApi]
+  )
+
   React.useEffect(
     () => {
       if (editingItem === null) {
@@ -172,15 +191,8 @@ export default function Editor ({
       const selections = codeMirrorInstance.current.listSelections()
 
       setShouldSkipSavingDraft(false)
-      if (shownComposableItemId && !shouldSkipSavingDraft) {
-        stateChangeApi.setEditorState(
-          shownComposableItemId,
-          {
-            cursor,
-            selections,
-            draft: codeMirrorInstance.current.getValue() ?? ''
-          }
-        )
+      if (!shouldSkipSavingDraft) {
+        saveEditorState()
       }
 
       if (editingItem?.base.editorState?.draft && editingItem?.base.editorState?.draft.trim() !== editingItem.base.sql.trim()) {
@@ -208,7 +220,7 @@ export default function Editor ({
       codeMirrorInstance.current.setOption('readOnly', editingItem?.base.isCsv ? 'nocursor' : false)
       setShouldShowCsvNotice(editingItem?.base.isCsv ?? false)
     },
-    [editingItem, shouldSkipSavingDraft, shownComposableItemId, stateChangeApi]
+    [editingItem, saveEditorState, shouldSkipSavingDraft, shownComposableItemId, stateChangeApi]
   )
 
   const formatSql = React.useCallback(
@@ -327,7 +339,7 @@ export default function Editor ({
           onRenamingSheet({ sheet, isNewTable: true })
         }
       } catch (err) {
-        dialog.showError('Found an error!', err as any as string)
+        dialog.showError('Running the SQL failed', err as any as string)
       } finally {
         setIsQueryLoading(false)
 
@@ -349,68 +361,98 @@ export default function Editor ({
     [isQueryLoading, workspaceState.results, stateChangeApi, editingItem, onRenamingSheet]
   )
 
-  React.useEffect(() => {
-    codeMirrorInstance.current = CodeMirror.fromTextArea(
-      textareaRef.current!,
-      {
-        value: '',
-        mode: 'text/x-sql',
-        indentWithTabs: false,
-        smartIndent: true,
-        lineNumbers: true,
-        matchBrackets: true,
-        dragDrop: false,
-        keyMap: editorMode,
-        tabSize: 2,
-        autofocus: true,
-        extraKeys: {
-          'Ctrl-Space': 'autocomplete',
-          'Cmd-Space': 'autocomplete',
-          'Ctrl-/': 'toggleComment',
-          'Cmd-/': 'toggleComment'
+  React.useEffect(
+    () => {
+      if (codeMirrorInstance.current) { return }
+
+      codeMirrorInstance.current = CodeMirror.fromTextArea(
+        textareaRef.current!,
+        {
+          value: '',
+          mode: 'text/x-sql',
+          indentWithTabs: false,
+          smartIndent: true,
+          lineNumbers: true,
+          matchBrackets: true,
+          dragDrop: false,
+          keyMap: editorMode,
+          tabSize: 2,
+          autofocus: true,
+          extraKeys: {
+            'Ctrl-Space': 'autocomplete',
+            'Cmd-Space': 'autocomplete',
+            'Ctrl-/': 'toggleComment',
+            'Cmd-/': 'toggleComment'
+          }
         }
-      }
-    )
+      )
 
-    let firstCharRecorded = false
+      let firstCharRecorded = false
 
-    codeMirrorInstance.current.on('keyup', (cm, event) => {
-      if (cm.state.completionActive) {
-        firstCharRecorded = false
-        return
-      }
-      if (cm.state.vim && !cm.state.vim.insertMode) {
-        firstCharRecorded = false
-        return
-      }
+      codeMirrorInstance.current.on('keyup', (cm, event) => {
+        if (cm.state.completionActive) {
+          firstCharRecorded = false
+          return
+        }
+        if (cm.state.vim && !cm.state.vim.insertMode) {
+          firstCharRecorded = false
+          return
+        }
 
-      if (
-        (event.keyCode >= 97 && event.keyCode <= 122) || // a-z
-        (event.keyCode >= 65 && event.keyCode <= 90) || // A-Z
-        (event.keyCode >= 48 && event.keyCode <= 57) || // 0-9
-        event.keyCode === 95 // _
-      ) {
-        if (firstCharRecorded) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-          CodeMirror.commands.autocomplete(cm, undefined, { completeSingle: false })
+        if (
+          (event.keyCode >= 97 && event.keyCode <= 122) || // a-z
+          (event.keyCode >= 65 && event.keyCode <= 90) || // A-Z
+          (event.keyCode >= 48 && event.keyCode <= 57) || // 0-9
+          event.keyCode === 95 // _
+        ) {
+          if (firstCharRecorded) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+            CodeMirror.commands.autocomplete(cm, undefined, { completeSingle: false })
+          } else {
+            firstCharRecorded = true
+          }
         } else {
-          firstCharRecorded = true
+          firstCharRecorded = false
         }
-      } else {
-        firstCharRecorded = false
-      }
-    })
-
-    codeMirrorInstance.current.on('contextmenu', (cm, event: Event) => {
-      if (!(event instanceof PointerEvent)) { return }
-      setContextMenuOpenInfo({
-        selectedText: cm.getSelection() as string,
-        clientX: event.clientX,
-        clientY: event.clientY
       })
-      event.preventDefault()
-    })
-  }, [editorMode])
+
+      codeMirrorInstance.current.on('contextmenu', (cm, event: Event) => {
+        if (!(event instanceof PointerEvent)) { return }
+        setContextMenuOpenInfo({
+          selectedText: cm.getSelection() as string,
+          clientX: event.clientX,
+          clientY: event.clientY
+        })
+        event.preventDefault()
+      })
+    },
+    [editorMode]
+  )
+
+  React.useEffect(
+    () => {
+      const callback = (): void => { saveEditorState() }
+      codeMirrorInstance.current.on('blur', callback)
+
+      return () => {
+        codeMirrorInstance.current.off('blur', callback)
+      }
+    },
+    [saveEditorState]
+  )
+
+  React.useEffect(
+    () => {
+      if (editorMode === 'vim') {
+        codeMirrorInstance.current.removeKeyMap('default')
+        codeMirrorInstance.current.addKeyMap('vim')
+      } else if (editorMode === 'default') {
+        codeMirrorInstance.current.removeKeyMap('vim')
+        codeMirrorInstance.current.addKeyMap('default')
+      }
+    },
+    [editorMode]
+  )
 
   React.useEffect(() => {
     if (!codeMirrorInstance.current) { return }

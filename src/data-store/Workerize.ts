@@ -72,4 +72,16 @@ export class Workerize extends Datastore {
   async reserveTableName (name: string): Promise<void> {
     await this.worker.reserveTableName(name)
   }
+
+  async import (dirPath: string): Promise<void> {
+    await this.worker.import(dirPath)
+  }
+
+  async export (dirPath: string): Promise<void> {
+    await this.worker.export(dirPath)
+  }
+
+  async loadTable (table: string): Promise<QueryResult> {
+    return await this.worker.loadTable(table)
+  }
 }

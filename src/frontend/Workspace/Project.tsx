@@ -3,9 +3,8 @@ import React from 'react'
 import Button from './Button'
 import { ctrlCmdChar } from './constants'
 import AddCsv, { type Ref as AddCsvRef } from './AddCsvModal'
-import { convertFileList, exportWorkflow, getInitialFile } from '../api'
+import { convertFileList, getInitialFile } from '../api'
 import { Sheet, DraftSql, type ComposableItem, Result } from './types'
-import { type ExportedWorkflow, ExportWorkflowChannel } from '../../types'
 import { useFloating, useClientPoint, useInteractions, useDismiss, useTransitionStyles, shift } from '@floating-ui/react'
 import { StateChangeApi, useDispatch, useWorkspaceContext, type ObjectWrapper } from './WorkspaceContext'
 import { type RenameDialogInfo } from './RenameDialog'
@@ -223,36 +222,6 @@ export default function Project ({
     },
     [setShouldOpenAddCsv]
   )
-
-  React.useEffect(() => {
-    const callback = (): void => {
-      const workflow: ExportedWorkflow = { sheets: [] }
-
-      csvs.forEach((sheet) => {
-        workflow.sheets.push({
-          name: sheet.base.name,
-          sql: sheet.base.sql,
-          isCsv: sheet.base.isCsv
-        })
-      })
-
-      sheets.forEach((sheet) => {
-        workflow.sheets.push({
-          name: sheet.base.name,
-          sql: sheet.base.sql,
-          isCsv: sheet.base.isCsv
-        })
-      })
-
-      void exportWorkflow(workflow)
-    }
-
-    const removeListener = window.ipcRenderer.on(ExportWorkflowChannel, callback)
-
-    return () => {
-      removeListener()
-    }
-  }, [csvs, sheets])
 
   React.useEffect(() => {
     const handler = (event): boolean => {

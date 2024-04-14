@@ -71,6 +71,7 @@
   "author": "Tanin Na Nakorn",
   "devDependencies": {
     "@electron/notarize": "2.1.0",
+    "@types/archiver": "^6.0.2",
     "@types/chart.js": "^2.9.32",
     "@types/codemirror": "^5.60.0",
     "@types/electron": "^1.6.10",
@@ -120,6 +121,8 @@
   },
   "dependencies": {
     "@floating-ui/react": "^0.26.9",
+    "@types/unzipper": "^0.10.9",
+    "archiver": "^7.0.1",
     "chart.js": "4.4.2",
     "codemirror": "^5.61.1",
     "csv-parse": "4.15.4",
@@ -133,9 +136,10 @@
     "react-window": "tanin47/react-window#ecadbf767a96624c194d09af39f9e13a05bfe8ce",
     "react-window-infinite-loader": "^1.0.7",
     "sql-formatter": "15.3.0",
-    "sweetalert2": "^11.0.18",
+    "sweetalert2": "11.10.7",
     "threads": "^1.6.5",
-    "tiny-worker": "^2.3.0"
+    "tiny-worker": "^2.3.0",
+    "unzipper": "^0.10.14"
   },
   "packageManager": "yarn@4.0.2",
   "repository": "git@github.com:tanin47/superintendent-app.git",
