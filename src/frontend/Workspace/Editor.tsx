@@ -17,7 +17,7 @@ import Button from './Button'
 import { altOptionChar, ctrlCmdChar } from './constants'
 import * as dialog from './dialog'
 import { useFloating, useClientPoint, useInteractions, useDismiss, useTransitionStyles, shift } from '@floating-ui/react'
-import { getInitialEditorMode, query } from '../api'
+import { getInitialEditorMode, hasValidLicense, maybeShowPurchaseNotice, query } from '../api'
 import { StateChangeApi, type ObjectWrapper, useDispatch, useWorkspaceContext } from './WorkspaceContext'
 import { type RenameDialogInfo } from './RenameDialog'
 
@@ -574,6 +574,15 @@ export default function Editor ({
             </Button>
           </div>
           <div className="right">
+            {hasValidLicense().state !== 'valid' && (
+              <Button
+                onClick={() => { void maybeShowPurchaseNotice(true) }}
+                icon={<i className="fas fa-dollar-sign"></i>}
+                testId="new-sql"
+              >
+                Buy License
+              </Button>
+            )}
           </div>
         </div>
       </div>

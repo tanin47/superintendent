@@ -222,7 +222,7 @@ export default function Chart ({
     labelColumnName: '',
     labelColumnTimestampFormat: 'month',
     datasetColumnNames: [],
-    processedColumnNames: new Set()
+    processedColumnNames: []
   })
 
   const _result = result.base
@@ -256,7 +256,7 @@ export default function Chart ({
             labelColumnName: _result.columns[labelColumnIndex].name,
             labelColumnTimestampFormat,
             datasetColumnNames,
-            processedColumnNames: new Set(_result.columns.map((c) => c.name))
+            processedColumnNames: _result.columns.map((c) => c.name)
           }
         )
       } else {
@@ -264,13 +264,13 @@ export default function Chart ({
         let changedOptions = false
 
         for (const column of _result.columns) {
-          if (!options.processedColumnNames.has(column.name) && column.name !== options.labelColumnName && VALID_DATASET_TYPES.has(column.tpe)) {
+          if (!options.processedColumnNames.includes(column.name) && column.name !== options.labelColumnName && VALID_DATASET_TYPES.has(column.tpe)) {
             options.datasetColumnNames.push(column.name)
             changedOptions = true
           }
         }
 
-        options.processedColumnNames = new Set(_result.columns.map((c) => c.name))
+        options.processedColumnNames = _result.columns.map((c) => c.name)
 
         if (changedOptions) {
           stateChangeApi.setChartOptions(

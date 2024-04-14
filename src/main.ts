@@ -158,7 +158,7 @@ export default class Main {
     const file = dialog.showSaveDialogSync(
       space.window,
       {
-        defaultPath: `workspace_${new Date().toISOString().replace(/[^0-9]+/g, '-')}.super`,
+        defaultPath: `workspace_${new Date().toISOString().replace(/[^0-9]+/g, '-').replace(/-$/, '')}.super`,
         filters: [{ name: '.super', extensions: ['super'] }]
       }
     )
@@ -417,6 +417,12 @@ export default class Main {
                   label: 'Clear the purchase notice shown at',
                   click: async () => {
                     Main.store.delete('purchaseNoticeShownAt')
+                  }
+                },
+                {
+                  label: 'Set the purchase notice shown at to be older than 12h ago',
+                  click: async () => {
+                    Main.store.set('purchaseNoticeShownAt', new Date().getTime() - (12 * 60 * 60 * 1000) + 1)
                   }
                 }
               ])

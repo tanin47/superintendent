@@ -23,7 +23,7 @@ export default function CheckLicenseForm ({
     '---- End of Superintendent license ----'
   ].join('\n'), [])
 
-  const licenseValidity = hasValidLicense()
+  const licenseValidity = hasValidLicense(true)
 
   return (
     <div id="checkLicenseForm">

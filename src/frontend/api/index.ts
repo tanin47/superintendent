@@ -191,14 +191,14 @@ export function checkIfLicenseIsValid (licenseKey: string | null | undefined): C
   }
 }
 
-export async function maybeShowPurchaseNotice (): Promise<void> {
-  if (hasValidLicense().state === 'valid') { return }
+export async function maybeShowPurchaseNotice (force: boolean = false): Promise<void> {
+  if (hasValidLicense(true).state === 'valid') { return }
 
   const latest = getPurchaseNoticeShownAt()
 
   const now = new Date().getTime()
 
-  if (latest === null || (now - latest) > (12 * 60 * 60 * 1000)) { // 12 hours
+  if (force || latest === null || (now - latest) > (12 * 60 * 60 * 1000)) { // 12 hours
     setPurchaseNoticeShownAt()
     await window.ipcRenderer.invoke('show-purchase-notice')
   }

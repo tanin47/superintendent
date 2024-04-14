@@ -89,7 +89,7 @@ export interface ChartOptions {
   labelColumnName: string
   labelColumnTimestampFormat: LabelTimestampFormat
   datasetColumnNames: string[]
-  processedColumnNames: Set<string>
+  processedColumnNames: string[]
 }
 
 export type ResultProps = ComposableItem & {
