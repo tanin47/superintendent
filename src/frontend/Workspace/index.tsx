@@ -293,33 +293,17 @@ export default function Workspace ({
                 )}
               </div>
               <div className="right">
-                {(selectedResult?.base as Result | null)?.presentationType === 'chart'
-                  ? (
-                      <Button
-                        testId="tabularize-sheet"
-                        onClick={() => { togglePresentationType() }}
-                        disabled={selectedResult === null}
-                        icon={<i className="fas fa-table"></i>}
-                      >
-                        Table
-                        <span className="short-key">
-                          {ctrlCmdChar()} U
-                        </span>
-                      </Button>
-                    )
-                  : (
-                      <Button
-                        testId="visualize-sheet"
-                        onClick={() => { togglePresentationType() }}
-                        disabled={selectedResult === null}
-                        icon={<i className="fas fa-chart-bar"></i>}
-                      >
-                        Visualize
-                        <span className="short-key">
-                          {ctrlCmdChar()} B
-                        </span>
-                      </Button>
-                    )}
+                <Button
+                  testId="toggle-tabularize-visualize"
+                  onClick={() => { togglePresentationType() }}
+                  disabled={selectedResult === null}
+                  icon={<i className={`fas ${selectedResult?.base?.presentationType === 'chart' ? 'fa-table' : 'fa-chart-bar'}`}></i>}
+                >
+                  {selectedResult?.base?.presentationType === 'chart' ? 'Table' : 'Visualize'}
+                  <span className="short-key">
+                    {ctrlCmdChar()} B
+                  </span>
+                </Button>
                 <span className="separator" />
                 <Button
                   testId="export-sheet"

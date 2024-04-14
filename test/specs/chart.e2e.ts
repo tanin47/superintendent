@@ -34,7 +34,7 @@ describe('Change column type', () => {
     await $('[data-testid="import-all-files"]').click()
 
     await expect($('.toolbarSection .total')).toHaveText('4 rows')
-    await $('[data-testid="visualize-sheet"]').click()
+    await $('[data-testid="toggle-tabularize-visualize"]').click()
 
     await (expect($('.chart-container'))).toExist()
   })
