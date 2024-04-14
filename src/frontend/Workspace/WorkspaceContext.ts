@@ -1,5 +1,5 @@
 import React from 'react'
-import { type Result, DraftSql, Sheet, generateWorkspaceItemId, DraftResult, type PresentationType, type ChartOptions, type SheetEditorState } from './types'
+import { type Result, DraftSql, Sheet, generateWorkspaceItemId, DraftResult, type PresentationType, type ChartOptions, type SheetEditorState, DraftSheetName } from './types'
 import { drop } from '../api'
 import { type ExportedWorkflow } from '../../types'
 
@@ -252,15 +252,29 @@ export class StateChangeApi {
 
   public importWorkflow (workflow: ExportedWorkflow): void {
     workflow.results.forEach((result) => {
-      this.dispatch({
-        type: ActionType.ADD_OR_REPLACE_RESULT,
-        newResult: new Sheet({
+      let newResult: Result
+
+      if (result.name === DraftSheetName) {
+        newResult = new DraftResult({
           count: 0,
           columns: [],
           rows: [],
           ...result,
           id: generateWorkspaceItemId()
         })
+      } else {
+        newResult = new Sheet({
+          count: 0,
+          columns: [],
+          rows: [],
+          ...result,
+          id: generateWorkspaceItemId()
+        })
+      }
+
+      this.dispatch({
+        type: ActionType.ADD_OR_REPLACE_RESULT,
+        newResult
       })
     })
 

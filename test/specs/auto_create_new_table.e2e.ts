@@ -1,5 +1,5 @@
 import { $, expect } from '@wdio/globals'
-import { fillEditor, setValidLicense } from './helpers'
+import { fillEditor, getEditorValue, setValidLicense } from './helpers'
 
 describe('A simple scenario', () => {
   beforeEach(async () => {
@@ -29,7 +29,7 @@ describe('A simple scenario', () => {
     await expect($('.toolbarSection .total')).not.toExist()
 
     await $('[data-testid="project-item-new_table"]').click()
-    await expect($('.CodeMirror')).toHaveText("1\nselect 'test'")
+    await expect(await getEditorValue()).toEqual("select 'test'")
     await expect($('[data-testid="draft-notice"]')).not.toExist()
   })
 })

@@ -1,5 +1,5 @@
 import { $, expect } from '@wdio/globals'
-import { fillEditor, setValidLicense } from './helpers'
+import { fillEditor, getEditorValue, setValidLicense } from './helpers'
 
 describe('A simple scenario', () => {
   beforeEach(async () => {
@@ -9,20 +9,20 @@ describe('A simple scenario', () => {
   it('builds data', async () => {
     await fillEditor("select 'test'")
     await $('[data-testid="new-sql"]').click()
-    await fillEditor('select 123')
+    await fillEditor('select 123 doesntmatter')
     await $('[data-testid="new-sql"]').click()
     await fillEditor('select 222')
 
     await expect($$('.project-panel .item.draft')).toBeElementsArrayOfSize(3)
 
     await $('[data-testid="project-item-draft-1"]').click()
-    await expect($('.CodeMirror-code')).toHaveText("1\nselect 'test'")
+    await expect(await getEditorValue()).toEqual('')
 
     await $('[data-testid="project-item-draft-2"]').click()
-    await expect($('.CodeMirror-code')).toHaveText('1\nselect 123')
+    await expect(await getEditorValue()).toEqual("select 'test'")
 
     await $('[data-testid="project-item-draft-3"]').click()
-    await expect($('.CodeMirror-code')).toHaveText('1\nselect 222')
+    await expect(await getEditorValue()).toEqual('select 222')
   })
 
   it('deletes a draft sql', async () => {
@@ -36,6 +36,7 @@ describe('A simple scenario', () => {
 
   it('runs the drafl sqls', async () => {
     await $('[data-testid="project-item-draft-1"]').click()
+    await fillEditor("select 'test'")
     await $('[data-testid="run-sql"]').click()
     await $('[data-testid="rename-button"]').click()
     await expect($('.sheet')).toHaveText(

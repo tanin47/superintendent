@@ -1,5 +1,5 @@
 import { $, expect } from '@wdio/globals'
-import { clearEditor, fillEditor, setValidLicense } from './helpers'
+import { clearEditor, fillEditor, getEditorValue, setValidLicense } from './helpers'
 
 describe('draft notice', () => {
   beforeEach(async () => {
@@ -11,7 +11,7 @@ describe('draft notice', () => {
     await fillEditor('select 1, 2')
     await $('[data-testid="run-sql"]').click()
     await $('[data-testid="rename-button"]').click()
-    await expect($('.CodeMirror')).toHaveText('1\nselect 1, 2')
+    await expect(await getEditorValue()).toEqual('select 1, 2')
 
     await $('[data-testid="new-sql"]').click()
 
@@ -23,7 +23,7 @@ describe('draft notice', () => {
     await $('[data-testid="project-item-albatross"] span').click()
     await clearEditor()
     await fillEditor('\nselect 1, 2\n')
-    await expect($('.CodeMirror')).toHaveText('1\n2\nselect 1, 2\n3')
+    await expect(await getEditorValue()).toEqual('\nselect 1, 2\n')
 
     await $('[data-testid="project-item-anhinga"] span').click()
     await $('[data-testid="project-item-albatross"] span').click()
@@ -33,14 +33,14 @@ describe('draft notice', () => {
   it('revert', async () => {
     await clearEditor()
     await fillEditor('select 1, 2, 3')
-    await expect($('.CodeMirror')).toHaveText('1\nselect 1, 2, 3')
+    await expect(await getEditorValue()).toEqual('select 1, 2, 3')
 
     await $('[data-testid="project-item-anhinga"] span').click()
     await $('[data-testid="project-item-albatross"] span').click()
     await expect($('[data-testid="draft-notice"]')).toExist()
     await $('[data-testid="draft-notice"] .link').click()
 
-    await expect($('.CodeMirror')).toHaveText('1\nselect 1, 2')
+    await expect(await getEditorValue()).toEqual('select 1, 2')
   })
 
   it("makes new SQL doesn't trigger draft notice", async () => {
@@ -50,7 +50,7 @@ describe('draft notice', () => {
     await expect($('[data-testid="project-item-draft-3"]')).toHaveElementClass(expect.stringContaining('selected'))
 
     await $('[data-testid="project-item-albatross"] span').click()
-    await expect($('.CodeMirror')).toHaveText('1\nselect 1, 2')
+    await expect(await getEditorValue()).toEqual('select 1, 2')
     await expect($('[data-testid="draft-notice"]')).not.toExist()
   })
 })

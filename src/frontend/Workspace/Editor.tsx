@@ -135,7 +135,6 @@ export default function Editor ({
   const [isQueryLoading, setIsQueryLoading] = React.useState<boolean>(false)
   const [shownComposableItemId, setShownComposableItemId] = React.useState<string | null>(null)
   const [shouldShowDraftNotice, setShouldShowDraftNotice] = React.useState<boolean>(false)
-  const [shouldSkipSavingDraft, setShouldSkipSavingDraft] = React.useState<boolean>(false)
   const [shouldShowCsvNotice, setShouldShowCsvNotice] = React.useState<boolean>(false)
   const [contextMenuOpenInfo, setContextMenuOpenInfo] = React.useState<ContextMenuOpenInfo | null>(null)
   const [editorMode, setEditorMode] = React.useState<EditorMode>(getInitialEditorMode())
@@ -190,8 +189,11 @@ export default function Editor ({
       const cursor = codeMirrorInstance.current.getCursor()
       const selections = codeMirrorInstance.current.listSelections()
 
-      setShouldSkipSavingDraft(false)
-      if (!shouldSkipSavingDraft) {
+      if (shownComposableItemId && editingItem.base.sql.trim() === codeMirrorInstance.current.getValue().trim()) {
+        // Revert the current shownComposableItemId because the new editingItem is equal to the previous sql.
+        // This means the new editingItem spawns from the previous item.
+        stateChangeApi.setEditorState(shownComposableItemId, null)
+      } else {
         saveEditorState()
       }
 
@@ -220,7 +222,7 @@ export default function Editor ({
       codeMirrorInstance.current.setOption('readOnly', editingItem?.base.isCsv ? 'nocursor' : false)
       setShouldShowCsvNotice(editingItem?.base.isCsv ?? false)
     },
-    [editingItem, saveEditorState, shouldSkipSavingDraft, shownComposableItemId, stateChangeApi]
+    [editingItem, saveEditorState, shownComposableItemId, stateChangeApi]
   )
 
   const formatSql = React.useCallback(
@@ -244,26 +246,23 @@ export default function Editor ({
 
   const makeNewSql = React.useCallback(
     () => {
-      if (editingItem?.base instanceof DraftSql) {
-        // do nothing
-      } else {
-        setShouldSkipSavingDraft(true)
-      }
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       stateChangeApi.makeDraftSql(codeMirrorInstance.current?.getValue() ?? '')
     },
-    [editingItem?.base, stateChangeApi]
+    [stateChangeApi]
   )
 
   const revertSql = React.useCallback(
     () => {
       if (!editingItem) { return }
+
       codeMirrorInstance.current.setValue(editingItem.base.sql)
-      editingItem.base.editorState = {}
-      setShouldShowDraftNotice(false)
+      stateChangeApi.setEditorState(editingItem.base.id, null)
       codeMirrorInstance.current.focus()
+
+      setShouldShowDraftNotice(false)
     },
-    [editingItem]
+    [editingItem, stateChangeApi]
   )
 
   const runSql = React.useCallback(
@@ -327,7 +326,6 @@ export default function Editor ({
 
         if (mode === 'default') {
           setShouldShowDraftNotice(false)
-          setShouldSkipSavingDraft(true)
 
           if (editingItem?.base instanceof DraftSql) {
             stateChangeApi.discardDraftSql(editingItem.base.id)

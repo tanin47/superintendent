@@ -1,5 +1,5 @@
 import { $, expect } from '@wdio/globals'
-import { expectDefaultEditorText, fillEditor, setValidLicense } from './helpers'
+import { expectDefaultEditorText, fillEditor, getEditorValue, setValidLicense } from './helpers'
 
 describe('Sort', () => {
   beforeEach(async () => {
@@ -98,6 +98,7 @@ describe('Sort', () => {
     await expect($('[data-testid="cell-3-1"]')).toHaveText('a')
     await expect($('[data-testid="cell-4-1"]')).toHaveText('a')
 
+    await $('[data-testid="cell-0-1"]').click() // no idea why we have to click. If we don't, it wouldn't click the sort button correctly.
     await $('[data-testid="cell-0-1"]').moveTo()
     await $('[data-testid="cell-0-1"] [data-testid="sort-button"]').click()
 
@@ -110,7 +111,7 @@ describe('Sort', () => {
     await expectDefaultEditorText()
 
     await $('[data-testid="project-item-albatross"] span').click()
-    await expect($('.CodeMirror')).toHaveText('1\nselect * from "456sort"') // The SQL is not changed when sorted.
+    await expect(await getEditorValue()).toEqual('select * from "456sort"') // The SQL is not changed when sorted.
 
     await expect($('[data-testid="project-item-albatross"] .fa-caret-square-right')).toExist() // The isCsv marker is not replaced.
   })

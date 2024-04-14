@@ -1,6 +1,6 @@
 import { browser, $, expect } from '@wdio/globals'
 import { Key } from 'webdriverio'
-import { clearEditor, setValidLicense } from './helpers'
+import { clearEditor, getEditorValue, setValidLicense } from './helpers'
 
 describe('A simple scenario', () => {
   beforeEach(async () => {
@@ -18,7 +18,7 @@ describe('A simple scenario', () => {
     await clearEditor()
     await browser.keys([Key.Ctrl, 'v'])
 
-    await expect($('.CodeMirror')).toHaveText('1\ntest')
+    await expect(await getEditorValue()).toEqual('test')
   })
 
   it('copy row', async () => {
@@ -36,7 +36,7 @@ describe('A simple scenario', () => {
     await clearEditor()
     await browser.keys([Key.Ctrl, 'v'])
 
-    await expect($('.CodeMirror')).toHaveText('1\naaa,bbb,2012-02-24T00:00:00.000Z')
+    await expect(await getEditorValue()).toEqual('aaa,bbb,2012-02-24T00:00:00.000Z')
   })
 
   it('copy column', async () => {
@@ -46,7 +46,7 @@ describe('A simple scenario', () => {
     await clearEditor()
     await browser.keys([Key.Ctrl, 'v'])
 
-    await expect($('.CodeMirror')).toHaveText("1\n'yo'\n2\nyo\n3\nbbb")
+    await expect(await getEditorValue()).toEqual("'yo'\nyo\nbbb")
   })
 
   it('copy all', async () => {
@@ -56,6 +56,6 @@ describe('A simple scenario', () => {
     await clearEditor()
     await browser.keys([Key.Ctrl, 'v'])
 
-    await expect($('.CodeMirror')).toHaveText("1\n'test','yo',CAST('2010-12-01' AS TIMESTAMP)\n2\ntest,yo,2010-12-01T00:00:00.000Z\n3\naaa,bbb,2012-02-24T00:00:00.000Z")
+    await expect(await getEditorValue()).toEqual("'test','yo',CAST('2010-12-01' AS TIMESTAMP)\ntest,yo,2010-12-01T00:00:00.000Z\naaa,bbb,2012-02-24T00:00:00.000Z")
   })
 })

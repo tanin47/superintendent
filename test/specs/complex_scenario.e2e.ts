@@ -1,5 +1,5 @@
 import { $, expect } from '@wdio/globals'
-import { clearEditor, expectDefaultEditorText, getSelectedText, getTabs, setValidLicense } from './helpers'
+import { clearEditor, expectDefaultEditorText, getEditorValue, getSelectedText, getTabs, setValidLicense } from './helpers'
 
 describe('A simple scenario', () => {
   beforeEach(async () => {
@@ -76,7 +76,7 @@ describe('A simple scenario', () => {
     await $('[data-testid="rename-textbox"]').setValue('bird')
     await $('[data-testid="rename-button"]').click()
     await $('[data-testid="project-item-bird"] span').click()
-    await expect($('.CodeMirror')).toHaveText('1\nselect 1')
+    await expect(await getEditorValue()).toEqual('select 1')
   })
 
   it('deletes', async () => {
@@ -87,9 +87,9 @@ describe('A simple scenario', () => {
 
   it('switches sql and sheet, and format SQL', async () => {
     await $('[data-testid="project-item-anhinga"] span').click()
-    await expect($('.CodeMirror')).toHaveText('1\nselect * from csv join albatross on true')
+    await expect(await getEditorValue()).toEqual('select * from csv join albatross on true')
     await $('[data-testid="format-sql"] span').click()
-    await expect($('.CodeMirror')).toHaveText('1\nselect\n2\n  *\n3\nfrom\n4\n  csv\n5\n  join albatross on true')
+    await expect(await getEditorValue()).toEqual('select\n  *\nfrom\n  csv\n  join albatross on true')
     await $('[data-testid="project-item-csv"] span').click()
     await expectDefaultEditorText()
 

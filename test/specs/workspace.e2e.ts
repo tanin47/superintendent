@@ -37,9 +37,20 @@ describe('Workflow', () => {
       { label: 'height', isSelected: true }
     ])
 
-    await fillEditor('select u.id, name, height from user u join height h on u.id = h.id order by u.id asc')
+    await fillEditor('select u.id, name, height from user u join height h on u.id = h.id order by u.id desc')
     await $('[data-testid="run-sql"]').click()
     await $('[data-testid="rename-button"]').click()
+    await expect($('.sheet')).toHaveText(
+      '3\nrachel\n165\n' +
+      '2\njohn\n175\n' +
+      '1\ntanin\n170\n' +
+      ' id\nname\nheight\n' +
+      '1\n2\n3'
+    )
+
+    await $('.CodeMirror').executeScript('document.querySelector(".CodeMirror").CodeMirror.setSelection({line: 0, ch: 0}, {line: 0, ch: 80})', [])
+    await $('.CodeMirror').click({ button: 'right' })
+    await $('[data-testid="editor-context-menu-run-draft"]').click()
     await expect($('.sheet')).toHaveText(
       '1\ntanin\n170\n' +
       '2\njohn\n175\n' +
@@ -81,8 +92,23 @@ describe('Workflow', () => {
     const names = await $$('.project-panel .item .name').map(async (i) => await i.getText())
     await expect(names).toEqual(['draft-1', 'draft-2', 'height', 'user', 'albatross'])
 
+    const sheetNames = await $$('[data-testid="sheet-item-list"] .label').map(async (i) => await i.getText())
+    await expect(sheetNames).toEqual(['user', 'height', 'albatross', 'draft'])
+
     await $('[data-testid="project-item-albatross"]').doubleClick()
-    await expect(await getEditorValue()).toEqual('select u.id, name, height from user u join height h on u.id = h.id order by u.id asc')
+    await expect(await getEditorValue()).toEqual('select u.id, name, height from user u join height h on u.id = h.id order by u.id desc')
+    await expect($('.sheet')).toHaveText(
+      '3\nrachel\n165\n' +
+      '2\njohn\n175\n' +
+      '1\ntanin\n170\n' +
+      ' id\nname\nheight\n' +
+      '1\n2\n3'
+    )
+
+    await $('[data-testid="project-item-draft-2"]').click()
+    await expect(await getEditorValue()).toEqual('select 1, 2, 3')
+
+    await $('[data-testid="sheet-section-item-_T_DRAFT_T_"]').click()
     await expect($('.sheet')).toHaveText(
       '1\ntanin\n170\n' +
       '2\njohn\n175\n' +
@@ -90,9 +116,6 @@ describe('Workflow', () => {
       ' id\nname\nheight\n' +
       '1\n2\n3'
     )
-
-    await $('[data-testid="project-item-draft-2"]').click()
-    await expect(await getEditorValue()).toEqual('select 1, 2, 3')
 
     await $('[data-testid="sheet-section-item-user"]').click()
     await expect($('.sheet')).toHaveText(
@@ -116,7 +139,7 @@ describe('Workflow', () => {
     await $('[data-testid="run-sql"]').click()
     await $('[data-testid="rename-button"]').click()
     await expect($('.sheet')).toHaveText(
-      '1\ntanin\n170\n' +
+      '3\nrachel\n165\n' +
       ' id\nname\nheight\n' +
       '1'
     )
