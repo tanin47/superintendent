@@ -175,7 +175,7 @@ export default function Workspace ({
 
   React.useEffect(() => {
     const handler = (event): boolean => {
-      if (event.code === 'KeyU' && (event.metaKey || event.ctrlKey)) {
+      if (event.code === 'KeyB' && (event.metaKey || event.ctrlKey)) {
         togglePresentationType()
         return false
       }
@@ -316,7 +316,7 @@ export default function Workspace ({
                       >
                         Visualize
                         <span className="short-key">
-                          {ctrlCmdChar()} U
+                          {ctrlCmdChar()} B
                         </span>
                       </Button>
                     )}
