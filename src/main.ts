@@ -89,6 +89,7 @@ export default class Main {
   private static async initImportWorkflow (): Promise<void> {
     const space = Main.getFocusedSpace()
 
+    // On Linux, the file dialog steals the focus.
     const files = dialog.showOpenDialogSync(
       space.window,
       {
@@ -100,11 +101,11 @@ export default class Main {
       return
     }
 
-    await Main.importWorkflow(files[0])
+    await Main.importWorkflow(files[0], space)
   }
 
-  private static async importWorkflow (file: string, space: Workspace | null = null): Promise<void> {
-    let selectedSpace = space ?? Main.getFocusedSpace()
+  private static async importWorkflow (file: string, space: Workspace): Promise<void> {
+    let selectedSpace = space
 
     // May switch windows
     const tables = await selectedSpace.db.getAllTables()
