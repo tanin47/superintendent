@@ -30,7 +30,7 @@ export default function CheckLicenseForm ({
       <div className="enter-license-form">
         <div className="label">
           <span className="step">1</span>
-          Go to <span className="link" onClick={() => { window.shellApi.openExternal('https://superintendent.app') }}>https://superintendent.app</span> to purchase a license key
+          Go to <span className="link" onClick={() => { window.shellApi.openExternal('https://superintendent.app/buy') }}>https://superintendent.app/buy</span> to purchase a license key
         </div>
         <div className="label">
           <span className="step">2</span>
