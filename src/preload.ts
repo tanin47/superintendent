@@ -1,6 +1,11 @@
 import { contextBridge, ipcRenderer, shell } from 'electron'
 import { cryptoApi, storeApi } from './external'
 
+if (process.env.ENABLE_WDIO === 'yes') {
+  require('wdio-electron-service/preload')
+  console.log('wdio-electron-service/preload is loaded.')
+}
+
 contextBridge.exposeInMainWorld('ipcRenderer', {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
   invoke: async (channel: string, ...args: any[]) => await ipcRenderer.invoke(channel, ...args),
@@ -45,9 +50,4 @@ declare global {
       isWdioEnabled: () => boolean
     }
   }
-}
-
-if (process.env.ENABLE_WDIO === 'yes') {
-  require('wdio-electron-service/preload')
-  console.log('wdio-electron-service/preload is loaded.')
 }

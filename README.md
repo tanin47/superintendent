@@ -11,12 +11,12 @@ You can use VSCode.
 4. Run tests: `yarn install --force` and `yarn jest`.
    - Run specific test based on pattern: `yarn jest -t <substring>`
 5. Run UI tests: `yarn run electron-builder install-app-deps` and `yarn wdio`. 
-   - For now, we should modify: `./node_modules/wdio-electron-service/dist/launcher.js` in order to make it work with the dev build.
-     - Add:
-       ```
-       appBinaryPath = './node_modules/.bin/electron';
-       appArgs = ['--app=./dist/dev/main.js'];
-       ```
+   - Modify: `./node_modules/wdio-electron-service/dist/launcher.js` to have the below lines:
+     ```
+     appBinaryPath = './node_modules/.bin/electron';
+     appArgs = ['--app=./dist/dev/main.js'];
+     ```
+   - Modify `./node_modules/@wdio/utils/build/node/startWebDriver.js` to have the line below: ` driverProcess = cp.spawn(chromedriverExcecuteablePath, driverParams, { env: { ...process.env, NODE_OPTIONS: null } });`
    - See: https://github.com/webdriverio-community/wdio-electron-service/issues/331
    - Run `yarn wdio --spec ./test/specs/draft_notice.e2e.ts` to run specific tests.
 4. To build the prod artifacts:
