@@ -40,6 +40,18 @@ For convenience, here are the 2 files we should verify:
 * `powershell -command "Get-AuthenticodeSignature -FilePath ./electron-builder/out/win-unpacked/superintendent.exe"`
 * `powershell -command "Get-AuthenticodeSignature -FilePath \"./electron-builder/out/superintendent Setup 5.2.0.exe\""`
 
+Mac's notarization
+--------------------
+
+We can check the notarization status with: 
+
+```
+spctl -a -vvv -t install ./electron-builder/out/mac/superintendent.app
+spctl -a -vvv -t install ./electron-builder/out/mac-arm64/superintendent.app
+```
+
+The DMG cannot be, and is not, notarized 
+
 Testing
 --------
 
