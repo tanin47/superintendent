@@ -96,13 +96,20 @@ export class Duckdb extends Datastore {
       try {
         await this.execChangeColumnType(table, col.name, 'timestamp', '%Y-%m-%d %H:%M')
       } catch (unknown) {
-        const error = unknown as any
+        // const error = unknown as any
 
-        if ('message' in error && error.message.includes('according to format specifier "%Y-%m-%d %H:%M"')) {
-          // Do nothing. The column cannot be converted to the timestamp
-        } else {
-          throw unknown
-        }
+        // if ('message' in error && error.message.includes('according to format specifier "%Y-%m-%d %H:%M"')) {
+        //   // Do nothing. The column cannot be converted to the timestamp
+        // } else {
+        //   throw unknown
+        // }
+        //
+        // Ignore all errors. On windows, sometimes it raises:
+        // [Error: Invalid Error:  ��t] {
+        //   errno: -1,
+        //   code: 'DUCKDB_NODEJS_ERROR',
+        //   errorType: 'Invalid'
+        // }
       }
     }
   }

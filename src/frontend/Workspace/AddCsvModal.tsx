@@ -6,6 +6,7 @@ import { type Result, type Sheet } from './types'
 import { type Format } from '../../types'
 import { ctrlCmdChar } from './constants'
 import { type ObjectWrapper, StateChangeApi, useDispatch } from './WorkspaceContext'
+import * as dialog from './dialog'
 
 type Status = 'draft' | 'loading' | 'added' | 'errored'
 
@@ -205,14 +206,16 @@ export default React.forwardRef(function AddCsv ({
           return [...prevFiles]
         })
       } catch (e) {
+        let message: string = ''
         if (e instanceof Error) {
-          alert(e.message)
+          message = e.message
         } else if (typeof e === 'string') {
-          alert(e)
+          message = e
         } else {
           // @ts-expect-error unknown type
-          alert(`Unknown error: ${e.toString()}`)
+          message = `Unknown error: ${e.toString()}`
         }
+        dialog.showError('Adding a CSV failed', message)
         setFiles((prevFiles) => {
           prevFiles[index] = {
             ...prevFiles[index],

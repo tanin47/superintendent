@@ -12,6 +12,7 @@ import { useFloating, useClientPoint, useInteractions, useDismiss, useTransition
 import { type ChangingColumnInfo, ChangingColumnTypeDialog } from './ChangingColumnTypeDialog'
 import { type ObjectWrapper, StateChangeApi, useDispatch } from './WorkspaceContext'
 import Chart from './Chart'
+import * as dialog from './dialog'
 
 interface CopyingData {
   cellCount: number
@@ -604,8 +605,8 @@ function Table ({
           )
         })
         .catch((e) => {
-          console.log(e)
-          alert('Error while copying.')
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+          dialog.showError('Copying failed', e)
           onCopyingFinished()
         })
 
