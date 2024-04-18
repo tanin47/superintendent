@@ -81,6 +81,13 @@ describe('Workerize', () => {
   })
 
   describe('import/export', () => {
+    it('import autodetect', async () => {
+      await workerize.addCsv('./test/data-store/csv-samples/auto_detect_bug.csv', true, ',', '')
+      const result = await workerize.query('SELECT * FROM auto_detect_bug', null)
+
+      await expect(result.count).toEqual(2)
+    })
+
     it('import bom', async () => {
       await workerize.addCsv('./test/data-store/csv-samples/bom.csv', true, ',', '')
       const result = await workerize.query('SELECT * FROM bom', null)
@@ -88,17 +95,16 @@ describe('Workerize', () => {
       await expect(result).toEqual(
         {
           count: 1,
-          columns: [{ name: 'bom_column_1', maxCharWidthCount: 6 }, { name: 'bom_column_2', maxCharWidthCount: 6 }],
+          columns: [{ name: 'bom_column_1', tpe: 'varchar', maxCharWidthCount: 6 }, { name: 'rowid', tpe: 'bigint', maxCharWidthCount: 3 }],
           name: expect.any(String),
           sql: 'SELECT * FROM bom',
-          rows: [['value1', 'value2']],
-          isCsv: false
+          rows: [['value1', BigInt(123)]]
         }
       )
 
       await workerize.exportCsv('bom', exportedPath, ',')
       await expect(fs.readFileSync(exportedPath, { encoding: 'utf8' })).toEqual(
-        'bom_column_1,bom_column_2\nvalue1,value2\n'
+        'bom_column_1,rowid\nvalue1,123\n'
       )
     })
 
@@ -109,11 +115,10 @@ describe('Workerize', () => {
       await expect(result).toEqual(
         {
           count: 1,
-          columns: [{ name: 'name', maxCharWidthCount: 4 }, { name: 'Name_dup', maxCharWidthCount: 7 }],
+          columns: [{ name: 'name', tpe: 'varchar', maxCharWidthCount: 4 }, { name: 'Name_dup', tpe: 'varchar', maxCharWidthCount: 7 }],
           name: expect.any(String),
           sql: 'SELECT * FROM dup_column',
-          rows: [['john', 'doe, do']],
-          isCsv: false
+          rows: [['john', 'doe, do']]
         }
       )
       await workerize.exportCsv('dup_column', exportedPath, ',')
@@ -129,11 +134,10 @@ describe('Workerize', () => {
       await expect(result).toEqual(
         {
           count: 1,
-          columns: [{ name: 'something', maxCharWidthCount: 5 }, { name: 'another', maxCharWidthCount: 5 }],
+          columns: [{ name: 'something', tpe: 'varchar', maxCharWidthCount: 5 }, { name: 'another', tpe: 'varchar', maxCharWidthCount: 5 }],
           name: expect.any(String),
           sql: 'SELECT * FROM unicode',
-          rows: [['ก ไก่', 'ข ไข่']],
-          isCsv: false
+          rows: [['ก ไก่', 'ข ไข่']]
         }
       )
       await workerize.exportCsv('unicode', exportedPath, ',')
@@ -149,14 +153,13 @@ describe('Workerize', () => {
 
       const expectedResult = {
         count: 2,
-        columns: [{ name: 'first_name', maxCharWidthCount: 17 }, { name: 'last_name', maxCharWidthCount: 10 }, { name: 'email', maxCharWidthCount: 12 }],
+        columns: [{ name: 'first_name', tpe: 'varchar', maxCharWidthCount: 17 }, { name: 'last_name', tpe: 'varchar', maxCharWidthCount: 10 }, { name: 'email', tpe: 'varchar', maxCharWidthCount: 12 }],
         name: expect.any(String),
         sql: 'SELECT * FROM quote',
         rows: [
           ['john', 'doe, do', 'test@doe.com'],
           ['nanakorn, " tanin', ' somename ', 'some email']
-        ],
-        isCsv: false
+        ]
       }
       const expectedContent = 'first_name,last_name,email\njohn,"doe, do",test@doe.com\n"nanakorn, "" tanin", somename ,some email\n'
 
