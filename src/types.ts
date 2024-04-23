@@ -6,6 +6,7 @@ export type Format = 'comma' | 'tab' | 'pipe' | 'semicolon' | 'colon' | 'tilde' 
 
 export const ExportDelimiters = ['comma', 'tab', 'pipe', 'semicolon', 'colon', 'tilde'] as const
 export type ExportDelimiter = typeof ExportDelimiters[number]
+export const ShowErrorDialogChannel = 'show-error-dialog'
 export const ExportWorkflowChannel = 'export-workflow'
 export const ImportWorkflowChannel = 'import-workflow'
 export const StartImportingWorkflowChannel = 'start-importing-workflow'

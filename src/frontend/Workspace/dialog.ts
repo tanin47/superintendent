@@ -20,10 +20,18 @@ function showDialog (title: string, messageHtml: string, showConfirmButton: bool
   })
 }
 
-export function showError (title: string, errorMessage: string): void {
+export function showError (
+  title: string,
+  errorMessage: string,
+  preBody: string | null = null,
+  postBody: string | null = null
+): void {
+  preBody ||= "Here's the error:'"
+  postBody ||= 'Please try again. If the problem persists, please contact support@superintendent.app.'
+
   showDialog(
     `<i class="fas fa-exclamation-circle error"></i><span class="title">${title}</span>`,
-    `<div class="pre-text">Here's the error:</div><div class="error">${errorMessage}</div><div class="post-text">Please try again. If the problem persists, please contact support@superintendent.app.</div>`
+    `<div class="pre-text">${preBody}</div><div class="error">${errorMessage}</div><div class="post-text">${postBody}</div>`
   )
 }
 

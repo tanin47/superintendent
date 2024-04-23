@@ -9,7 +9,8 @@ import {
   ExportDelimiters, type ExportedWorkflow, ExportWorkflowChannel,
   type Format, ImportWorkflowChannel, type Sort, type ColumnType,
   GoToPurchaseLicense,
-  StartImportingWorkflowChannel
+  StartImportingWorkflowChannel,
+  ShowErrorDialogChannel
 } from './types'
 import fs from 'fs'
 import path from 'path'
@@ -150,6 +151,15 @@ export default class Main {
         void loadWorkflowFunc()
       })
       await promise
+    } catch (e) {
+      selectedSpace.window.webContents.send(
+        ShowErrorDialogChannel,
+        {
+          title: 'Importing workspace failed',
+          errorMessage: (e as any).message,
+          postBody: 'If you are looking to import a CSV, please use the button "Add files".\n\nPlease contact support@superintendent.app if you have an issue importing a workspace.'
+        }
+      )
     } finally {
       fs.rmSync(tmpdir, { recursive: true, force: true })
     }

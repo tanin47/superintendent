@@ -215,7 +215,7 @@ export default React.forwardRef(function AddCsv ({
           // @ts-expect-error unknown type
           message = `Unknown error: ${e.toString()}`
         }
-        dialog.showError('Adding a CSV failed', message)
+        dialog.showError('Adding a CSV failed', message, null, 'If you are looking to load a workspace, please use the menu "File > Load a workspace".\n\nPlease contact support@superintendent.app if you have an issue adding a CSV file.')
         setFiles((prevFiles) => {
           prevFiles[index] = {
             ...prevFiles[index],

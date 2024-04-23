@@ -1,8 +1,8 @@
 import React, { type ReactElement } from 'react'
 import './index.scss'
 import { downloadCsv, exportWorkflow } from '../api'
-import { type ExportedWorkflow, ImportWorkflowChannel, GoToPurchaseLicense, ExportWorkflowChannel, StartImportingWorkflowChannel } from '../../types'
-import { type ComposableItem, type Result } from './types'
+import { type ExportedWorkflow, ImportWorkflowChannel, GoToPurchaseLicense, ExportWorkflowChannel, StartImportingWorkflowChannel, ShowErrorDialogChannel } from '../../types'
+import { type ComposableItem } from './types'
 import SheetSection from './SheetSection'
 import Button from './Button'
 import Editor from './Editor'
@@ -39,6 +39,39 @@ export default function Workspace ({
       return found
     },
     [workspaceState]
+  )
+
+  React.useEffect(
+    () => {
+      const callback = (
+        event,
+        {
+          title,
+          errorMessage,
+          preBody,
+          postBody
+        }: {
+          title: string
+          errorMessage: string
+          preBody: string | null
+          postBody: string | null
+        }
+      ): void => {
+        dialog.showError(
+          title,
+          errorMessage,
+          preBody,
+          postBody
+        )
+      }
+
+      const removeListener = window.ipcRenderer.on(ShowErrorDialogChannel, callback)
+
+      return () => {
+        removeListener()
+      }
+    },
+    []
   )
 
   React.useEffect(() => {
