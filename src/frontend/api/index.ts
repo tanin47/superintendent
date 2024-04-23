@@ -1,5 +1,6 @@
 import { Sheet, type Result, generateWorkspaceItemId } from '../Workspace/types'
 import { type CopySelection, type EditorMode, type ExportedWorkflow, ExportWorkflowChannel, type SortDirection, type ColumnType } from '../../types'
+import { trackEvent } from '@aptabase/electron/renderer'
 
 const urlParams = new URLSearchParams(window.location.search)
 
@@ -205,10 +206,14 @@ export async function maybeShowPurchaseNotice (force: boolean = false): Promise<
 }
 
 export async function query (q: string, replace: Result | null): Promise<Result> {
+  void trackEvent('querying')
+
   return await window.ipcRenderer
     .invoke('query', q, replace?.name ?? null)
     .then((result) => {
       if (result.success === true) {
+        void trackEvent('querying_succeeded', { count: result.data.count })
+
         if (replace && replace.name === result.data.name) {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
           replace.update(result.data, false)
@@ -222,12 +227,15 @@ export async function query (q: string, replace: Result | null): Promise<Result>
           })
         }
       } else {
+        void trackEvent('querying_failed', { error: result.message })
         throw result.message
       }
     })
 }
 
 export async function sort (result: Result, column: string, direction: SortDirection): Promise<Result> {
+  void trackEvent('sorting')
+
   const sorts = result.sorts.filter((s) => s.name !== column)
   if (direction !== 'none') {
     sorts.push({ name: column, direction })
@@ -237,11 +245,14 @@ export async function sort (result: Result, column: string, direction: SortDirec
     .invoke('sort', result.name, sorts)
     .then((newResult) => {
       if (newResult.success === true) {
+        void trackEvent('sorting_succeeded')
+
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         result.update(newResult.data, true)
         result.updateSorts(sorts)
         return result
       } else {
+        void trackEvent('sorting_failed', { error: newResult.message })
         throw newResult.message
       }
     })
@@ -272,11 +283,15 @@ export async function copy (table: string, selection: CopySelection): Promise<bo
 }
 
 export async function addCsv (path: string, withHeader: boolean, format: string, replace: Sheet | null): Promise<Sheet> {
+  void trackEvent('adding_csv')
+
   return await window.ipcRenderer
     .invoke('add-csv', path, withHeader, format, replace?.name)
     .then((result) => {
       if (result.success === true) {
+        void trackEvent('adding_csv_succeeded', { count: result.data.count })
         void maybeShowPurchaseNotice()
+
         if (replace) {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
           replace.update(result.data, false)
@@ -291,6 +306,7 @@ export async function addCsv (path: string, withHeader: boolean, format: string,
           })
         }
       } else {
+        void trackEvent('adding_csv_failed', { error: result.message })
         throw result.message
       }
     })
@@ -309,12 +325,18 @@ export async function exportWorkflow (file: string, workflow: ExportedWorkflow):
 }
 
 export async function downloadCsv (table: string): Promise<string> {
+  void trackEvent('downloading_csv')
+
   return await window.ipcRenderer
     .invoke('download-csv', table)
     .then((result) => {
       if (result.success) {
+        void trackEvent('downloading_csv_succeeded')
+
         return result.data
       } else {
+        void trackEvent('downloading_csv_failed', { error: result.message })
+
         throw result.message
       }
     })

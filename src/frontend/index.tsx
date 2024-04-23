@@ -2,6 +2,7 @@ import React, { type ReactElement } from 'react'
 import './index.scss'
 import Workspace from './Workspace'
 import CheckLicense from './CheckLicense'
+import { trackEvent } from '@aptabase/electron/renderer'
 
 if (window.miscApi.isWdioEnabled()) {
   // @ts-expect-error for testing
@@ -13,6 +14,13 @@ type Page = 'license' | 'workspace'
 
 export default function App (): ReactElement {
   const [page, setPage] = React.useState<Page>('workspace')
+
+  React.useEffect(
+    () => {
+      void trackEvent('app_opened')
+    },
+    []
+  )
 
   switch (page) {
     case 'license':

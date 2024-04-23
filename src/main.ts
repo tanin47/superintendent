@@ -17,6 +17,10 @@ import path from 'path'
 import os from 'os'
 import archiver from 'archiver'
 import unzipper from 'unzipper'
+import * as aptabase from '@aptabase/electron/main'
+import { trackEvent } from '@aptabase/electron/renderer'
+
+void aptabase.initialize('A-US-0398660071')
 
 const ExportDelimiterLabels = {
   comma: 'Comma (,)',
@@ -88,6 +92,8 @@ export default class Main {
   }
 
   private static async initImportWorkflow (): Promise<void> {
+    void trackEvent('import_workflow')
+
     const space = Main.getFocusedSpace()
 
     // On Linux, the file dialog steals the focus.
@@ -99,6 +105,7 @@ export default class Main {
     )
 
     if (!files || files.length === 0) {
+      void trackEvent('import_workflow_canceled')
       return
     }
 
@@ -151,12 +158,17 @@ export default class Main {
         void loadWorkflowFunc()
       })
       await promise
+
+      void trackEvent('import_workflow_succeeded')
     } catch (e) {
+      const error = e as any
+
+      void trackEvent('import_workflow_failed', { error: error.message })
       selectedSpace.window.webContents.send(
         ShowErrorDialogChannel,
         {
           title: 'Importing workspace failed',
-          errorMessage: (e as any).message,
+          errorMessage: error.message,
           postBody: 'If you are looking to import a CSV, please use the button "Add files".\n\nPlease contact support@superintendent.app if you have an issue importing a workspace.'
         }
       )
@@ -166,6 +178,8 @@ export default class Main {
   }
 
   private static async initExportWorkflow (space: Workspace): Promise<void> {
+    void trackEvent('export_workflow')
+
     const file = dialog.showSaveDialogSync(
       space.window,
       {
@@ -175,6 +189,7 @@ export default class Main {
     )
 
     if (!file) {
+      void trackEvent('export_workflow_canceled')
       return
     }
 
@@ -204,7 +219,12 @@ export default class Main {
 
       await archive.finalize()
 
+      void trackEvent('export_workflow_succeeded')
+
       return { file }
+    } catch (e) {
+      void trackEvent('export_workflow_failed', { message: (e as any).message })
+      throw e
     } finally {
       fs.rmSync(tmpdir, { recursive: true, force: true })
     }
@@ -465,6 +485,8 @@ export default class Main {
     Main.spaces.set(space.window.webContents.id, space)
 
     space.window.on('close', (e) => {
+      void trackEvent('window_closed')
+
       if (!process.env.ENABLE_WDIO) {
         const choice = dialog.showMessageBoxSync(
           space.window,
@@ -555,6 +577,8 @@ export default class Main {
   }
 
   static showPurchaseNotice (): void {
+    void trackEvent('show_purchase_notice')
+
     const choice = dialog.showMessageBoxSync(
       Main.getFocusedSpace().window,
       {
