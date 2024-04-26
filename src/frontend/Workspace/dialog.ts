@@ -26,7 +26,7 @@ export function showError (
   preBody: string | null = null,
   postBody: string | null = null
 ): void {
-  preBody ||= "Here's the error:'"
+  preBody ||= "Here's the error:"
   postBody ||= 'Please try again. If the problem persists, please contact support@superintendent.app.'
 
   showDialog(

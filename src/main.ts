@@ -17,10 +17,9 @@ import path from 'path'
 import os from 'os'
 import archiver from 'archiver'
 import unzipper from 'unzipper'
-import * as aptabase from '@aptabase/electron/main'
-import { trackEvent } from '@aptabase/electron/renderer'
+import { trackEvent, initialize } from '@aptabase/electron/main'
 
-void aptabase.initialize('A-US-0398660071')
+void initialize('A-US-0398660071')
 
 const ExportDelimiterLabels = {
   comma: 'Comma (,)',
@@ -485,8 +484,6 @@ export default class Main {
     Main.spaces.set(space.window.webContents.id, space)
 
     space.window.on('close', (e) => {
-      void trackEvent('window_closed')
-
       if (!process.env.ENABLE_WDIO) {
         const choice = dialog.showMessageBoxSync(
           space.window,
@@ -689,7 +686,10 @@ export default class Main {
     Main.store = new Store()
     Main.buildMenu()
     Main.application.on('window-all-closed', () => {
-      Main.application.quit()
+      void trackEvent('exiting')
+        .finally(() => {
+          Main.application.quit()
+        })
     })
     Main.application.on('open-file', (event, file) => {
       if (Main.spaces.size > 0) {

@@ -41,6 +41,7 @@ declare global {
     }
     cryptoApi: {
       verify: (algorithm: string, input: string, publicKey: string, signature: string) => boolean
+      sign: (algorithm: string, input: string, privateKey: string) => string
     }
     shellApi: {
       openExternal: (url: string) => void

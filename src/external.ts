@@ -11,6 +11,15 @@ export const cryptoApi = {
       crypto.createPublicKey(publicKey),
       Buffer.from(signature, 'base64')
     )
+  },
+  sign (algorithm: string, input: string, privateKey: string): string {
+    const signature = crypto.sign(
+      algorithm,
+      Buffer.from(input),
+      crypto.createPrivateKey(privateKey)
+    )
+
+    return signature.toString('base64')
   }
 }
 

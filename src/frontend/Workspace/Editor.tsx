@@ -17,9 +17,10 @@ import Button from './Button'
 import { altOptionChar, ctrlCmdChar } from './constants'
 import * as dialog from './dialog'
 import { useFloating, useClientPoint, useInteractions, useDismiss, useTransitionStyles, shift } from '@floating-ui/react'
-import { getInitialEditorMode, hasValidLicense, maybeShowPurchaseNotice, query } from '../api'
+import { type AiResult, getInitialEditorMode, hasValidLicense, maybeShowPurchaseNotice, query } from '../api'
 import { StateChangeApi, type ObjectWrapper, useDispatch, useWorkspaceContext } from './WorkspaceContext'
 import { type RenameDialogInfo } from './RenameDialog'
+import AskAi from './AskAi'
 
 function getAutocompleteWord (s: string): string {
   if (s.includes('.') || s.includes('-') || s.includes(' ') || s.match(/^[0-9]/) !== null) {
@@ -132,12 +133,14 @@ export default function Editor ({
 }): JSX.Element {
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
   const codeMirrorInstance = React.useRef<any>(null)
+  const askAiRef = React.useRef<any>(null)
   const [isQueryLoading, setIsQueryLoading] = React.useState<boolean>(false)
   const [shownComposableItemId, setShownComposableItemId] = React.useState<string | null>(null)
   const [shouldShowDraftNotice, setShouldShowDraftNotice] = React.useState<boolean>(false)
   const [shouldShowCsvNotice, setShouldShowCsvNotice] = React.useState<boolean>(false)
   const [contextMenuOpenInfo, setContextMenuOpenInfo] = React.useState<ContextMenuOpenInfo | null>(null)
   const [editorMode, setEditorMode] = React.useState<EditorMode>(getInitialEditorMode())
+  const [showAiChat, setShowAiChat] = React.useState<boolean>(false)
 
   const workspaceState = useWorkspaceContext()
   const dispatch = useDispatch()
@@ -226,17 +229,24 @@ export default function Editor ({
   )
 
   const formatSql = React.useCallback(
-    () => {
-      codeMirrorInstance.current.setValue(
-        format(
+    (newContent: string | null = null) => {
+      let formatted = newContent ?? codeMirrorInstance.current.getValue()
+
+      try {
+        formatted = format(
           // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-          codeMirrorInstance.current.getValue(),
+          newContent ?? codeMirrorInstance.current.getValue(),
           {
             language: 'sql',
             linesBetweenQueries: 2
           }
         )
-      )
+      } catch (e) {
+        const error = e as any
+        dialog.showError('Formatting SQL failed', error.message as string)
+      }
+
+      codeMirrorInstance.current.setValue(formatted)
       const lastLine = codeMirrorInstance.current.lastLine()
       const lastCharIndex = codeMirrorInstance.current.getLine(lastLine).length
       codeMirrorInstance.current.setCursor({ line: lastLine, ch: lastCharIndex })
@@ -245,11 +255,30 @@ export default function Editor ({
   )
 
   const makeNewSql = React.useCallback(
-    () => {
+    (newContent: string | null = null) => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      stateChangeApi.makeDraftSql(codeMirrorInstance.current?.getValue() ?? '')
+      stateChangeApi.makeDraftSql(newContent ?? codeMirrorInstance.current?.getValue() ?? '')
     },
     [stateChangeApi]
+  )
+
+  const onPerformingAiResult = React.useCallback(
+    async (result: AiResult): Promise<void> => {
+      if (result.action === 'replace_selected_part') {
+        codeMirrorInstance.current.replaceSelection(result.result, 'around')
+      } else if (result.action === 'replace_currently_viewed_sql') {
+        formatSql(result.result)
+      } else if (result.action === 'make_new_sql') {
+        if (codeMirrorInstance.current?.getValue().trim()) {
+          makeNewSql(`-- ${result.description}\n${result.result}`)
+        } else {
+          formatSql(result.result)
+        }
+      } else {
+        throw new Error()
+      }
+    },
+    [formatSql, makeNewSql]
   )
 
   const revertSql = React.useCallback(
@@ -486,10 +515,37 @@ export default function Editor ({
     })
   }, [workspaceState.results])
 
+  const toggleAiChat = React.useCallback(
+    () => {
+      setShowAiChat((current) => {
+        const newValue = !current
+
+        setTimeout(
+          () => {
+            if (newValue) {
+              askAiRef.current?.focus()
+            } else {
+              codeMirrorInstance.current?.focus()
+            }
+          },
+          1
+        )
+
+        return newValue
+      })
+    },
+    []
+  )
+
   React.useEffect(
     () => {
       const handler = (event): boolean => {
         if (!(event instanceof KeyboardEvent)) { return true }
+
+        if (event.code === 'KeyI' && (event.metaKey || event.ctrlKey)) {
+          toggleAiChat()
+          return false
+        }
 
         if (event.code === 'KeyN' && (event.metaKey || event.ctrlKey)) {
           makeNewSql()
@@ -524,7 +580,7 @@ export default function Editor ({
         document.removeEventListener('keydown', handler)
       }
     },
-    [runSql, formatSql, makeNewSql]
+    [runSql, formatSql, makeNewSql, toggleAiChat]
   )
 
   return (
@@ -572,14 +628,26 @@ export default function Editor ({
             </Button>
           </div>
           <div className="right">
-            {hasValidLicense().state !== 'valid' && (
-              <Button
-                onClick={() => { void maybeShowPurchaseNotice(true) }}
-                icon={<i className="fas fa-dollar-sign"></i>}
-                testId="new-sql"
+            <Button
+                onClick={() => { toggleAiChat() }}
+                icon={<i className="fas fa-robot"></i>}
+                testId="toggle-ai"
+                className={showAiChat ? 'green' : ''}
               >
-                Buy License
+                Ask AI
+                <span className="short-key">{ctrlCmdChar()} I</span>
               </Button>
+            {hasValidLicense().state !== 'valid' && (
+              <>
+                <span className="separator" />
+                <Button
+                  onClick={() => { void maybeShowPurchaseNotice(true) }}
+                  icon={<i className="fas fa-dollar-sign"></i>}
+                  testId="new-sql"
+                >
+                  Buy License
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -607,7 +675,6 @@ export default function Editor ({
               opacity: 0.5,
               position: 'absolute',
               width: '100%',
-              height: '100%',
               zIndex: 1000
             }}
           />
@@ -623,6 +690,15 @@ export default function Editor ({
           <textarea ref={textareaRef} placeholder="Compose a beautiful SQL..." />
         </div>
       </div>
+      <AskAi
+        ref={askAiRef}
+        show={showAiChat}
+        onGetContext={() => ({
+          selection: codeMirrorInstance.current?.getSelection(),
+          currentSql: codeMirrorInstance.current?.getValue()
+        })}
+        onSuccess={async (result) => { await onPerformingAiResult(result) }}
+      />
     </>
   )
 }

@@ -3,7 +3,7 @@ import { $ } from '@wdio/globals'
 describe('Show the purchase notice', () => {
   it('show the purchase notice when adding a CSV and goes to the purchase page', async () => {
     await browser.executeScript('window.storeApi.set("license-key", "invalid")', [])
-    await browser.executeScript(`window.storeApi.set("purchaseNoticeShownAt", ${new Date().getTime() - (13 * 60 * 60 * 1000)})`, [])
+    await browser.executeScript(`window.storeApi.set("purchaseNoticeShownAt", ${new Date().getTime() - 25200000})`, []) // 7 hours
 
     const dialog = await browser.electron.mockAll('dialog')
     await dialog.showMessageBoxSync.mockReturnValue(0)

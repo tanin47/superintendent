@@ -22,10 +22,14 @@ export default function App (): ReactElement {
     []
   )
 
-  switch (page) {
-    case 'license':
-      return <CheckLicense onGoToWorkspace={() => { setPage('workspace') }} />
-    case 'workspace':
-      return <Workspace onGoToLicense={() => { setPage('license') }}/>
-  }
+  return (
+    <>
+      <div style={{ display: page === 'license' ? 'block' : 'none' }}>
+        <CheckLicense onGoToWorkspace={() => { setPage('workspace') }} />
+      </div>
+      <div style={{ display: page === 'workspace' ? 'block' : 'none' }}>
+        <Workspace onGoToLicense={() => { setPage('license') }}/>
+      </div>
+    </>
+  )
 }
