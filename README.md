@@ -1,6 +1,4 @@
 Superintendent
 ===============
 
-Load multiple CSVs and write SQL
-
-Please see the release page to download.
+Load multiple CSVs and write SQL. Try it out today: [Superintendent.app](https://superintendent.app)
