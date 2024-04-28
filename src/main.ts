@@ -18,7 +18,9 @@ import os from 'os'
 import archiver from 'archiver'
 import unzipper from 'unzipper'
 import { trackEvent, initialize } from '@aptabase/electron/main'
+import * as Sentry from '@sentry/electron/main'
 
+Sentry.init({ dsn: 'https://ffa45e5490e645f694fb3bb0775d2c2a@app.glitchtip.com/6548' })
 void initialize('A-US-0398660071')
 
 const ExportDelimiterLabels = {

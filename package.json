@@ -129,6 +129,7 @@
   "dependencies": {
     "@aptabase/electron": "^0.3.1",
     "@floating-ui/react": "^0.26.9",
+    "@sentry/electron": "^4.24.0",
     "@types/unzipper": "^0.10.9",
     "archiver": "^7.0.1",
     "chart.js": "4.4.2",

@@ -1,6 +1,7 @@
 import { Sheet, type Result, generateWorkspaceItemId } from '../Workspace/types'
 import { type CopySelection, type EditorMode, type ExportedWorkflow, ExportWorkflowChannel, type SortDirection, type ColumnType } from '../../types'
 import { trackEvent } from '@aptabase/electron/renderer'
+import * as Sentry from '@sentry/electron/renderer'
 
 const urlParams = new URLSearchParams(window.location.search)
 
@@ -228,6 +229,9 @@ export async function query (q: string, replace: Result | null): Promise<Result>
         }
       } else {
         void trackEvent('querying_failed', { error: result.message })
+        Sentry.captureException(new Error(result.message as string), {
+          tags: { action: 'querying_failed' }
+        })
         throw result.message
       }
     })
@@ -253,6 +257,9 @@ export async function sort (result: Result, column: string, direction: SortDirec
         return result
       } else {
         void trackEvent('sorting_failed', { error: newResult.message })
+        Sentry.captureException(new Error(newResult.message as string), {
+          tags: { action: 'sorting_failed' }
+        })
         throw newResult.message
       }
     })
@@ -307,6 +314,9 @@ export async function addCsv (path: string, withHeader: boolean, format: string,
         }
       } else {
         void trackEvent('adding_csv_failed', { error: result.message })
+        Sentry.captureException(new Error(result.message as string), {
+          tags: { action: 'adding_csv_failed' }
+        })
         throw result.message
       }
     })
@@ -336,6 +346,9 @@ export async function downloadCsv (table: string): Promise<string> {
         return result.data
       } else {
         void trackEvent('downloading_csv_failed', { error: result.message })
+        Sentry.captureException(new Error(result.message as string), {
+          tags: { action: 'downloading_csv_failed' }
+        })
 
         throw result.message
       }
@@ -363,14 +376,21 @@ export async function rename (previousTableName: string, newTableName: string): 
 }
 
 export async function changeColumnType (result: Result, columnName: string, newType: ColumnType, timestampFormat: string | null = null): Promise<Result> {
+  void trackEvent('changing_column')
+
   return await window.ipcRenderer
     .invoke('change-column-type', result.name, columnName, newType, timestampFormat)
     .then((newResult) => {
       if (newResult.success === true) {
+        void trackEvent('changing_column_succeeded')
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         result.update(newResult.data, true)
         return result
       } else {
+        void trackEvent('changing_column_failed', { error: newResult.message })
+        Sentry.captureException(new Error(newResult.message as string), {
+          tags: { action: 'changing_column_failed' }
+        })
         throw newResult.message
       }
     })
@@ -463,8 +483,11 @@ export async function askAi (command: string, selection: string | null, currentS
       throw new Error('Unknown error has occurred.')
     }
   } catch (e) {
-    const error = e as any
+    const error = e as Error
     void trackEvent('ask_ai_failed', { message: error.message })
+    Sentry.captureException(new Error(error.message), {
+      tags: { action: 'ask_ai_failed' }
+    })
     throw e
   }
 }
