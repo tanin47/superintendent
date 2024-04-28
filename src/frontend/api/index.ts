@@ -313,11 +313,10 @@ export async function addCsv (path: string, withHeader: boolean, format: string,
           })
         }
       } else {
-        const fileExtension = path.split('.').pop() ?? ''
-        void trackEvent('adding_csv_failed', { error: result.message, fileExtension })
+        void trackEvent('adding_csv_failed', { error: result.message, path, withHeader, format })
         Sentry.captureException(new Error(result.message as string), {
           tags: { action: 'adding_csv_failed' },
-          extra: { fileExtension }
+          extra: { path, withHeader, format }
         })
         throw result.message
       }
