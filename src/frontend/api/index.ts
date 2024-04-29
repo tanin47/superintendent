@@ -228,9 +228,10 @@ export async function query (q: string, replace: Result | null): Promise<Result>
           })
         }
       } else {
-        void trackEvent('querying_failed', { error: result.message })
+        void trackEvent('querying_failed', { error: result.message, query: q })
         Sentry.captureException(new Error(result.message as string), {
-          tags: { action: 'querying_failed' }
+          tags: { action: 'querying_failed' },
+          extra: { query: q }
         })
         throw result.message
       }
