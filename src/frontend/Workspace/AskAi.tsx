@@ -67,7 +67,7 @@ export default React.forwardRef(function AskAi (
       } catch (e) {
         const error = e as any
 
-        dialog.showError('Asking AI failed', error.message as string)
+        void dialog.showError('Asking AI failed', error.message as string, { action: 'ask_ai_failed' })
       } finally {
         setIsLoading(false)
       }

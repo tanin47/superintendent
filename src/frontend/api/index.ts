@@ -1,7 +1,6 @@
 import { Sheet, type Result, generateWorkspaceItemId } from '../Workspace/types'
 import { type CopySelection, type EditorMode, type ExportedWorkflow, ExportWorkflowChannel, type SortDirection, type ColumnType } from '../../types'
 import { trackEvent } from '@aptabase/electron/renderer'
-import * as Sentry from '@sentry/electron/renderer'
 
 const urlParams = new URLSearchParams(window.location.search)
 
@@ -32,6 +31,16 @@ export function convertFileList (fileList: FileList | null): string[] {
   }
 
   return results
+}
+
+export const ERROR_REPORTING_OPT_IN_KEY = 'errorReportingOptIn'
+
+export function getErrorReportingOptIn (): boolean | null {
+  return window.storeApi.get(ERROR_REPORTING_OPT_IN_KEY) as (boolean | undefined) ?? null
+}
+
+export function setErrorReportingOptIn (isReporting: boolean): void {
+  window.storeApi.set(ERROR_REPORTING_OPT_IN_KEY, isReporting)
 }
 
 export const PURCHASE_NOTICE_SHOWN_AT_KEY = 'purchaseNoticeShownAt'
@@ -228,11 +237,7 @@ export async function query (q: string, replace: Result | null): Promise<Result>
           })
         }
       } else {
-        void trackEvent('querying_failed', { error: result.message, query: q })
-        Sentry.captureException(new Error(result.message as string), {
-          tags: { action: 'querying_failed' },
-          extra: { query: q }
-        })
+        void trackEvent('querying_failed')
         throw result.message
       }
     })
@@ -257,10 +262,7 @@ export async function sort (result: Result, column: string, direction: SortDirec
         result.updateSorts(sorts)
         return result
       } else {
-        void trackEvent('sorting_failed', { error: newResult.message })
-        Sentry.captureException(new Error(newResult.message as string), {
-          tags: { action: 'sorting_failed' }
-        })
+        void trackEvent('sorting_failed')
         throw newResult.message
       }
     })
@@ -314,11 +316,7 @@ export async function addCsv (path: string, withHeader: boolean, format: string,
           })
         }
       } else {
-        void trackEvent('adding_csv_failed', { error: result.message, path, withHeader, format })
-        Sentry.captureException(new Error(result.message as string), {
-          tags: { action: 'adding_csv_failed' },
-          extra: { path, withHeader, format }
-        })
+        void trackEvent('adding_csv_failed')
         throw result.message
       }
     })
@@ -347,11 +345,7 @@ export async function downloadCsv (table: string): Promise<string> {
 
         return result.data
       } else {
-        void trackEvent('downloading_csv_failed', { error: result.message })
-        Sentry.captureException(new Error(result.message as string), {
-          tags: { action: 'downloading_csv_failed' }
-        })
-
+        void trackEvent('downloading_csv_failed')
         throw result.message
       }
     })
@@ -389,10 +383,7 @@ export async function changeColumnType (result: Result, columnName: string, newT
         result.update(newResult.data, true)
         return result
       } else {
-        void trackEvent('changing_column_failed', { error: newResult.message })
-        Sentry.captureException(new Error(newResult.message as string), {
-          tags: { action: 'changing_column_failed' }
-        })
+        void trackEvent('changing_column_failed')
         throw newResult.message
       }
     })
@@ -485,11 +476,7 @@ export async function askAi (command: string, selection: string | null, currentS
       throw new Error('Unknown error has occurred.')
     }
   } catch (e) {
-    const error = e as Error
-    void trackEvent('ask_ai_failed', { message: error.message })
-    Sentry.captureException(new Error(error.message), {
-      tags: { action: 'ask_ai_failed' }
-    })
+    void trackEvent('ask_ai_failed')
     throw e
   }
 }

@@ -53,6 +53,44 @@
   .post-text {
     white-space: pre-line;
   }
+
+  .error-reporting {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    gap: 4px;
+    font-size: 13px !important;
+    margin-top: 8px;
+    border: 1px solid #0c5460;
+    padding: 5px;
+    border-radius: 5px;
+    background-color: #d1ecf1;
+    color: #0c5460;
+
+    .opt-in {
+      display: flex;
+      align-items: center;
+      justify-content: start;
+
+      input[type="checkbox"] {
+        margin: 0px;
+        margin-right: 8px;
+        cursor: pointer;
+      }
+
+      label {
+        cursor: pointer;
+      }
+    }
+
+    .disclosure {
+      display: flex;
+      justify-content: start;
+      font-size: 11px !important;
+      font-style: italic;
+    }
+  }
+
 }
 
 .dialog-button {

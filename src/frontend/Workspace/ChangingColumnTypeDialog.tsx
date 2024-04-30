@@ -6,6 +6,7 @@ import { type ColumnType, ColumnTypes } from '../../types'
 import { changeColumnType } from '../api'
 import Button from './Button'
 import { StateChangeApi, useDispatch } from './WorkspaceContext'
+import * as dialog from './dialog'
 
 export interface ChangingColumnInfo {
   result: Result
@@ -74,7 +75,18 @@ export function ChangingColumnTypeDialog ({
           console.log(error)
         }
 
-        setError(message)
+        void dialog.showError(
+          'Changing column type failed',
+          message,
+          {
+            action: 'changing_column_type_failed',
+            extras: {
+              columnName: info!.column.name,
+              tpe,
+              timestmapFormat: timestampFormat
+            }
+          }
+        )
       } finally {
         setIsLoading(false)
       }

@@ -230,10 +230,10 @@ export default function Editor ({
 
   const formatSql = React.useCallback(
     (newContent: string | null = null) => {
-      let formatted = newContent ?? codeMirrorInstance.current.getValue()
+      let sql = newContent ?? codeMirrorInstance.current.getValue()
 
       try {
-        formatted = format(
+        sql = format(
           // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
           newContent ?? codeMirrorInstance.current.getValue(),
           {
@@ -243,10 +243,10 @@ export default function Editor ({
         )
       } catch (e) {
         const error = e as any
-        dialog.showError('Formatting SQL failed', error.message as string)
+        void dialog.showError('Formatting SQL failed', error.message as string, { action: 'formatting_sql_failed', extras: { sql } })
       }
 
-      codeMirrorInstance.current.setValue(formatted)
+      codeMirrorInstance.current.setValue(sql)
       const lastLine = codeMirrorInstance.current.lastLine()
       const lastCharIndex = codeMirrorInstance.current.getLine(lastLine).length
       codeMirrorInstance.current.setCursor({ line: lastLine, ch: lastCharIndex })
@@ -366,7 +366,7 @@ export default function Editor ({
           onRenamingSheet({ sheet, isNewTable: true })
         }
       } catch (err) {
-        dialog.showError('Running the SQL failed', err as any as string)
+        void dialog.showError('Running the SQL failed', err as any as string, { action: 'querying_failed', extras: { sql } })
       } finally {
         setIsQueryLoading(false)
 

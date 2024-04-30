@@ -606,7 +606,7 @@ function Table ({
         })
         .catch((e) => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-          dialog.showError('Copying failed', e)
+          void dialog.showError('Copying failed', e, { action: 'copying_failed' })
           onCopyingFinished()
         })
 
@@ -756,6 +756,9 @@ function Table ({
                   void sort(_result, columnName, newDirection)
                     .then((newResult) => {
                       stateChangeApi.addOrReplaceResult(newResult)
+                    })
+                    .catch((error) => {
+                      void dialog.showError('Sorting failed', error as string, { action: 'sorting_failed' })
                     })
                     .finally(() => {
                       stateChangeApi.stopLoading(_result.id)

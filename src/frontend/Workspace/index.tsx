@@ -48,19 +48,19 @@ export default function Workspace ({
         {
           title,
           errorMessage,
-          preBody,
+          errorContext,
           postBody
         }: {
           title: string
           errorMessage: string
-          preBody: string | null
+          errorContext: dialog.ErrorContext
           postBody: string | null
         }
       ): void => {
-        dialog.showError(
+        void dialog.showError(
           title,
           errorMessage,
-          preBody,
+          errorContext,
           postBody
         )
       }
@@ -105,7 +105,7 @@ export default function Workspace ({
           dialog.showSuccess('Succeeded', `The workspace has been saved at: ${resp.file}`)
         })
         .catch((err) => {
-          dialog.showError('Saving the workspace failed', err as string)
+          void dialog.showError('Saving the workspace failed', err as string, { action: 'saving_workspace_failed' })
         })
     }
 
@@ -182,7 +182,7 @@ export default function Workspace ({
               dialog.showSuccess('Exported!', `The sheet has been exported to: ${filePath}`)
             })
             .catch((err) => {
-              dialog.showError('Exporting failed', err.message as string)
+              void dialog.showError('Exporting failed', err.message as string, { action: 'exporting_failed' })
             })
             .finally(() => {
               setIsDownloadCsvLoading(false)
