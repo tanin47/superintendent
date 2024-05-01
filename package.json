@@ -1,6 +1,6 @@
 {
   "name": "superintendent",
-  "version": "6.0.0",
+  "version": "5.8.0",
   "description": "Write SQLs on CSVs",
   "license": "UNLICENSED",
   "main": "dist/prod/main.js",
@@ -49,8 +49,7 @@
       "target": {
         "target": "default",
         "arch": [
-          "x64",
-          "arm64"
+          "x64"
         ]
       },
       "category": "public.app-category.finance",
@@ -135,7 +134,7 @@
     "chart.js": "4.4.2",
     "codemirror": "^5.61.1",
     "csv-parse": "4.15.4",
-    "duckdb-async": "^0.10.0",
+    "duckdb-async": "0.10.2",
     "electron-default-menu": "^1.0.2",
     "electron-store": "^8.0.0",
     "luxon": "^3.4.4",

@@ -1,5 +1,7 @@
 import { contextBridge, ipcRenderer, shell } from 'electron'
 import { cryptoApi, storeApi } from './external'
+import fs from 'fs'
+import readline from 'readline'
 
 if (process.env.ENABLE_WDIO === 'yes') {
   require('wdio-electron-service/preload')
@@ -29,6 +31,29 @@ contextBridge.exposeInMainWorld('miscApi', {
   isWdioEnabled: () => process.env.ENABLE_WDIO === 'yes'
 })
 
+contextBridge.exposeInMainWorld('fileApi', {
+  extractContextualLines: async (file: string, middleLineNumber: number): Promise<string | null> => {
+    if (middleLineNumber >= 3000000) { return await Promise.resolve(null) }
+
+    const rl = readline.createInterface({
+      input: fs.createReadStream(file),
+      crlfDelay: Infinity
+    })
+
+    const lines: string[] = []
+
+    let currentLine = 1
+    for await (const line of rl) {
+      if ((middleLineNumber - 2) <= currentLine && currentLine <= (middleLineNumber + 2)) {
+        lines.push(line.slice(0, 1000))
+      }
+      currentLine += 1
+    }
+
+    return lines.join('\n')
+  }
+})
+
 declare global {
   interface Window {
     ipcRenderer: {
@@ -49,6 +74,9 @@ declare global {
     miscApi: {
       getPlatform: () => string
       isWdioEnabled: () => boolean
+    }
+    fileApi: {
+      extractContextualLines: (file: string, middleLineNumber: number) => Promise<string | null>
     }
   }
 }

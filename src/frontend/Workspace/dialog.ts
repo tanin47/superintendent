@@ -2,6 +2,7 @@ import Swal from 'sweetalert2'
 import './dialog.scss'
 import { getErrorReportingOptIn, hasValidLicense, setErrorReportingOptIn } from '../api'
 import * as Sentry from '@sentry/electron/renderer'
+import { type ErrorContext } from '../../types'
 
 const SWAL_OPTIONS = {
   customClass: {
@@ -26,11 +27,6 @@ function showDialog (title: string, messageHtml: string, showConfirmButton: bool
     showConfirmButton,
     ...SWAL_OPTIONS
   })
-}
-
-export interface ErrorContext {
-  action: string
-  extras?: Record<string, string> | null
 }
 
 export async function showError (

@@ -517,22 +517,22 @@ export default function Editor ({
 
   const toggleAiChat = React.useCallback(
     () => {
-      setShowAiChat((current) => {
-        const newValue = !current
+      // setShowAiChat((current) => {
+      //   const newValue = !current
 
-        setTimeout(
-          () => {
-            if (newValue) {
-              askAiRef.current?.focus()
-            } else {
-              codeMirrorInstance.current?.focus()
-            }
-          },
-          1
-        )
+      //   setTimeout(
+      //     () => {
+      //       if (newValue) {
+      //         askAiRef.current?.focus()
+      //       } else {
+      //         codeMirrorInstance.current?.focus()
+      //       }
+      //     },
+      //     1
+      //   )
 
-        return newValue
-      })
+      //   return newValue
+      // })
     },
     []
   )
@@ -628,7 +628,7 @@ export default function Editor ({
             </Button>
           </div>
           <div className="right">
-            <Button
+            {/* <Button
                 onClick={() => { toggleAiChat() }}
                 icon={<i className="fas fa-robot"></i>}
                 testId="toggle-ai"
@@ -636,10 +636,10 @@ export default function Editor ({
               >
                 Ask AI
                 <span className="short-key">{ctrlCmdChar()} I</span>
-              </Button>
+              </Button> */}
             {hasValidLicense().state !== 'valid' && (
               <>
-                <span className="separator" />
+                {/* <span className="separator" /> */}
                 <Button
                   onClick={() => { void maybeShowPurchaseNotice(true) }}
                   icon={<i className="fas fa-dollar-sign"></i>}

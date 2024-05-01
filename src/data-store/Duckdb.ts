@@ -40,7 +40,8 @@ export class Duckdb extends Datastore {
         delimiter: separator,
         skipEmptyLines: true,
         relax: true,
-        relax_column_count: true
+        relax_column_count: true,
+        toLine: 1
       }))
 
     const columnNames: string[] = []
@@ -125,6 +126,9 @@ export class Duckdb extends Datastore {
       `header = ${withHeader}`,
       `columns = ${columnsParam}`,
       'null_padding = true'
+      // TODO: Ignoring error doesn't work well with multiline rows. No idea why. We should make it work some day.
+      // 'ignore_errors = true'
+      // `rejects_table = '${rejectsTable}'`
     ]
     if (detectionResult.dateFormat) {
       readCsvOptions.push(`dateformat = '${detectionResult.dateFormat}'`)

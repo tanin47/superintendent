@@ -157,16 +157,31 @@ export interface Ref {
   addFiles: (fileList: string[] | null) => void
 }
 
+async function extractProblematicLine (message: string, file: string): Promise<string | null> {
+  const matches = message.match(/line ([0-9]+)/i)
+
+  if (!matches || matches.length < 1) { return null }
+
+  const line = parseInt(matches[1])
+
+  return await window.fileApi.extractContextualLines(file, line)
+}
+
+function mask (s: string | null): string | null {
+  if (!s) { return null }
+
+  // eslint-disable-next-line no-control-regex
+  return s.replace(/[a-zA-Z]/gi, 'x').replace(/[0-9]/gi, '0').replace(/[^\x00-\x7F]/gi, 'u')
+}
+
 export default React.forwardRef(function AddCsv ({
   isOpen,
   csvs,
-  onClose,
-  onGoToLicense
+  onClose
 }: {
   isOpen: boolean
   csvs: Array<ObjectWrapper<Result>>
   onClose: () => void
-  onGoToLicense: () => void
 }, ref: React.ForwardedRef<Ref>): JSX.Element {
   const dispatch = useDispatch()
   const stateChangeApi = React.useMemo(() => new StateChangeApi(dispatch), [dispatch])
@@ -215,15 +230,21 @@ export default React.forwardRef(function AddCsv ({
           // @ts-expect-error unknown type
           message = `Unknown error: ${e.toString()}`
         }
+
+        const problematicLine = await extractProblematicLine(message, file.path)
+        const headerLine = await window.fileApi.extractContextualLines(file.path, 1)
+
         void dialog.showError(
           'Adding a CSV failed',
           message,
           {
             action: 'adding_csv_failed',
             extras: {
-              path: file.path,
+              fileExtension: file.path.split('.').pop() ?? '',
               withHeader: file.withHeader.toString(),
-              format: file.format
+              format: file.format,
+              problematicLine: mask(problematicLine) ?? '',
+              headerLine: mask(headerLine) ?? ''
             }
           },
           'If you are looking to load a workspace, please use the menu "File > Load a workspace".\n\nPlease contact support@superintendent.app if you have an issue adding a CSV file.'

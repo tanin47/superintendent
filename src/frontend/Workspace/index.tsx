@@ -1,7 +1,7 @@
 import React, { type ReactElement } from 'react'
 import './index.scss'
 import { downloadCsv, exportWorkflow } from '../api'
-import { type ExportedWorkflow, ImportWorkflowChannel, GoToPurchaseLicense, ExportWorkflowChannel, StartImportingWorkflowChannel, ShowErrorDialogChannel } from '../../types'
+import { type ExportedWorkflow, ImportWorkflowChannel, GoToPurchaseLicense, ExportWorkflowChannel, StartImportingWorkflowChannel, ShowErrorDialogChannel, type ErrorContext } from '../../types'
 import { type ComposableItem } from './types'
 import SheetSection from './SheetSection'
 import Button from './Button'
@@ -53,7 +53,7 @@ export default function Workspace ({
         }: {
           title: string
           errorMessage: string
-          errorContext: dialog.ErrorContext
+          errorContext: ErrorContext
           postBody: string | null
         }
       ): void => {
@@ -277,7 +277,6 @@ export default function Workspace ({
               <Project
                 selectedComposableItem={selectedComposableItem}
                 onRenamingSheet={(info) => { setRenamingInfo(info) }}
-                onGoToLicense={onGoToLicense}
               />
             </div>
             <ResizeBar

@@ -67,3 +67,8 @@ export interface QueryResult {
 export interface ExportWorkflowResponse {
   file: string
 }
+
+export interface ErrorContext {
+  action: string
+  extras?: Record<string, string> | null
+}

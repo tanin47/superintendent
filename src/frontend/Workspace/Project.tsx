@@ -173,12 +173,10 @@ function sort (a: ObjectWrapper<ComposableItem>, b: ObjectWrapper<ComposableItem
 
 export default function Project ({
   selectedComposableItem,
-  onRenamingSheet,
-  onGoToLicense
+  onRenamingSheet
 }: {
   selectedComposableItem: ObjectWrapper<ComposableItem> | null
   onRenamingSheet: (info: RenameDialogInfo) => void
-  onGoToLicense: () => void
 }): JSX.Element {
   const workspaceState = useWorkspaceContext()
   const dispatch = useDispatch()
@@ -304,7 +302,6 @@ export default function Project ({
         isOpen={shouldOpenAddCsv}
         csvs={csvs}
         onClose={() => { setShouldOpenAddCsv(false) }}
-        onGoToLicense={onGoToLicense}
       />
       <ContextMenu
         open={openContextMenu !== null}

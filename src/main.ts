@@ -10,7 +10,8 @@ import {
   type Format, ImportWorkflowChannel, type Sort, type ColumnType,
   GoToPurchaseLicense,
   StartImportingWorkflowChannel,
-  ShowErrorDialogChannel
+  ShowErrorDialogChannel,
+  type ErrorContext
 } from './types'
 import fs from 'fs'
 import path from 'path'
@@ -20,7 +21,7 @@ import unzipper from 'unzipper'
 import { trackEvent, initialize } from '@aptabase/electron/main'
 import * as Sentry from '@sentry/electron/main'
 
-Sentry.init({ dsn: 'https://ffa45e5490e645f694fb3bb0775d2c2a@app.glitchtip.com/6548' })
+Sentry.init({ dsn: 'https://ffa45e5490e645f694fb3bb0775d2c2a@app.glitchtip.com/6548', maxValueLength: 3000 })
 void initialize('A-US-0398660071')
 
 const ExportDelimiterLabels = {
@@ -170,6 +171,10 @@ export default class Main {
         {
           title: 'Importing workspace failed',
           errorMessage: error.message,
+          errorContext: {
+            action: 'importing_workflow_failed',
+            extras: { fileExtension: file.split('.').pop() ?? '' }
+          } satisfies ErrorContext,
           postBody: 'If you are looking to import a CSV, please use the button "Add files".\n\nPlease contact support@superintendent.app if you have an issue importing a workspace.'
         }
       )
