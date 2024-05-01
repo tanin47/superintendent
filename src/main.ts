@@ -581,8 +581,10 @@ export default class Main {
   static showPurchaseNotice (): void {
     void trackEvent('show_purchase_notice')
 
+    const space = Main.getFocusedSpace()
+
     const choice = dialog.showMessageBoxSync(
-      Main.getFocusedSpace().window,
+      space.window,
       {
         type: 'info',
         buttons: ['Purchase a license', 'Close'],
@@ -593,7 +595,7 @@ export default class Main {
     )
 
     if (choice === 0) {
-      Main.getFocusedSpace().window.webContents.send(GoToPurchaseLicense)
+      space.window.webContents.send(GoToPurchaseLicense)
     }
   }
 
