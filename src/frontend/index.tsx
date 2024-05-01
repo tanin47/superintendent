@@ -2,10 +2,7 @@ import React, { type ReactElement } from 'react'
 import './index.scss'
 import Workspace from './Workspace'
 import CheckLicense from './CheckLicense'
-import { trackEvent } from '@aptabase/electron/renderer'
-import * as Sentry from '@sentry/electron/renderer'
-
-Sentry.init({ dsn: 'https://ffa45e5490e645f694fb3bb0775d2c2a@app.glitchtip.com/6548', maxValueLength: 3000 })
+import { trackEvent } from './telemetryRenderer'
 
 if (window.miscApi.isWdioEnabled()) {
   // @ts-expect-error for testing

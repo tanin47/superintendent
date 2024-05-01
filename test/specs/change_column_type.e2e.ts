@@ -42,7 +42,8 @@ describe('Change column type', () => {
   it('validates invalid timestamp format', async () => {
     await $('.changing-column-type-dialog [data-testid="timestamp-format-selectbox"]').selectByVisibleText('%m/%d/%Y')
     await $('.changing-column-type-dialog [data-testid="change-button"]').click()
-    await expect($('.changing-column-type-dialog [data-testid="error"]')).toHaveText("Binder Error: No function matches the given name and argument types 'strptime(BIGINT, STRING_LITERAL)'. You might need to add explicit type casts. Candidate functions: strptime(VARCHAR, VARCHAR) -> TIMESTAMP strptime(VARCHAR, VARCHAR[]) -> TIMESTAMP")
+    await expect($('.swal2-container')).toHaveText(expect.stringContaining("Binder Error: No function matches the given name and argument types 'strptime(BIGINT, STRING_LITERAL)'. You might need to add explicit type casts."))
+    await $('.swal2-container .swal2-confirm').click()
   })
 
   it('change the column to varchar and back', async () => {

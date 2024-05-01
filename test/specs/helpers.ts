@@ -44,7 +44,11 @@ export async function getTabs (): Promise<Tab[]> {
 }
 
 export async function getSelectedText (): Promise<string> {
-  return (await browser.executeScript('return window.getSelection().toString()', []))
+  return await browser.executeScript('return window.getSelection().toString()', [])
+}
+
+export async function getCaptureExceptionCalls (): Promise<any[][]> {
+  return await browser.executeScript('return window.captureExceptionCalls', [])
 }
 
 const TEST_VALID_LICENSE = '---- Superintendent license ----\n' +

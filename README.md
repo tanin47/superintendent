@@ -16,7 +16,7 @@ You can use VSCode.
      appBinaryPath = './node_modules/.bin/electron';
      appArgs = ['--app=./dist/dev/main.js'];
      ```
-   - Modify `./node_modules/@wdio/utils/build/node/startWebDriver.js` to have the line below: ` driverProcess = cp.spawn(chromedriverExcecuteablePath, driverParams, { env: { ...process.env, NODE_OPTIONS: null } });`
+   - Modify `./node_modules/@wdio/utils/build/node/startWebDriver.js` to have the line below: `driverProcess = cp.spawn(chromedriverExcecuteablePath, driverParams, { env: { ...process.env, NODE_OPTIONS: null } });`
    - See: https://github.com/webdriverio-community/wdio-electron-service/issues/331
    - Run `yarn wdio --spec ./test/specs/draft_notice.e2e.ts` to run specific tests.
 4. To build the prod artifacts:

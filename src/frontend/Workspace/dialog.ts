@@ -1,8 +1,9 @@
 import Swal from 'sweetalert2'
 import './dialog.scss'
 import { getErrorReportingOptIn, hasValidLicense, setErrorReportingOptIn } from '../api'
-import * as Sentry from '@sentry/electron/renderer'
+
 import { type ErrorContext } from '../../types'
+import { captureException } from '../telemetryRenderer'
 
 const SWAL_OPTIONS = {
   customClass: {
@@ -86,7 +87,7 @@ export async function showError (
   setErrorReportingOptIn(optIn)
 
   if (optIn || !isLicenseValid) {
-    Sentry.captureException(new Error(errorMessage), {
+    captureException(new Error(errorMessage), {
       tags: { action: errorContext.action },
       extra: errorContext.extras ?? {}
     })

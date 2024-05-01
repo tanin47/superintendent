@@ -1,6 +1,6 @@
 import { Sheet, type Result, generateWorkspaceItemId } from '../Workspace/types'
 import { type CopySelection, type EditorMode, type ExportedWorkflow, ExportWorkflowChannel, type SortDirection, type ColumnType } from '../../types'
-import { trackEvent } from '@aptabase/electron/renderer'
+import { trackEvent } from '../telemetryRenderer'
 
 const urlParams = new URLSearchParams(window.location.search)
 
@@ -209,7 +209,7 @@ export async function maybeShowPurchaseNotice (force: boolean = false): Promise<
 
   const now = new Date().getTime()
 
-  if (force || latest === null || (now - latest) > (6 * 60 * 60 * 1000)) { // 12 hours
+  if (force || latest === null || (now - latest) > (6 * 60 * 60 * 1000)) { // 6 hours
     setPurchaseNoticeShownAt()
     await window.ipcRenderer.invoke('show-purchase-notice')
   }

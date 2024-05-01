@@ -13,18 +13,18 @@ describe('Show the purchase notice', () => {
     await $('[data-testid="input-file"]').addValue(await browser.uploadFile('./test/specs/csv-samples/column_detection.csv'))
     await $('[data-testid="import-all-files"]').click()
 
-    await expect($('#checkLicenseForm')).toExist()
+    await expect($('#checkLicenseForm')).toBeDisplayed()
+    await $('[data-testid="cancel-button"]').click()
 
     const currentShownAt = await browser.executeScript('return window.storeApi.get("purchaseNoticeShownAt")', [])
     await expect(currentShownAt).toBeGreaterThan(new Date().getTime() - 60 * 1000)
-
-    await $('[data-testid="cancel-button"]').click()
 
     // The second time doesn't show the dialog
     await $('[data-testid="add-files"]').click()
     await $('[data-testid="input-file"]').clearValue()
     await $('[data-testid="input-file"]').addValue(await browser.uploadFile('./test/specs/csv-samples/column_detection.csv'))
     await $('[data-testid="import-all-files"]').click()
-    await expect($('#checkLicenseForm')).not.toExist()
+
+    await expect($('#checkLicenseForm')).not.toBeDisplayed()
   })
 })

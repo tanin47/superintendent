@@ -1,4 +1,5 @@
 import { type ChartOptions, type PresentationType } from './frontend/Workspace/types'
+import { type ExclusiveEventHintOrCaptureContext } from '@sentry/core/types/utils/prepareEvent'
 
 export type EditorMode = 'default' | 'vim'
 
@@ -71,4 +72,17 @@ export interface ExportWorkflowResponse {
 export interface ErrorContext {
   action: string
   extras?: Record<string, string> | null
+}
+
+export type TrackEventFunction = (eventName: string, props?: Record<string, string | number | boolean>) => Promise<void>
+export type CaptureExceptionFunction = (exception: any, hint?: ExclusiveEventHintOrCaptureContext) => string
+
+export interface SentryFunctions {
+  init: (options: { dsn: string, maxValueLength: number }) => void
+  captureException: CaptureExceptionFunction
+}
+
+export interface AptabaseFunctions {
+  initialize: (appKey: string) => Promise<void>
+  trackEvent: TrackEventFunction
 }

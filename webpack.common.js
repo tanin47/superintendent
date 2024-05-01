@@ -1,5 +1,14 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const ThreadsPlugin = require('threads-plugin')
+const { DefinePlugin } = require('webpack')
+
+const electronMainDefinePlugin = new DefinePlugin({
+  'process.env.PROCESS_TYPE': JSON.stringify('main')
+})
+
+const electronRendererDefinePlugin = new DefinePlugin({
+  'process.env.PROCESS_TYPE': JSON.stringify('renderer')
+})
 
 const electronPreload = {
   entry: './src/preload.ts',
@@ -69,7 +78,8 @@ const electronConfiguration = {
     filename: 'main.js'
   },
   plugins: [
-    new ThreadsPlugin()
+    new ThreadsPlugin(),
+    electronMainDefinePlugin
   ],
   externals: {
     'better-sqlite3': 'commonjs better-sqlite3'
@@ -121,7 +131,8 @@ const reactConfiguration = {
   plugins: [
     new HtmlWebpackPlugin({
       template: './src/frontend/index.html'
-    })
+    }),
+    electronRendererDefinePlugin
   ]
 }
 
