@@ -25,7 +25,9 @@ export default function Button ({
       data-testid={testId}
     >
       {isLoading ? (<span className="spinner" />) : (icon ? <span className="icon">{icon}</span> : null)}
-      &nbsp;&nbsp;
+      {(!!isLoading || !!icon) && (
+        <>&nbsp;&nbsp;</>
+      )}
       {children}
     </button>
   )

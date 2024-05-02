@@ -25,7 +25,7 @@ export function ChangingColumnTypeDialog ({
 
   const [isLoading, setIsLoading] = React.useState<boolean>(false)
   const [tpe, setTpe] = React.useState<ColumnType | ''>('')
-  const [timestampFormat, setTimestampFormat] = React.useState<string>('')
+  const [timestampFormat, setTimestampFormat] = React.useState<string>('%-d-%b-%Y')
   const [error, setError] = React.useState<string | null>(null)
 
   const close = React.useCallback(
@@ -98,7 +98,6 @@ export function ChangingColumnTypeDialog ({
     () => {
       if (!info) { return }
       setTpe('')
-      setTimestampFormat('')
     },
     [info]
   )
@@ -158,22 +157,19 @@ export function ChangingColumnTypeDialog ({
                 </div>
               </div>
               {tpe === 'timestamp' && (
-                <div className="selector">
-                  <div className="select" style={{ width: '200px' }}>
-                    <select data-testid="timestamp-format-selectbox" value={timestampFormat} onChange={(event) => { setTimestampFormat(event.target.value) }}>
-                      <option value="">Select the timestamp format</option>
-                      <option>%m/%d/%Y</option>
-                      <option>%m/%d/%Y %I:%M %p</option>
-                      <option>%m/%d/%Y %I:%M:%S %p</option>
-                      <option>%Y-%m-%d</option>
-                      <option>%Y-%m-%d %H:%M</option>
-                      <option>%Y-%m-%d %H:%M:%S</option>
-                    </select>
-                  </div>
+                <div className="timestamp-format">
+                  <input type="text" value={timestampFormat} onChange={(event) => { setTimestampFormat(event.target.value) }} />
                 </div>
               )}
             </span>
           </div>
+          {tpe === 'timestamp' && (
+            <div className="remark">
+              <div>
+                Please refer to <span className="link" onClick={() => { window.shellApi.openExternal('https://duckdb.org/docs/sql/functions/dateformat.html') }}>the strptime documentation</span> for accurate date parsing instruction.
+              </div>
+            </div>
+          )}
           {error && (
             <div className="error" data-testid="error">
               {error}

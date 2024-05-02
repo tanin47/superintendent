@@ -15,18 +15,30 @@
 
   .body {
     > div {
-      display: block;
+      display: flex;
+      gap: 8px;
+      align-items: center;
       margin: 10px 0px;
+      font-size: 12px;
 
       > .label {
-        font-size: 12px;
-        font-weight: bold;
+        // font-weight: bold;
       }
 
       > .value {
-        font-size: 12px;
-        text-decoration: underline;
+        // text-decoration: underline;
         font-family: 'JetBrains Mono', monospace !important;
+        display: flex;
+        gap: 8px;
+        align-items: center;;
+
+        .timestamp-format {
+          display: inline-block;
+
+          input {
+            font-family: 'JetBrains Mono', monospace !important;
+          }
+        }
       }
     }
 
@@ -38,7 +50,6 @@
     .selector {
       display: inline-block;
       margin: 0px;
-      margin-left: 5px;
       flex-direction: column;
       justify-content: center;
       align-items: center;
