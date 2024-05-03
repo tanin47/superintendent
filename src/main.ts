@@ -559,6 +559,7 @@ export default class Main {
     const now = new Date().getTime()
 
     if ((now - latest) > (35 * 86400 * 1000)) {
+      void trackEvent('show_update_notice')
       void dialog.showMessageBox(
         space.window,
         {

@@ -1,5 +1,5 @@
 import { $, expect } from '@wdio/globals'
-import { setValidLicense } from './helpers'
+import { fill, setValidLicense } from './helpers'
 
 describe('Change column type', () => {
   beforeEach(async () => {
@@ -35,14 +35,16 @@ describe('Change column type', () => {
 
   it('validates the timestamp format', async () => {
     await $('.changing-column-type-dialog [data-testid="new-type-selectbox"]').selectByVisibleText('TIMESTAMP')
+    await fill($('.changing-column-type-dialog [data-testid="timestamp-format-textbox"]'), '')
     await $('.changing-column-type-dialog [data-testid="change-button"]').click()
-    await expect($('.changing-column-type-dialog [data-testid="error"]')).toHaveText('You must select a timestamp format.')
+    await expect($('.changing-column-type-dialog [data-testid="error"]')).toHaveText('The timestamp format is required.')
   })
 
   it('validates invalid timestamp format', async () => {
-    await $('.changing-column-type-dialog [data-testid="timestamp-format-selectbox"]').selectByVisibleText('%m/%d/%Y')
+    await $('.changing-column-type-dialog [data-testid="timestamp-format-textbox"]').setValue('%m/%d/%Y')
     await $('.changing-column-type-dialog [data-testid="change-button"]').click()
-    await expect($('.swal2-container')).toHaveText(expect.stringContaining("Binder Error: No function matches the given name and argument types 'strptime(BIGINT, STRING_LITERAL)'. You might need to add explicit type casts."))
+    await expect($('.swal2-container')).toHaveText(expect.stringContaining("No function matches the given name and argument types 'strptime(BIGINT, STRING_LITERAL)'."))
+    await expect($('.swal2-container')).toHaveText(expect.stringContaining('the strptime documentation'))
     await $('.swal2-container .swal2-confirm').click()
   })
 
@@ -62,7 +64,7 @@ describe('Change column type', () => {
 
     // Change it back
     await $('.changing-column-type-dialog [data-testid="new-type-selectbox"]').selectByVisibleText('TIMESTAMP')
-    await $('.changing-column-type-dialog [data-testid="timestamp-format-selectbox"]').selectByVisibleText('%Y-%m-%d %H:%M:%S')
+    await $('.changing-column-type-dialog [data-testid="timestamp-format-textbox"]').setValue('%Y-%m-%d %H:%M:%S')
     await $('.changing-column-type-dialog [data-testid="change-button"]').click()
 
     await $('[data-testid="cell-0-2"]').click({ button: 'right' })

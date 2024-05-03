@@ -13,6 +13,19 @@ export async function fillEditor (text: string): Promise<void> {
   await browser.keys(text)
 }
 
+export async function clear (elem: ChainablePromiseElement): Promise<void> {
+  await elem.click()
+  await browser.keys([Key.Ctrl, 'a'])
+  await browser.keys(Key.Backspace)
+  await elem.click()
+}
+
+export async function fill (elem: ChainablePromiseElement, text: string): Promise<void> {
+  await clear(elem)
+  await elem.click()
+  await browser.keys(text)
+}
+
 export async function selectMenu (category: string, item: string): Promise<void> {
   await browser.electron.execute(
     async (electron, args) => {
@@ -62,6 +75,10 @@ const TEST_VALID_LICENSE = '---- Superintendent license ----\n' +
 
 export async function setValidLicense (): Promise<void> {
   await browser.executeScript(`window.storeApi.set('license-key', atob('${Buffer.from(TEST_VALID_LICENSE).toString('base64')}'))`, [])
+}
+
+export async function suppressPurchaseNotice (): Promise<void> {
+  await browser.executeScript(`window.storeApi.set("purchaseNoticeShownAt", ${new Date().getTime()})`, []) // now
 }
 
 export async function getEditorValue (): Promise<string> {

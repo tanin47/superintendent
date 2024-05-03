@@ -46,7 +46,7 @@ export function ChangingColumnTypeDialog ({
       }
 
       if (tpe === 'timestamp' && timestampFormat === '') {
-        setError('You must select a timestamp format.')
+        setError('The timestamp format is required.')
         return
       }
 
@@ -75,6 +75,13 @@ export function ChangingColumnTypeDialog ({
           console.log(error)
         }
 
+        let postBody: string | null = null
+
+        // The error is about parsing a date.
+        if (tpe === 'timestamp') {
+          postBody = 'It looks like you are having an issue with date parsing. Please review <span class="link" onclick="window.shellApi.openExternal(\'https://duckdb.org/docs/sql/functions/dateformat.html\')">the strptime documentation</span> for accurate date parsing instruction.\n\nIf you need help, contact support@superintendent.app.'
+        }
+
         void dialog.showError(
           'Changing column type failed',
           message,
@@ -85,7 +92,8 @@ export function ChangingColumnTypeDialog ({
               tpe,
               timestmapFormat: timestampFormat
             }
-          }
+          },
+          postBody
         )
       } finally {
         setIsLoading(false)
@@ -158,7 +166,7 @@ export function ChangingColumnTypeDialog ({
               </div>
               {tpe === 'timestamp' && (
                 <div className="timestamp-format">
-                  <input type="text" value={timestampFormat} onChange={(event) => { setTimestampFormat(event.target.value) }} />
+                  <input type="text" data-testid="timestamp-format-textbox" value={timestampFormat} onChange={(event) => { setTimestampFormat(event.target.value) }} />
                 </div>
               )}
             </span>

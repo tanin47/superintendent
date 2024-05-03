@@ -80,7 +80,7 @@ function FileItem ({
                   setWithHeader(newWithHeader)
                   onWithHeaderChanged(newWithHeader)
                 }}
-                disabled={disabled || format === 'super'}
+                disabled={disabled}
               >
                 <option value="true">with header</option>
                 <option value="false">without header</option>
@@ -104,7 +104,6 @@ function FileItem ({
                 <option value="semicolon">Semicolon (;)</option>
                 <option value="colon">Colon (:)</option>
                 <option value="tilde">Tilde (~)</option>
-                <option value="super">Workflow</option>
               </select>
             </div>
           </div>
@@ -128,7 +127,7 @@ function FileItem ({
                   setReplace(replace)
                   onReplaceChanged(replace)
                 }}
-                disabled={disabled || format === 'super'}
+                disabled={disabled}
                 data-testid="add-csv-sheet-option"
               >
                 <option value="" key="">as a new sheet</option>
@@ -289,8 +288,6 @@ export default React.forwardRef(function AddCsv ({
         format = 'tab'
       } else if (filename.endsWith('.psv')) {
         format = 'pipe'
-      } else if (filename.endsWith('.super')) {
-        format = 'super'
       }
 
       newFiles.push({
