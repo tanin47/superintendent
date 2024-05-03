@@ -659,8 +659,6 @@ export default class Main {
         separator = ':'
       } else if (format === 'tilde') {
         separator = '~'
-      } else if (format === 'super') {
-        return await Main.wrapResponse(Main.importWorkflow(path, Main.getSpace(event)))
       } else {
         throw new Error()
       }

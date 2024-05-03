@@ -371,7 +371,7 @@ export default function Editor ({
 
         // The error is about parsing a date.
         if (message.includes('Could not parse string') && message.includes('format specifier')) {
-          postBody = 'It looks like you are having an issue with date parsing. Please review <span class="link" onclick="window.shellApi.openExternal(\'https://duckdb.org/docs/sql/functions/dateformat.html\')">the strptime documentation</span> for accurate date parsing instruction. If you need help, contact support@superintendent.app.'
+          postBody = 'It looks like you are having an issue with date parsing. Please review <span class="link" onclick="window.shellApi.openExternal(\'https://duckdb.org/docs/sql/functions/dateformat.html\')">the strptime documentation</span> for accurate date parsing instruction.\n\nIf you need help, contact support@superintendent.app.'
         }
 
         void dialog.showError('Running the SQL failed', err as any as string, { action: 'querying_failed', extras: { sql } }, postBody)

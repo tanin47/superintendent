@@ -234,21 +234,31 @@ export default React.forwardRef(function AddCsv ({
         const problematicLine = await extractProblematicLine(message, file.path)
         const headerLine = await window.fileApi.extractContextualLines(file.path, 1)
 
+        const fileExtension = file.path.split('.').pop() ?? ''
+        let postBody = ''
+
+        if (fileExtension.toLocaleLowerCase() === 'super') {
+          postBody = 'It seems you are trying to load a workspace file. Please use the menu "File > Load a workspace".'
+        } else if (fileExtension.toLocaleLowerCase().startsWith('xls')) {
+          postBody = 'It seems you are trying to load an Excel file, which is not supported. Please open it in Excel and export it into a CSV file. Then, you can add the CSV file.'
+        }
+
         void dialog.showError(
           'Adding a CSV failed',
           message,
           {
             action: 'adding_csv_failed',
             extras: {
-              fileExtension: file.path.split('.').pop() ?? '',
+              fileExtension,
               withHeader: file.withHeader.toString(),
               format: file.format,
               problematicLine: mask(problematicLine) ?? '',
               headerLine: mask(headerLine) ?? ''
             }
           },
-          'If you are looking to load a workspace, please use the menu "File > Load a workspace".\n\nPlease contact support@superintendent.app if you have an issue adding a CSV file.'
+          `${postBody}\n\nPlease contact support@superintendent.app if you have an issue adding a CSV file.`.trim()
         )
+
         setFiles((prevFiles) => {
           prevFiles[index] = {
             ...prevFiles[index],

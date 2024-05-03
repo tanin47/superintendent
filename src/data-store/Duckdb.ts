@@ -88,29 +88,38 @@ export class Duckdb extends Datastore {
     }
   }
 
+  OTHER_DATE_FORMATS = [
+    '%Y-%m-%d %H:%M',
+    '%-d-%B-%Y',
+    '%-d-%b-%Y'
+  ]
+
   private async detectAndChangeMoreColumns (table: string): Promise<void> {
     const columnInfos = (await this.db.prepare(`SELECT * FROM "${table}" LIMIT 1`)).columns()
 
     for await (const col of columnInfos) {
       if (col.type.id.toLocaleLowerCase() !== 'varchar') { continue }
 
-      try {
-        await this.execChangeColumnType(table, col.name, 'timestamp', '%Y-%m-%d %H:%M')
-      } catch (unknown) {
-        // const error = unknown as any
+      for (const df of this.OTHER_DATE_FORMATS) {
+        try {
+          await this.execChangeColumnType(table, col.name, 'timestamp', df)
+          break
+        } catch (unknown) {
+          // const error = unknown as any
 
-        // if ('message' in error && error.message.includes('according to format specifier "%Y-%m-%d %H:%M"')) {
-        //   // Do nothing. The column cannot be converted to the timestamp
-        // } else {
-        //   throw unknown
-        // }
-        //
-        // Ignore all errors. On windows, sometimes it raises:
-        // [Error: Invalid Error:  ��t] {
-        //   errno: -1,
-        //   code: 'DUCKDB_NODEJS_ERROR',
-        //   errorType: 'Invalid'
-        // }
+          // if ('message' in error && error.message.includes('according to format specifier "%Y-%m-%d %H:%M"')) {
+          //   // Do nothing. The column cannot be converted to the timestamp
+          // } else {
+          //   throw unknown
+          // }
+          //
+          // Ignore all errors. On windows, sometimes it raises:
+          // [Error: Invalid Error:  ��t] {
+          //   errno: -1,
+          //   code: 'DUCKDB_NODEJS_ERROR',
+          //   errorType: 'Invalid'
+          // }
+        }
       }
     }
   }
