@@ -218,6 +218,14 @@ export class Duckdb extends Datastore {
     return result
   }
 
+  async update (sql: string, table: string): Promise<QueryResult> {
+    await this.db.exec(sql)
+
+    const result = await this.queryAllFromTable(table, '')
+
+    return result
+  }
+
   async sort (table: string, sorts: Sort[]): Promise<QueryResult> {
     const filteredSorts = sorts.filter((s) => s.direction !== 'none')
     const unsortedTable = this.makeUnsortedTableName(table)

@@ -611,6 +611,10 @@ export default class Main {
       return await Main.wrapResponse(Main.getSpace(event).db.query(sql, table))
     })
 
+    ipcMain.handle('update', async (event, sql: string, table: string) => {
+      return await Main.wrapResponse(Main.getSpace(event).db.update(sql, table))
+    })
+
     ipcMain.handle('sort', async (event, table: string, sorts: Sort[]) => {
       return await Main.wrapResponse(Main.getSpace(event).db.sort(table, sorts))
     })

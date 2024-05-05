@@ -5,7 +5,6 @@ import { type ExportedWorkflow, ImportWorkflowChannel, GoToPurchaseLicense, Expo
 import { type ComposableItem } from './types'
 import SheetSection from './SheetSection'
 import Button from './Button'
-import Editor from './Editor'
 import * as dialog from './dialog'
 import { formatTotal } from './helper'
 import { ctrlCmdChar } from './constants'
@@ -13,12 +12,14 @@ import Project from './Project'
 import ResizeBar from './ResizeBar'
 import RenameDialog, { type RenameDialogInfo } from './RenameDialog'
 import { DispatchContext, type ObjectWrapper, StateChangeApi, WorkspaceContext, reduce } from './WorkspaceContext'
+import EditorOrUpdateEditor, { type EditorOrUpdateEditorRef } from './EditorOrUpdateEditor'
 
 export default function Workspace ({
   onGoToLicense
 }: {
   onGoToLicense: () => void
 }): ReactElement {
+  const editorRef = React.useRef<EditorOrUpdateEditorRef>(null)
   const [workspaceState, dispatch] = React.useReducer(reduce, { draftSqls: [], results: [], selectedComposableItemId: null, selectedResultId: null })
   const stateChangeApi = React.useMemo(() => new StateChangeApi(dispatch), [dispatch])
 
@@ -77,6 +78,7 @@ export default function Workspace ({
   React.useEffect(() => {
     const callback = (event, { file }: { file: string }): void => {
       dialog.showLoading('Saving the workspace...', 'This might take a while if the data is large.')
+      editorRef.current!.commitCurrentState()
 
       const workflow: ExportedWorkflow = { results: [], draftSqls: [] }
 
@@ -293,10 +295,10 @@ export default function Workspace ({
               right: 0,
               top: 0,
               left: projectWidth,
-              display: 'flex',
-              flexDirection: 'column'
+              display: 'block'
             }}>
-              <Editor
+              <EditorOrUpdateEditor
+                ref={editorRef}
                 editingItem={selectedComposableItem}
                 onRenamingSheet={(info) => { setRenamingInfo(info) }}
               />

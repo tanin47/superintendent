@@ -32,6 +32,9 @@ expose({
   async query (sql: string, table: string | null): Promise<QueryResult> {
     return await datastore!.query(sql, table)
   },
+  async update (sql: string, table: string): Promise<QueryResult> {
+    return await datastore!.update(sql, table)
+  },
   async sort (table: string, sorts: Sort[]): Promise<QueryResult> {
     return await datastore!.sort(table, sorts)
   },

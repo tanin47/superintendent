@@ -215,6 +215,25 @@ export async function maybeShowPurchaseNotice (force: boolean = false): Promise<
   }
 }
 
+export async function update (q: string, replace: Result): Promise<Result> {
+  void trackEvent('updating')
+
+  return await window.ipcRenderer
+    .invoke('update', q, replace.name)
+    .then((result) => {
+      if (result.success === true) {
+        void trackEvent('updating_succeeded')
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        replace.update(result.data, true)
+        return replace
+      } else {
+        void trackEvent('updating_failed')
+        throw result.message
+      }
+    })
+}
+
 export async function query (q: string, replace: Result | null): Promise<Result> {
   void trackEvent('querying')
 

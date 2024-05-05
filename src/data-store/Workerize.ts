@@ -41,6 +41,10 @@ export class Workerize extends Datastore {
     return await this.worker.query(sql, table)
   }
 
+  async update (sql: string, table: string): Promise<QueryResult> {
+    return await this.worker.update(sql, table)
+  }
+
   async sort (table: string, sorts: Sort[]): Promise<QueryResult> {
     return await this.worker.sort(table, sorts)
   }

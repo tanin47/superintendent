@@ -14,6 +14,7 @@ export abstract class Datastore {
   abstract exportCsv (table: string, filePath: string, delimiter: string): Promise<void>
 
   abstract query (sql: string, table: string | null): Promise<QueryResult>
+  abstract update (sql: string, table: string): Promise<QueryResult>
   abstract sort (table: string, sorts: Sort[]): Promise<QueryResult>
   abstract copy (table: string, selection: CopySelection): Promise<{ text: string, html: string }>
   abstract loadMore (table: string, offset: number): Promise<QueryRow[]>

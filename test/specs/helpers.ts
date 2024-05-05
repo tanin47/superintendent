@@ -13,6 +13,18 @@ export async function fillEditor (text: string): Promise<void> {
   await browser.keys(text)
 }
 
+export async function clearUpdateEditor (): Promise<void> {
+  await $('[data-testid="update-editor"] .CodeMirror').click()
+  await browser.keys([Key.Ctrl, 'a'])
+  await browser.keys(Key.Backspace)
+  await $('[data-testid="update-editor"] .CodeMirror').click()
+}
+
+export async function fillUpdateEditor (text: string): Promise<void> {
+  await clearUpdateEditor()
+  await browser.keys(text)
+}
+
 export async function clear (elem: ChainablePromiseElement): Promise<void> {
   await elem.click()
   await browser.keys([Key.Ctrl, 'a'])
