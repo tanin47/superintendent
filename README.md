@@ -27,6 +27,12 @@ You can use VSCode.
 
 On Windows, we use MINGW64, not the Command-Line Tool.
 
+Errors
+-------
+
+If we see this: `"mach-o file, but is an incompatible architecture (have 'arm64', need 'x86_64h' or 'x86_64')"`,
+run `yarn run electron-builder install-app-deps` because duckdb.node is missing for Mac OS (Intel).
+
 Windows Code Signing
 ----------------------
 

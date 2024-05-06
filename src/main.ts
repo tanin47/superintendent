@@ -123,10 +123,15 @@ export default class Main {
 
     await new Promise<void>((resolve, reject) => {
       let entryCount = 0
+      let errorOut = false
 
       zip.forEach(() => { entryCount++ }) // there is no other way to count the number of entries within the zip file.
 
       zip.forEach((relativePath, zipEntry) => {
+        if (errorOut) {
+          return
+        }
+
         const outputEntryPath = path.join(outputPath, relativePath)
         if (zipEntry.dir) {
           if (!fs.existsSync(outputEntryPath)) {
@@ -138,14 +143,27 @@ export default class Main {
           void zipEntry.async('blob')
             .then(async (content) => Buffer.from(await content.arrayBuffer()))
             .then((buffer) => {
-              fs.createWriteStream(outputEntryPath).write(buffer)
-              entryCount--
+              fs
+                .createWriteStream(outputEntryPath)
+                .write(
+                  buffer,
+                  (error) => {
+                    if (error) {
+                      reject(error)
+                      errorOut = true
+                      return
+                    }
 
-              if (entryCount === 0) {
-                resolve()
-              }
+                    entryCount--
+
+                    if (entryCount === 0) {
+                      resolve()
+                    }
+                  }
+                )
             })
             .catch((e) => {
+              errorOut = true
               reject(e)
             })
         }
@@ -168,9 +186,7 @@ export default class Main {
     try {
       await Main.extractZipFileToPath(file, tmpdir)
 
-      console.log('Read', tmpdir)
       await selectedSpace.db.import(tmpdir)
-      console.log('Imported', tmpdir)
 
       const data = fs.readFileSync(path.join(tmpdir, 'workspace.json'), { encoding: 'utf8', flag: 'r' })
       const workflow: ExportedWorkflow = JSON.parse(data)

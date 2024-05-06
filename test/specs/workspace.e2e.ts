@@ -68,7 +68,7 @@ describe('Workflow', () => {
     await dialog.showSaveDialogSync.mockReturnValue(workflowFile)
     await selectMenu('File', 'Save Workspace')
 
-    await expect($('.swal2-container')).toHaveText(expect.not.stringContaining(`The workspace has been saved at: ${workflowFile}`))
+    await expect($('.swal2-container')).toHaveText(expect.stringContaining(`The workspace has been saved at: ${workflowFile}`))
 
     await $('.swal2-container .swal2-confirm').click()
 

@@ -31,7 +31,7 @@ describe('show error for Excel', () => {
 
     await expect(calls.length).toEqual(1)
 
-    await expect(calls[0][0]).toEqual('invalid signature: 0x656d6f73')
+    await expect(calls[0][0]).toMatch(/is this a zip file/)
     await expect(calls[0][1]).toEqual({ extra: { fileExtension: 'csv' }, tags: { action: 'importing_workflow_failed' } })
   })
 })

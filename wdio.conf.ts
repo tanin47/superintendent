@@ -152,9 +152,6 @@ export const config: Options.Testrunner = {
   jasmineOpts: {
     // Jasmine default timeout
     defaultTimeoutInterval: 60000,
-    // Fail spec if one expectation fails.
-    oneFailurePerSpec: true,
-    stopSpecOnExpectationFailure: true,
     //
     // The Jasmine framework allows interception of each assertion in order to log the state of the application
     // or website depending on the result. For example, it is pretty handy to take a screenshot every time
