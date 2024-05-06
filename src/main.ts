@@ -18,6 +18,7 @@ import path from 'path'
 import os from 'os'
 import archiver from 'archiver'
 import JSZip from 'jszip'
+
 import { trackEvent, initialize } from './telemetryMain'
 
 initialize()
@@ -143,24 +144,24 @@ export default class Main {
           void zipEntry.async('blob')
             .then(async (content) => Buffer.from(await content.arrayBuffer()))
             .then((buffer) => {
-              fs
-                .createWriteStream(outputEntryPath)
-                .write(
-                  buffer,
-                  (error) => {
-                    if (error) {
-                      reject(error)
-                      errorOut = true
-                      return
-                    }
-
-                    entryCount--
-
-                    if (entryCount === 0) {
-                      resolve()
-                    }
+              const stream = fs.createWriteStream(outputEntryPath)
+              stream.write(
+                buffer,
+                (error) => {
+                  if (error) {
+                    reject(error)
+                    errorOut = true
                   }
-                )
+                }
+              )
+              stream.on('finish', () => {
+                entryCount--
+
+                if (entryCount === 0) {
+                  resolve()
+                }
+              })
+              stream.end()
             })
             .catch((e) => {
               errorOut = true
@@ -220,6 +221,7 @@ export default class Main {
 
       void trackEvent('import_workflow_succeeded')
     } catch (e) {
+      console.log(e)
       const error = e as any
 
       void trackEvent('import_workflow_failed', { error: error.message })
