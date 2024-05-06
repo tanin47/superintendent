@@ -66,9 +66,17 @@ describe('Workflow', () => {
   it('saves workflow', async () => {
     const dialog = await browser.electron.mockAll('dialog')
     await dialog.showSaveDialogSync.mockReturnValue(workflowFile)
-    await dialog.showOpenDialogSync.mockReturnValue([workflowFile])
-
     await selectMenu('File', 'Save Workspace')
+
+    await expect($('.swal2-container')).toHaveText(expect.not.stringContaining(`The workspace has been saved at: ${workflowFile}`))
+
+    await $('.swal2-container .swal2-confirm').click()
+
+    // Move file to simulate real-world
+    const newWorkflowFile = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'superintendent-test')), 'test.super')
+    fs.renameSync(workflowFile, newWorkflowFile)
+
+    await dialog.showOpenDialogSync.mockReturnValue([newWorkflowFile])
   })
 
   it('loads workflow', async () => {

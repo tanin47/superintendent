@@ -137,6 +137,7 @@
     "duckdb-async": "0.10.2",
     "electron-default-menu": "^1.0.2",
     "electron-store": "^8.0.0",
+    "jszip": "^3.10.1",
     "luxon": "^3.4.4",
     "nan": "^2.14.0",
     "react-modal": "^3.14.3",
@@ -146,8 +147,7 @@
     "sql-formatter": "15.3.0",
     "sweetalert2": "11.10.7",
     "threads": "^1.6.5",
-    "tiny-worker": "^2.3.0",
-    "unzipper": "^0.10.14"
+    "tiny-worker": "^2.3.0"
   },
   "packageManager": "yarn@4.0.2",
   "repository": "git@github.com:tanin47/superintendent-app.git",

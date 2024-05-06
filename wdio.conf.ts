@@ -101,7 +101,7 @@ export const config: Options.Testrunner = {
   //
   // If you only want to run your tests until a specific amount of tests have failed use
   // bail (default is 0 - don't bail, run all tests).
-  bail: 0,
+  bail: 1,
   //
   // Set a base URL in order to shorten url command calls. If your `url` parameter starts
   // with `/`, the base url gets prepended, not including the path portion of your baseUrl.
@@ -152,6 +152,9 @@ export const config: Options.Testrunner = {
   jasmineOpts: {
     // Jasmine default timeout
     defaultTimeoutInterval: 60000,
+    // Fail spec if one expectation fails.
+    oneFailurePerSpec: true,
+    stopSpecOnExpectationFailure: true,
     //
     // The Jasmine framework allows interception of each assertion in order to log the state of the application
     // or website depending on the result. For example, it is pretty handy to take a screenshot every time

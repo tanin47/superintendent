@@ -17,7 +17,7 @@ import fs from 'fs'
 import path from 'path'
 import os from 'os'
 import archiver from 'archiver'
-import unzipper from 'unzipper'
+import JSZip from 'jszip'
 import { trackEvent, initialize } from './telemetryMain'
 
 initialize()
@@ -112,6 +112,47 @@ export default class Main {
     await Main.importWorkflow(files[0], space)
   }
 
+  private static async extractZipFileToPath (file: string, outputPath: string): Promise<void> {
+    if (!fs.existsSync(outputPath)) {
+      fs.mkdirSync(outputPath, { recursive: true })
+    }
+
+    const data = fs.readFileSync(file)
+
+    const zip = await JSZip.loadAsync(data, { createFolders: true })
+
+    await new Promise<void>((resolve, reject) => {
+      let entryCount = 0
+
+      zip.forEach(() => { entryCount++ }) // there is no other way to count the number of entries within the zip file.
+
+      zip.forEach((relativePath, zipEntry) => {
+        const outputEntryPath = path.join(outputPath, relativePath)
+        if (zipEntry.dir) {
+          if (!fs.existsSync(outputEntryPath)) {
+            fs.mkdirSync(outputEntryPath, { recursive: true })
+          }
+
+          entryCount--
+        } else {
+          void zipEntry.async('blob')
+            .then(async (content) => Buffer.from(await content.arrayBuffer()))
+            .then((buffer) => {
+              fs.createWriteStream(outputEntryPath).write(buffer)
+              entryCount--
+
+              if (entryCount === 0) {
+                resolve()
+              }
+            })
+            .catch((e) => {
+              reject(e)
+            })
+        }
+      })
+    })
+  }
+
   private static async importWorkflow (file: string, space: Workspace): Promise<void> {
     let selectedSpace = space
 
@@ -125,9 +166,11 @@ export default class Main {
     const tmpdir = fs.mkdtempSync(path.join(os.tmpdir(), 'superintendent-import'))
 
     try {
-      await fs.createReadStream(file).pipe(unzipper.Extract({ path: tmpdir })).promise()
+      await Main.extractZipFileToPath(file, tmpdir)
 
+      console.log('Read', tmpdir)
       await selectedSpace.db.import(tmpdir)
+      console.log('Imported', tmpdir)
 
       const data = fs.readFileSync(path.join(tmpdir, 'workspace.json'), { encoding: 'utf8', flag: 'r' })
       const workflow: ExportedWorkflow = JSON.parse(data)
@@ -177,7 +220,7 @@ export default class Main {
         }
       )
     } finally {
-      fs.rmSync(tmpdir, { recursive: true, force: true })
+      // fs.rmSync(tmpdir, { recursive: true, force: true })
     }
   }
 
