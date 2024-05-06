@@ -124,6 +124,10 @@ export default class Main {
 
     await new Promise<void>((resolve, reject) => {
       let entryCount = 0
+      const reduceEntryCount = (): void => {
+        entryCount--
+        if (entryCount === 0) { resolve() }
+      }
       let errorOut = false
 
       zip.forEach(() => { entryCount++ }) // there is no other way to count the number of entries within the zip file.
@@ -139,7 +143,7 @@ export default class Main {
             fs.mkdirSync(outputEntryPath, { recursive: true })
           }
 
-          entryCount--
+          reduceEntryCount()
         } else {
           void zipEntry.async('blob')
             .then(async (content) => Buffer.from(await content.arrayBuffer()))
@@ -155,11 +159,7 @@ export default class Main {
                 }
               )
               stream.on('finish', () => {
-                entryCount--
-
-                if (entryCount === 0) {
-                  resolve()
-                }
+                reduceEntryCount()
               })
               stream.end()
             })
@@ -238,7 +238,7 @@ export default class Main {
         }
       )
     } finally {
-      // fs.rmSync(tmpdir, { recursive: true, force: true })
+      fs.rmSync(tmpdir, { recursive: true, force: true })
     }
   }
 
