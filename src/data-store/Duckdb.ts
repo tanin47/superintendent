@@ -70,7 +70,8 @@ export class Duckdb extends Datastore {
       break
     }
 
-    const sniffedRows = await this.db.all(`SELECT Columns, DateFormat, TimestampFormat FROM sniff_csv('${filePath}')`)
+    // sample_size = -1 would scan the whole file and makes auto detection robust. It seems to add 10% of the run time of a 800MB file.
+    const sniffedRows = await this.db.all(`SELECT Columns, DateFormat, TimestampFormat FROM sniff_csv('${filePath}', sample_size = -1)`)
     const types = sniffedRows[0].Columns.match(/(: '([a-zA-Z]+)')/g).map((matched: string) => matched.substring(3, matched.length - 1))
     const dateFormat = sniffedRows[0].DateFormat ?? ''
     const timestampFormat = sniffedRows[0].TimestampFormat ?? ''
