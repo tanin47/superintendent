@@ -1,0 +1,33 @@
+.ask-ai {
+  font-size: 12px;
+  gap: 0px 10px;
+  align-items: center;
+  justify-content: flex-start;
+  background-color: #fff;
+  border-top: 2px solid #333;
+  padding: 0px 10px;
+
+  input[type="text"] {
+    flex-grow: 1000;
+    height: 30px; 
+    border: 0px;
+    padding: 0px;
+
+    &:disabled {
+      color: #999;
+    }
+  }
+
+  .help-button {
+    font-size: 15px;
+    color: #333;
+    cursor: pointer;
+  }
+
+  .submit-button {
+    color: #999;
+    cursor: pointer;
+    white-space: nowrap;
+    font-size: 11px;
+  }
+}

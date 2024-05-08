@@ -37,6 +37,10 @@ html {
 
 input[type="text"] {
   border: 1px solid #333;
+
+  &:focus {
+    outline: none;
+  }
 }
 
 .modal {

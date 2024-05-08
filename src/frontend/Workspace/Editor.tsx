@@ -136,7 +136,7 @@ export default React.forwardRef(function Editor ({
   const [shouldShowDraftNotice, setShouldShowDraftNotice] = React.useState<boolean>(false)
   const [shouldShowCsvNotice, setShouldShowCsvNotice] = React.useState<boolean>(false)
   const [contextMenuOpenInfo, setContextMenuOpenInfo] = React.useState<ContextMenuOpenInfo | null>(null)
-  const [showAiChat] = React.useState<boolean>(false)
+  const [showAiChat, setShowAiChat] = React.useState<boolean>(false)
 
   const workspaceState = useWorkspaceContext()
   const dispatch = useDispatch()
@@ -255,7 +255,8 @@ export default React.forwardRef(function Editor ({
         formatSql(result.result)
       } else if (result.action === 'make_new_sql') {
         if (codeMirrorInstance.current?.getValue().trim()) {
-          makeNewSql(`-- ${result.description}\n${result.result}`)
+          makeNewSql(result.result)
+          setTimeout(() => { formatSql() }, 1)
         } else {
           formatSql(result.result)
         }
@@ -391,22 +392,22 @@ export default React.forwardRef(function Editor ({
 
   const toggleAiChat = React.useCallback(
     () => {
-      // setShowAiChat((current) => {
-      //   const newValue = !current
+      setShowAiChat((current) => {
+        const newValue = !current
 
-      //   setTimeout(
-      //     () => {
-      //       if (newValue) {
-      //         askAiRef.current?.focus()
-      //       } else {
-      //         codeMirrorInstance.current?.focus()
-      //       }
-      //     },
-      //     1
-      //   )
+        setTimeout(
+          () => {
+            if (newValue) {
+              askAiRef.current?.focus()
+            } else {
+              codeMirrorInstance.current?.focus()
+            }
+          },
+          1
+        )
 
-      //   return newValue
-      // })
+        return newValue
+      })
     },
     []
   )
@@ -506,16 +507,15 @@ export default React.forwardRef(function Editor ({
               New
               <span className="short-key">{ctrlCmdChar()} N</span>
             </Button>
-            {/* <span className="separator" />
+            <span className="separator" />
             <Button
                 onClick={() => { toggleAiChat() }}
-                icon={<i className="fas fa-robot"></i>}
+                icon={<i className="fas fa-magic"></i>}
                 testId="toggle-ai"
-                className={showAiChat ? 'green' : ''}
               >
               AI
               <span className="short-key">{ctrlCmdChar()} I</span>
-            </Button> */}
+            </Button>
           </div>
           <div className="right">
             <Button

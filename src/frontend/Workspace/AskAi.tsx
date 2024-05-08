@@ -2,11 +2,25 @@ import React from 'react'
 import { useWorkspaceContext } from './WorkspaceContext'
 import { type AiResult, askAi } from '../api'
 import * as dialog from './dialog'
+import './AskAi.scss'
 
 export interface EditorContext {
   selection: string | null
   currentSql: string | null
 }
+
+const PLACEHOLDERS = [
+  'Ask AI to write SQL. Press enter to submit.',
+  'Highlight a part of your SQL and ask AI to rewrite it e.g. formatting date. Press enter to submit.',
+  'Example: What is revenue per year? Order by largest revenue.',
+  'Example: [Highlight the column in the editor] Format it to YYYY-MM-DD.',
+  'Example: Format all dates to YYYY-MM-DD',
+  'Example: Format all dates to something like May 3, 2024',
+  'Example: Order by smallest revenue',
+  'Example: What are the possible values of the column country?',
+  'Example: Which country has the highest revenue?',
+  'Example: [Highlight the column in the editor] Format it to 2 decimal points.'
+]
 
 export default React.forwardRef(function AskAi (
   {
@@ -24,6 +38,7 @@ export default React.forwardRef(function AskAi (
 
   const askAiTextboxRef = React.useRef<HTMLInputElement>(null)
   const [command, setCommand] = React.useState<string>('')
+  const [placeholderIndex, setPlaceholderIndex] = React.useState<number>(PLACEHOLDERS.length - 1)
   const [isLoading, setIsLoading] = React.useState<boolean>(false)
 
   const focus = React.useCallback(
@@ -32,6 +47,15 @@ export default React.forwardRef(function AskAi (
       askAiTextboxRef.current?.select()
     },
     []
+  )
+
+  React.useEffect(
+    () => {
+      if (show) {
+        setPlaceholderIndex((previousIndex) => ((previousIndex + 1) % PLACEHOLDERS.length))
+      }
+    },
+    [show]
   )
 
   React.useImperativeHandle(
@@ -46,6 +70,9 @@ export default React.forwardRef(function AskAi (
     async () => {
       if (isLoading) { return }
 
+      const sanitizedCommand = command.trim()
+      if (sanitizedCommand === '') { return }
+
       setIsLoading(true)
       try {
         const context = onGetContext()
@@ -57,7 +84,7 @@ export default React.forwardRef(function AskAi (
         if (!selection) { selection = null }
 
         const result = await askAi(
-          command,
+          sanitizedCommand,
           selection,
           currentSql,
           workspaceState.results.filter((r) => r.base.isComposable()).map((r) => r.base)
@@ -76,35 +103,48 @@ export default React.forwardRef(function AskAi (
   )
 
   return (
-    <div style={{
-      fontSize: '12px',
-      gap: '0px 5px',
-      alignItems: 'center',
-      justifyContent: 'flex-start',
-      padding: '4px',
-      backgroundColor: '#aaa',
-      display: show ? 'flex' : 'none'
-    }}>
-      <span><i className="fas fa-robot"></i></span>
-      <span>Ask AI:</span>
-      <span style={{ flexGrow: 1000 }}>
-        <input
-          type="text"
-          style={{ width: '100%' }}
-          placeholder="What are the interesting insights?"
-          ref={askAiTextboxRef}
-          value={command}
-          onChange={(event) => { setCommand(event.target.value) }}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              void submit()
-              event.stopPropagation()
-              event.preventDefault()
-            }
-          }}
-          disabled={isLoading}
-        />
+    <div
+      className="ask-ai"
+      style={{
+        display: show ? 'flex' : 'none'
+      }}
+    >
+      <span>
+        {isLoading
+          ? (
+          <span className="spinner" style={{ marginRight: '0px', color: '#999' }} />
+            )
+          : (
+          <i className="fas fa-magic"></i>
+            )}
       </span>
+      <input
+        type="text"
+        placeholder={PLACEHOLDERS[placeholderIndex]}
+        ref={askAiTextboxRef}
+        value={command}
+        onChange={(event) => { setCommand(event.target.value) }}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            void submit()
+            event.stopPropagation()
+            event.preventDefault()
+          }
+        }}
+        disabled={isLoading}
+      />
+      <span
+        className="submit-button"
+        onClick={() => {
+          void submit()
+        }}
+      >Enter ⏎</span>
+      <span
+        className="help-button"
+        onClick={() => {
+          window.shellApi.openExternal('https://superintendent.app/ai/help')
+        }}
+      ><i className="fas fa-question-circle"></i></span>
     </div>
   )
 })
