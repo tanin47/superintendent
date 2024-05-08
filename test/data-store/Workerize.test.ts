@@ -108,6 +108,72 @@ describe('Workerize', () => {
       )
     })
 
+    it('can handle null padding and quote new line at the same time', async () => {
+      await workerize.addCsv('./test/data-store/csv-samples/null_padding_quote_new_line.csv', true, ',', '')
+      const result = await workerize.query('SELECT * FROM null_padding_quote_new_line', null)
+
+      await expect(result).toEqual(
+        {
+          count: 3,
+          columns: [
+            { name: 'name', tpe: 'varchar', maxCharWidthCount: 5 },
+            { name: 'address', tpe: 'varchar', maxCharWidthCount: 10 },
+            { name: 'something', tpe: 'varchar', maxCharWidthCount: 4 }
+          ],
+          name: expect.any(String),
+          sql: 'SELECT * FROM null_padding_quote_new_line',
+          rows: [
+            ['tanin', 'multi\nline', 'yoyo'],
+            ['yes', 'no', null],
+            ['well', null, null],
+            [null, null, null]
+          ]
+        }
+      )
+      await workerize.exportCsv('null_padding_quote_new_line', exportedPath, ',')
+      await expect(fs.readFileSync(exportedPath, { encoding: 'utf8' })).toEqual(
+        [
+          'name,address,something',
+          'tanin,"multi',
+          'line",yoyo',
+          'yes,no,',
+          'well,,'
+        ].join('\n')
+      )
+    })
+
+    it('supports hugeint; it uses double', async () => {
+      await workerize.addCsv('./test/data-store/csv-samples/hugeint.csv', true, ',', '')
+      const result = await workerize.query('SELECT * FROM "hugeint"', null)
+
+      await expect(result).toEqual(
+        {
+          count: 3,
+          columns: [
+            { name: 'name', tpe: 'varchar', maxCharWidthCount: 5 },
+            { name: 'number', tpe: 'double', maxCharWidthCount: 22 }
+          ],
+          name: expect.any(String),
+          sql: 'SELECT * FROM "hugeint"',
+          rows: [
+            ['tanin', 1.7014118346046923e+38],
+            ['test', 1.6014118346046923e+38],
+            [null, null]
+          ]
+        }
+      )
+      await workerize.exportCsv('hugeint', exportedPath, ',')
+      await expect(fs.readFileSync(exportedPath, { encoding: 'utf8' })).toEqual(
+        [
+          'name,number',
+          'tanin,1.7014118346046923e+38',
+          'test,1.6014118346046923e+38',
+          ',',
+          ''
+        ].join('\n')
+      )
+    })
+
     it('import dup column names', async () => {
       await workerize.addCsv('./test/data-store/csv-samples/dup_column.csv', true, ',', '')
       const result = await workerize.query('SELECT * FROM dup_column', null)

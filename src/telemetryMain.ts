@@ -1,13 +1,15 @@
 import { type CaptureExceptionFunction, type TrackEventFunction } from './types'
 import * as Aptabase from '@aptabase/electron/main'
 import * as Sentry from '@sentry/electron/main'
+console.log(process.env.JEST_WORKER_ID)
+console.log(process.env.NODE_ENV)
 
-const isWdioEnabled = process.env.ENABLE_WDIO === 'yes'
+const isInTest = process.env.ENABLE_WDIO === 'yes' || !!process.env.JEST_WORKER_ID
 
 let trackEventProxy: TrackEventFunction
 let captureExceptionProxy: CaptureExceptionFunction
 
-if (isWdioEnabled) {
+if (isInTest) {
   trackEventProxy = async () => { await Promise.resolve() }
 
   captureExceptionProxy = () => ''

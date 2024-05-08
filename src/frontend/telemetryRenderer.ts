@@ -3,14 +3,12 @@ import * as Sentry from '@sentry/electron/renderer'
 import { type ExclusiveEventHintOrCaptureContext } from '@sentry/core/types/utils/prepareEvent'
 import { type CaptureExceptionFunction, type TrackEventFunction } from '../types'
 
-Sentry.init({ dsn: 'https://ffa45e5490e645f694fb3bb0775d2c2a@app.glitchtip.com/6548', maxValueLength: 3000 })
-
-const isWdioEnabled = window.miscApi.isWdioEnabled()
+const isInTest = window.miscApi.isWdioEnabled()
 
 let trackEventProxy: TrackEventFunction
 let captureExceptionProxy: CaptureExceptionFunction
 
-if (isWdioEnabled) {
+if (isInTest) {
   trackEventProxy = async () => { await Promise.resolve() }
 
   const captureExceptionCalls: any[][] = []

@@ -31,7 +31,7 @@ export class Duckdb extends Datastore {
     await this.db.close()
   }
 
-  private async detectColumns (filePath: string, withHeader: boolean, separator: string): Promise<ColumnDetectionResult> {
+  private async detectColumns (filePath: string, withHeader: boolean, separator: string, autoDetect: boolean): Promise<ColumnDetectionResult> {
     const stream = fs
       .createReadStream(filePath)
       .pipe(new Parser({
@@ -70,11 +70,19 @@ export class Duckdb extends Datastore {
       break
     }
 
-    // sample_size = -1 would scan the whole file and makes auto detection robust. It seems to add 10% of the run time of a 800MB file.
-    const sniffedRows = await this.db.all(`SELECT Columns, DateFormat, TimestampFormat FROM sniff_csv('${filePath}', sample_size = -1)`)
-    const types = sniffedRows[0].Columns.match(/(: '([a-zA-Z]+)')/g).map((matched: string) => matched.substring(3, matched.length - 1))
-    const dateFormat = sniffedRows[0].DateFormat ?? ''
-    const timestampFormat = sniffedRows[0].TimestampFormat ?? ''
+    let types: string[]
+    let dateFormat = ''
+    let timestampFormat = ''
+
+    if (autoDetect) {
+      // sample_size = -1 would scan the whole file and makes auto detection robust. It seems to add 10% of the run time of a 800MB file.
+      const sniffedRows = await this.db.all(`SELECT Columns, DateFormat, TimestampFormat FROM sniff_csv('${filePath}', sample_size = -1)`)
+      types = sniffedRows[0].Columns.match(/(: '([a-zA-Z]+)')/g).map((matched: string) => matched.substring(3, matched.length - 1))
+      dateFormat = sniffedRows[0].DateFormat ?? ''
+      timestampFormat = sniffedRows[0].TimestampFormat ?? ''
+    } else {
+      types = columnNames.map(() => 'VARCHAR')
+    }
 
     return {
       columns: columnNames.map((name, index) => {
@@ -125,9 +133,8 @@ export class Duckdb extends Datastore {
     }
   }
 
-  async addCsv (filePath: string, withHeader: boolean, separator: string, replace: string): Promise<QueryResult> {
-    let table = this.getTableName(path.parse(filePath).name)
-    const detectionResult = await this.detectColumns(filePath, withHeader, separator)
+  private async createCsvTable (table: string, filePath: string, withHeader: boolean, separator: string, replace: string, autoDetectColumn: boolean): Promise<void> {
+    const detectionResult = await this.detectColumns(filePath, withHeader, separator, autoDetectColumn)
     const columnsParam = `{${detectionResult.columns.map((c) => `'${c.name}': '${c.tpe}'`).join(', ')}}`
 
     const readCsvOptions = [
@@ -135,7 +142,12 @@ export class Duckdb extends Datastore {
       `delim = '${separator}'`,
       `header = ${withHeader}`,
       `columns = ${columnsParam}`,
-      'null_padding = true'
+      // We already do sniff_csv. We don't need to do auto detection again.
+      'auto_detect = false',
+      'null_padding = true',
+      // Avoid the error: The parallel scanner does not support null_padding in conjunction with quoted new lines. Please disable the parallel csv reader with parallel=false
+      // This is not testable.
+      'parallel = false'
       // TODO: Ignoring error doesn't work well with multiline rows. No idea why. We should make it work some day.
       // 'ignore_errors = true'
       // `rejects_table = '${rejectsTable}'`
@@ -147,7 +159,20 @@ export class Duckdb extends Datastore {
       readCsvOptions.push(`timestampformat = '${detectionResult.timestampFormat}'`)
     }
 
+    await this.db.exec(`DROP TABLE IF EXISTS "${table}"`)
     await this.db.exec(`CREATE TABLE "${table}" AS FROM read_csv(${readCsvOptions.join(', ')})`)
+    // TODO: handle the last line of all nulls
+  }
+
+  async addCsv (filePath: string, withHeader: boolean, separator: string, replace: string): Promise<QueryResult> {
+    let table = this.getTableName(path.parse(filePath).name)
+
+    try {
+      await this.createCsvTable(table, filePath, withHeader, separator, replace, true)
+    } catch (e) {
+      // TODO: Offer it as an option for the user instead.
+      await this.createCsvTable(table, filePath, withHeader, separator, replace, false)
+    }
 
     if (replace && replace !== '' && table !== replace) {
       await this.drop(replace)
