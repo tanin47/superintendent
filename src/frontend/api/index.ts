@@ -311,14 +311,14 @@ export async function copy (table: string, selection: CopySelection): Promise<bo
     })
 }
 
-export async function addCsv (path: string, withHeader: boolean, format: string, replace: Sheet | null): Promise<Sheet> {
-  void trackEvent('adding_csv')
+export async function addCsv (path: string, withHeader: boolean, format: string, replace: Sheet | null, autoDetect: boolean): Promise<Sheet> {
+  void trackEvent('adding_csv', { withHeader, format, autoDetect })
 
   return await window.ipcRenderer
-    .invoke('add-csv', path, withHeader, format, replace?.name)
+    .invoke('add-csv', path, withHeader, format, replace?.name, autoDetect)
     .then((result) => {
       if (result.success === true) {
-        void trackEvent('adding_csv_succeeded', { count: result.data.count })
+        void trackEvent('adding_csv_succeeded', { count: result.data.count, withHeader, format, autoDetect })
         void maybeShowPurchaseNotice()
 
         if (replace) {
@@ -335,7 +335,7 @@ export async function addCsv (path: string, withHeader: boolean, format: string,
           })
         }
       } else {
-        void trackEvent('adding_csv_failed')
+        void trackEvent('adding_csv_failed', { withHeader, format, autoDetect })
         throw result.message
       }
     })

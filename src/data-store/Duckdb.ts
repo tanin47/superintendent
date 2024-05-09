@@ -128,7 +128,7 @@ export class Duckdb extends Datastore {
 
     const lastRowId = Number(data[0].rowid)
 
-    await this.db.exec(`DELETE FROM "${table}" where rowid = ${lastRowId} AND ${columns.map((c) => `${c.name} IS NULL`).join(' AND ')}`)
+    await this.db.exec(`DELETE FROM "${table}" where "rowid" = ${lastRowId} AND ${columns.map((c) => `"${c.name}" IS NULL`).join(' AND ')}`)
   }
 
   private async createCsvTable (table: string, filePath: string, withHeader: boolean, separator: string, replace: string, autoDetectColumn: boolean): Promise<void> {
@@ -162,15 +162,10 @@ export class Duckdb extends Datastore {
     await this.removeLastNullLine(table, detectionResult.columns)
   }
 
-  async addCsv (filePath: string, withHeader: boolean, separator: string, replace: string): Promise<QueryResult> {
+  async addCsv (filePath: string, withHeader: boolean, separator: string, replace: string, autoDetect: boolean): Promise<QueryResult> {
     let table = this.getTableName(path.parse(filePath).name)
 
-    try {
-      await this.createCsvTable(table, filePath, withHeader, separator, replace, true)
-    } catch (e) {
-      // TODO: Offer it as an option for the user instead.
-      await this.createCsvTable(table, filePath, withHeader, separator, replace, false)
-    }
+    await this.createCsvTable(table, filePath, withHeader, separator, replace, autoDetect)
 
     if (replace && replace !== '' && table !== replace) {
       await this.drop(replace)

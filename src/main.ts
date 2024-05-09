@@ -710,7 +710,7 @@ export default class Main {
       return await Main.wrapResponse(Main.getSpace(event).db.changeColumnType(tableName, columnName, newColumnType, timestampFormat))
     })
 
-    ipcMain.handle('add-csv', async (event, path: string, withHeader: boolean, format: Format, replace: string) => {
+    ipcMain.handle('add-csv', async (event, path: string, withHeader: boolean, format: Format, replace: string, autoDetect: boolean) => {
       let separator: string
 
       if (format === 'comma') {
@@ -729,7 +729,7 @@ export default class Main {
         throw new Error()
       }
 
-      return await Main.wrapResponse(Main.getSpace(event).db.addCsv(path, withHeader, separator, replace))
+      return await Main.wrapResponse(Main.getSpace(event).db.addCsv(path, withHeader, separator, replace, autoDetect))
     })
 
     ipcMain.handle('download-csv', async (event, table: string) => {

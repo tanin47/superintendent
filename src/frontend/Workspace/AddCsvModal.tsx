@@ -15,6 +15,7 @@ interface File {
   path: string
   withHeader: boolean
   format: Format
+  autoDetect: boolean
   replace: ObjectWrapper<Result> | null
   status: Status
 }
@@ -38,6 +39,7 @@ function FileItem ({
   onWithHeaderChanged,
   onFormatChanged,
   onReplaceChanged,
+  onAutoDetectChanged,
   onDeleted
 }: {
   file: File
@@ -46,9 +48,11 @@ function FileItem ({
   onWithHeaderChanged: (newWithHeader: boolean) => void
   onFormatChanged: (newFormat: Format) => void
   onReplaceChanged: (newReplace: ObjectWrapper<Result> | null) => void
+  onAutoDetectChanged: (newAutoDetect: boolean) => void
   onDeleted: () => void
 }): JSX.Element {
   const [format, setFormat] = React.useState(file.format)
+  const [autoDetect, setAutoDetect] = React.useState(file.autoDetect)
   const [replace, setReplace] = React.useState<ObjectWrapper<Result> | null>(null)
   const [withHeader, setWithHeader] = React.useState(file.withHeader)
 
@@ -72,7 +76,7 @@ function FileItem ({
       <div className="right">
         <div className="line">
           <div className="selector">
-            <div className="select" style={{ width: '110px' }}>
+            <div className="select">
               <select
                 value={`${withHeader}`}
                 onChange={(event) => {
@@ -118,7 +122,23 @@ function FileItem ({
         </div>
         <div className="line">
           <div className="selector">
-            <div className="select" style={{ width: '215px' }}>
+            <div className="select">
+              <select
+                value={autoDetect ? 'yes' : 'no'}
+                onChange={(event) => {
+                  const newAutoDetect = event.target.value === 'yes'
+                  setAutoDetect(newAutoDetect)
+                  onAutoDetectChanged(newAutoDetect)
+                }}
+                disabled={disabled}
+              >
+                <option value="yes">Auto-detect column types</option>
+                <option value="no">Disable type auto-detection</option>
+              </select>
+            </div>
+          </div>
+          <div className="selector">
+            <div className="select">
               <select
                 value={replace?.base.id ?? ''}
                 onChange={(event) => {
@@ -207,7 +227,7 @@ export default React.forwardRef(function AddCsv ({
       })
 
       try {
-        const sheet = await addCsv(file.path, file.withHeader, file.format, file.replace?.base as Sheet)
+        const sheet = await addCsv(file.path, file.withHeader, file.format, file.replace?.base as Sheet, file.autoDetect)
         stateChangeApi.addOrReplaceResult(sheet)
         stateChangeApi.setSelectedResultId(sheet.id)
 
@@ -240,6 +260,8 @@ export default React.forwardRef(function AddCsv ({
           postBody = 'It seems you are trying to load a workspace file. Please use the menu "File > Load a workspace".'
         } else if (fileExtension.toLocaleLowerCase().startsWith('xls')) {
           postBody = 'It seems you are trying to load an Excel file, which is not supported. Please open it in Excel and export it into a CSV file. Then, you can add the CSV file.'
+        } else if (file.autoDetect) {
+          postBody = 'You can try disabling the column type auto-detection by selecting "Disable type auto-detection" when adding a CSV file.'
         }
 
         void dialog.showError(
@@ -251,6 +273,7 @@ export default React.forwardRef(function AddCsv ({
               fileExtension,
               withHeader: file.withHeader.toString(),
               format: file.format,
+              autoDetect: file.autoDetect.toString(),
               problematicLine: mask(problematicLine) ?? '',
               headerLine: mask(headerLine) ?? ''
             }
@@ -295,6 +318,7 @@ export default React.forwardRef(function AddCsv ({
         path: file,
         withHeader: true,
         format,
+        autoDetect: true,
         replace: null,
         status: 'draft'
       })
@@ -422,6 +446,16 @@ export default React.forwardRef(function AddCsv ({
                   prevFiles[index] = {
                     ...prevFiles[index],
                     replace: newReplace
+                  }
+
+                  return [...prevFiles]
+                })
+              }}
+              onAutoDetectChanged={(newAutoDetect) => {
+                setFiles((prevFiles) => {
+                  prevFiles[index] = {
+                    ...prevFiles[index],
+                    autoDetect: newAutoDetect
                   }
 
                   return [...prevFiles]

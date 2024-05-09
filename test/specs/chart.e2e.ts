@@ -4,7 +4,7 @@ import path from 'path'
 import os from 'os'
 import { setValidLicense } from './helpers'
 
-describe('Change column type', () => {
+describe('Build chart', () => {
   let csvFile: string | null = null
   beforeEach(async () => {
     const tmpdir = fs.mkdtempSync(path.join(os.tmpdir(), 'superintendent-test'))
@@ -17,6 +17,7 @@ describe('Change column type', () => {
     stream.write('b,2000\n')
     stream.write('c,1500\n')
     stream.write('d,3000\n')
+    stream.end()
 
     await setValidLicense()
   })
@@ -27,7 +28,7 @@ describe('Change column type', () => {
     }
   })
 
-  it('imports a csv', async () => {
+  it('imports a csv and visualize', async () => {
     await $('[data-testid="add-files"]').click()
     await $('[data-testid="input-file"]').clearValue()
     await $('[data-testid="input-file"]').addValue(await browser.uploadFile(csvFile!))

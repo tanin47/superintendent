@@ -33,6 +33,6 @@ describe('show error for Excel', () => {
     await expect(calls.length).toEqual(1)
 
     await expect(calls[0][0]).toEqual('Invalid Closing Quote: found non trimable byte after quote at line 1')
-    await expect(calls[0][1]).toEqual({ extra: { fileExtension: 'super', format: 'comma', headerLine: '{xxxxxxx@#$@#$%,,,""xxxxxx#%!$!,$,",@', problematicLine: '{xxxxxxx@#$@#$%,,,""xxxxxx#%!$!,$,",@', withHeader: 'true' }, tags: { action: 'adding_csv_failed' } })
+    await expect(calls[0][1]).toEqual({ extra: { autoDetect: 'true', fileExtension: 'super', format: 'comma', headerLine: '{xxxxxxx@#$@#$%,,,""xxxxxx#%!$!,$,",@', problematicLine: '{xxxxxxx@#$@#$%,,,""xxxxxx#%!$!,$,",@', withHeader: 'true' }, tags: { action: 'adding_csv_failed' } })
   })
 })

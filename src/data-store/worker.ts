@@ -23,8 +23,8 @@ expose({
   async close () {
     await datastore!.close()
   },
-  async addCsv (filePath: string, withHeader: boolean, separator: string, replace: string): Promise<QueryResult> {
-    return await datastore!.addCsv(filePath, withHeader, separator, replace)
+  async addCsv (filePath: string, withHeader: boolean, separator: string, replace: string, autoDetect: boolean): Promise<QueryResult> {
+    return await datastore!.addCsv(filePath, withHeader, separator, replace, autoDetect)
   },
   async exportCsv (table: string, filePath: string, delimiter: string): Promise<void> {
     await datastore!.exportCsv(table, filePath, delimiter)
