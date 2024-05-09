@@ -48,7 +48,7 @@ export class Duckdb extends Datastore {
 
     const sanitizedColumnNames = new Set<string>()
     const getColumnName = (candidate: string): string => {
-      if (sanitizedColumnNames.has(candidate.toLowerCase())) {
+      if (sanitizedColumnNames.has(candidate.toLowerCase()) || candidate.toLocaleLowerCase() === 'rowid') {
         return getColumnName(`${candidate}_dup`)
       } else {
         return candidate
@@ -114,23 +114,21 @@ export class Duckdb extends Datastore {
           await this.execChangeColumnType(table, col.name, 'timestamp', df)
           break
         } catch (unknown) {
-          // const error = unknown as any
-
-          // if ('message' in error && error.message.includes('according to format specifier "%Y-%m-%d %H:%M"')) {
-          //   // Do nothing. The column cannot be converted to the timestamp
-          // } else {
-          //   throw unknown
-          // }
-          //
-          // Ignore all errors. On windows, sometimes it raises:
-          // [Error: Invalid Error:  ��t] {
-          //   errno: -1,
-          //   code: 'DUCKDB_NODEJS_ERROR',
-          //   errorType: 'Invalid'
-          // }
+          // Ignore error
         }
       }
     }
+  }
+
+  // We need this because null_padding = true and parallel = false adds an all-null line as the last line.
+  private async removeLastNullLine (table: string, columns: QueryColumn[]): Promise<void> {
+    const data = await this.db.all(`SELECT MAX(rowid) as rowid FROM "${table}"`)
+
+    if (data.length === 0) { return }
+
+    const lastRowId = Number(data[0].rowid)
+
+    await this.db.exec(`DELETE FROM "${table}" where rowid = ${lastRowId} AND ${columns.map((c) => `${c.name} IS NULL`).join(' AND ')}`)
   }
 
   private async createCsvTable (table: string, filePath: string, withHeader: boolean, separator: string, replace: string, autoDetectColumn: boolean): Promise<void> {
@@ -161,7 +159,7 @@ export class Duckdb extends Datastore {
 
     await this.db.exec(`DROP TABLE IF EXISTS "${table}"`)
     await this.db.exec(`CREATE TABLE "${table}" AS FROM read_csv(${readCsvOptions.join(', ')})`)
-    // TODO: handle the last line of all nulls
+    await this.removeLastNullLine(table, detectionResult.columns)
   }
 
   async addCsv (filePath: string, withHeader: boolean, separator: string, replace: string): Promise<QueryResult> {
@@ -373,7 +371,7 @@ export class Duckdb extends Datastore {
 
       if (tpe === 'integer') {
         await this.execChangeColumnType(table, column.name, 'BIGINT')
-      } else if (tpe === 'decimal') {
+      } else if (tpe === 'decimal' || tpe === 'hugeint') {
         await this.execChangeColumnType(table, column.name, 'DOUBLE')
       } else if (tpe === 'time' || tpe === 'date') {
         await this.execChangeColumnType(table, column.name, 'TIMESTAMP')

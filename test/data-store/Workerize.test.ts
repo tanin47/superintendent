@@ -95,7 +95,7 @@ describe('Workerize', () => {
       await expect(result).toEqual(
         {
           count: 1,
-          columns: [{ name: 'bom_column_1', tpe: 'varchar', maxCharWidthCount: 6 }, { name: 'rowid', tpe: 'bigint', maxCharWidthCount: 3 }],
+          columns: [{ name: 'bom_column_1', tpe: 'varchar', maxCharWidthCount: 6 }, { name: 'rowid_dup', tpe: 'bigint', maxCharWidthCount: 3 }],
           name: expect.any(String),
           sql: 'SELECT * FROM bom',
           rows: [['value1', BigInt(123)]]
@@ -104,7 +104,7 @@ describe('Workerize', () => {
 
       await workerize.exportCsv('bom', exportedPath, ',')
       await expect(fs.readFileSync(exportedPath, { encoding: 'utf8' })).toEqual(
-        'bom_column_1,rowid\nvalue1,123\n'
+        'bom_column_1,rowid_dup\nvalue1,123\n'
       )
     })
 
@@ -125,8 +125,7 @@ describe('Workerize', () => {
           rows: [
             ['tanin', 'multi\nline', 'yoyo'],
             ['yes', 'no', null],
-            ['well', null, null],
-            [null, null, null]
+            ['well', null, null]
           ]
         }
       )
@@ -137,7 +136,8 @@ describe('Workerize', () => {
           'tanin,"multi',
           'line",yoyo',
           'yes,no,',
-          'well,,'
+          'well,,',
+          ''
         ].join('\n')
       )
     })
@@ -148,7 +148,7 @@ describe('Workerize', () => {
 
       await expect(result).toEqual(
         {
-          count: 3,
+          count: 2,
           columns: [
             { name: 'name', tpe: 'varchar', maxCharWidthCount: 5 },
             { name: 'number', tpe: 'double', maxCharWidthCount: 22 }
@@ -157,8 +157,7 @@ describe('Workerize', () => {
           sql: 'SELECT * FROM "hugeint"',
           rows: [
             ['tanin', 1.7014118346046923e+38],
-            ['test', 1.6014118346046923e+38],
-            [null, null]
+            ['test', 1.6014118346046923e+38]
           ]
         }
       )
@@ -168,7 +167,6 @@ describe('Workerize', () => {
           'name,number',
           'tanin,1.7014118346046923e+38',
           'test,1.6014118346046923e+38',
-          ',',
           ''
         ].join('\n')
       )

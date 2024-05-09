@@ -1,3 +1,9 @@
+/* eslint-disable import/first */
+
+(window.miscApi as any) = {
+  isWdioEnabled: () => true
+}
+
 import { cryptoApi, storeApi } from '../../../src/external'
 import { checkIfLicenseIsValid, extractLicenseInfo, getAiApiSignature } from '../../../src/frontend/api'
 import fs from 'fs'

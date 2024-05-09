@@ -157,7 +157,7 @@ export interface Ref {
 }
 
 async function extractProblematicLine (message: string, file: string): Promise<string | null> {
-  const matches = message.match(/line ([0-9]+)/i)
+  const matches = message.match(/line[^0-9]*([0-9]+)/i)
 
   if (!matches || matches.length < 1) { return null }
 

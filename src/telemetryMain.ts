@@ -1,8 +1,6 @@
 import { type CaptureExceptionFunction, type TrackEventFunction } from './types'
 import * as Aptabase from '@aptabase/electron/main'
 import * as Sentry from '@sentry/electron/main'
-console.log(process.env.JEST_WORKER_ID)
-console.log(process.env.NODE_ENV)
 
 const isInTest = process.env.ENABLE_WDIO === 'yes' || !!process.env.JEST_WORKER_ID
 
@@ -21,6 +19,7 @@ if (isInTest) {
 }
 
 export function initialize (): void {
+  if (isInTest) { return }
   void Aptabase.initialize('A-US-0398660071')
 }
 

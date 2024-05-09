@@ -1,9 +1,8 @@
-import { dialog, shell } from 'electron'
-import { type BrowserWindow } from 'electron'
-import { type Workspace } from '../src/main'
-import Main from '../src/main'
-import { type Datastore } from '../src/data-store/Datastore'
-import Store from 'electron-store'
+/* eslint-disable import/first */
+
+(process as any).versions.electron = '5.9.0'
+
+jest.mock('@sentry/electron/main', () => ({}))
 
 jest.mock('electron', () => ({
   dialog: {
@@ -11,8 +10,26 @@ jest.mock('electron', () => ({
   },
   shell: {
     openExternal: jest.fn()
+  },
+  require: jest.fn(),
+  match: jest.fn(),
+  app: {
+    isReady: () => true,
+    getAppPath: () => 'fake-path'
+  },
+  remote: {
+    app: {
+      getPath: () => 'fake-path'
+    }
   }
 }))
+
+import { dialog, shell } from 'electron'
+import { type BrowserWindow } from 'electron'
+import { type Workspace } from '../src/main'
+import Main from '../src/main'
+import { type Datastore } from '../src/data-store/Datastore'
+import Store from 'electron-store'
 
 describe('the update notice', () => {
   const space: Workspace = {
