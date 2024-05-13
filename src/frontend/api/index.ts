@@ -473,8 +473,8 @@ export async function askAi (command: string, selection: string | null, currentS
     const signature = getAiApiSignature(body, timestamp, user)
 
     const resp = await fetch(
-      // 'https://superintendent.app/ai/ask',
-      'http://localhost:9000/ai/ask',
+      'https://superintendent.app/ai/ask',
+      // 'http://localhost:9000/ai/ask',
       {
         method: 'POST',
         headers: {

@@ -19,6 +19,7 @@ import { StateChangeApi, type ObjectWrapper, useDispatch, useWorkspaceContext } 
 import { type RenameDialogInfo } from './RenameDialog'
 import AskAi from './AskAi'
 import CodeEditor, { type CodeEditorRef } from './CodeEditor'
+import { formatSql } from './helper'
 
 function ContextMenu ({
   open,
@@ -232,9 +233,9 @@ export default React.forwardRef(function Editor ({
     [editingItem, saveEditorState, shownComposableItemId, stateChangeApi]
   )
 
-  const formatSql = React.useCallback(
-    (newContent: string | null = null) => {
-      codeMirrorInstance.current!.format(newContent)
+  const formatCodeEditor = React.useCallback(
+    () => {
+      codeMirrorInstance.current!.format()
     },
     []
   )
@@ -245,26 +246,6 @@ export default React.forwardRef(function Editor ({
       stateChangeApi.makeDraftSql(newContent ?? codeMirrorInstance.current?.getValue() ?? '')
     },
     [stateChangeApi]
-  )
-
-  const onPerformingAiResult = React.useCallback(
-    async (result: AiResult): Promise<void> => {
-      if (result.action === 'replace_selected_part') {
-        codeMirrorInstance.current!.replaceSelection(result.result, 'around')
-      } else if (result.action === 'replace_currently_viewed_sql') {
-        formatSql(result.result)
-      } else if (result.action === 'make_new_sql') {
-        if (codeMirrorInstance.current?.getValue().trim()) {
-          makeNewSql(result.result)
-          setTimeout(() => { formatSql() }, 1)
-        } else {
-          formatSql(result.result)
-        }
-      } else {
-        throw new Error()
-      }
-    },
-    [formatSql, makeNewSql]
   )
 
   const revertSql = React.useCallback(
@@ -390,6 +371,32 @@ export default React.forwardRef(function Editor ({
     [show]
   )
 
+  const onPerformingAiResult = React.useCallback(
+    async (result: AiResult, isAutorun: boolean): Promise<void> => {
+      if (result.action === 'replace_selected_part') {
+        codeMirrorInstance.current!.replaceSelection(result.result, 'around')
+      } else if (result.action === 'replace_currently_viewed_sql') {
+        codeMirrorInstance.current?.setValue(formatSql(result.result))
+      } else if (result.action === 'make_new_sql') {
+        if (codeMirrorInstance.current?.getValue().trim()) {
+          makeNewSql(formatSql(result.result))
+        } else {
+          codeMirrorInstance.current?.setValue(formatSql(result.result))
+        }
+      } else {
+        throw new Error()
+      }
+
+      if (isAutorun) {
+        setTimeout(
+          () => { void runSql() },
+          1
+        )
+      }
+    },
+    [makeNewSql, runSql]
+  )
+
   const toggleAiChat = React.useCallback(
     () => {
       setShowAiChat((current) => {
@@ -439,7 +446,7 @@ export default React.forwardRef(function Editor ({
         }
 
         if (event.code === 'Enter' && event.altKey) {
-          formatSql()
+          formatCodeEditor()
           return false
         }
 
@@ -461,7 +468,7 @@ export default React.forwardRef(function Editor ({
         document.removeEventListener('keydown', handler)
       }
     },
-    [runSql, makeNewSql, toggleAiChat, onGoToUpdateMode, show, formatSql]
+    [runSql, makeNewSql, toggleAiChat, onGoToUpdateMode, show, formatCodeEditor]
   )
 
   return (
@@ -489,7 +496,7 @@ export default React.forwardRef(function Editor ({
             </Button>
             <span className="separator" />
             <Button
-              onClick={() => { formatSql() }}
+              onClick={() => { formatCodeEditor() }}
               icon={<i className="fas fa-align-justify" />}
               testId="format-sql"
             >
@@ -551,6 +558,15 @@ export default React.forwardRef(function Editor ({
           This is an imported CSV. You cannot modify its SQL.
         </div>
       )}
+      <AskAi
+        ref={askAiRef}
+        show={showAiChat}
+        onGetContext={() => ({
+          selection: codeMirrorInstance.current!.getSelection(),
+          currentSql: codeMirrorInstance.current!.getValue()
+        })}
+        onSuccess={async (result, isAutorun) => { await onPerformingAiResult(result, isAutorun) }}
+      />
       <div
         style={{
           position: 'relative',
@@ -578,15 +594,6 @@ export default React.forwardRef(function Editor ({
           results={workspaceState.results}
         />
       </div>
-      <AskAi
-        ref={askAiRef}
-        show={showAiChat}
-        onGetContext={() => ({
-          selection: codeMirrorInstance.current!.getSelection(),
-          currentSql: codeMirrorInstance.current!.getValue()
-        })}
-        onSuccess={async (result) => { await onPerformingAiResult(result) }}
-      />
     </>
   )
 })

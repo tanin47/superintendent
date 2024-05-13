@@ -30,7 +30,7 @@ export default React.forwardRef(function AskAi (
   }: {
     show: boolean
     onGetContext: () => EditorContext
-    onSuccess: (result: AiResult) => Promise<void>
+    onSuccess: (result: AiResult, isAutorun: boolean) => Promise<void>
   },
   ref: React.Ref<unknown>
 ): JSX.Element {
@@ -38,6 +38,7 @@ export default React.forwardRef(function AskAi (
 
   const askAiTextboxRef = React.useRef<HTMLInputElement>(null)
   const [command, setCommand] = React.useState<string>('')
+  const [isAutorun, setIsAutorun] = React.useState<boolean>(true)
   const [placeholderIndex, setPlaceholderIndex] = React.useState<number>(PLACEHOLDERS.length - 1)
   const [isLoading, setIsLoading] = React.useState<boolean>(false)
 
@@ -89,17 +90,17 @@ export default React.forwardRef(function AskAi (
           currentSql,
           workspaceState.results.filter((r) => r.base.isComposable()).map((r) => r.base)
         )
-        await onSuccess(result)
-        setTimeout(() => { focus() }, 1)
+        await onSuccess(result, isAutorun)
       } catch (e) {
         const error = e as any
 
         void dialog.showError('Asking AI failed', error.message as string, { action: 'ask_ai_failed' })
       } finally {
         setIsLoading(false)
+        setTimeout(() => { focus() }, 1)
       }
     },
-    [command, focus, isLoading, onGetContext, onSuccess, workspaceState.results]
+    [command, focus, isAutorun, isLoading, onGetContext, onSuccess, workspaceState.results]
   )
 
   return (
@@ -125,7 +126,7 @@ export default React.forwardRef(function AskAi (
         value={command}
         onChange={(event) => { setCommand(event.target.value) }}
         onKeyDown={(event) => {
-          if (event.key === 'Enter' && !(event.metaKey || event.ctrlKey)) {
+          if (event.key === 'Enter' && !(event.metaKey || event.ctrlKey || event.altKey)) {
             void submit()
             event.stopPropagation()
             event.preventDefault()
@@ -139,6 +140,12 @@ export default React.forwardRef(function AskAi (
           void submit()
         }}
       >Enter ⏎</span>
+      <span
+        className="auto-run-panel"
+      >
+        <input id="isAutorun" type="checkbox" checked={isAutorun} onChange={(event) => { setIsAutorun(event.target.checked) }}/>
+        <label htmlFor="isAutorun">Auto-run?</label>
+      </span>
       <span
         className="help-button"
         onClick={() => {

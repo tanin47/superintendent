@@ -46,7 +46,7 @@ export interface CodeEditorRef {
   replaceSelection: (value: string, replaceOption: string) => void
   getSelection: () => string
   refresh: () => void
-  format: (newContent: string | null) => void
+  format: () => void
 }
 
 export default React.forwardRef(function CodeEditor ({
@@ -65,15 +65,14 @@ export default React.forwardRef(function CodeEditor ({
   const [editorMode, setEditorMode] = React.useState<EditorMode>(getInitialEditorMode())
 
   const formatSql = React.useCallback(
-    (newContent: string | null) => {
-      let sql = newContent ?? codeMirrorInstance.current.getValue()
+    () => {
+      let sql: string = codeMirrorInstance.current.getValue()
 
       try {
         sql = format(
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-          newContent ?? codeMirrorInstance.current.getValue(),
+          sql,
           {
-            language: 'sql',
+            language: 'postgresql',
             linesBetweenQueries: 2
           }
         )
@@ -107,7 +106,7 @@ export default React.forwardRef(function CodeEditor ({
       replaceSelection: (value: string, replaceOption: string) => codeMirrorInstance.current.replaceSelection(value, replaceOption),
       getSelection: () => codeMirrorInstance.current.getSelection(),
       refresh: () => codeMirrorInstance.current.refresh(),
-      format: (newContent: string | null = null) => { formatSql(newContent) }
+      format: () => { formatSql() }
     }),
     [formatSql]
   )

@@ -97,8 +97,8 @@ export default function Editor ({
   )
 
   const formatSql = React.useCallback(
-    (newContent: string | null = null) => {
-      codeMirrorInstance.current!.format(newContent)
+    () => {
+      codeMirrorInstance.current!.format()
     },
     []
   )

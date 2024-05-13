@@ -4,7 +4,7 @@
   align-items: center;
   justify-content: flex-start;
   background-color: #fff;
-  border-top: 2px solid #333;
+  border-bottom: 2px solid #333;
   padding: 0px 10px;
 
   input[type="text"] {
@@ -29,5 +29,16 @@
     cursor: pointer;
     white-space: nowrap;
     font-size: 11px;
+  }
+
+  .auto-run-panel {
+    display: flex;
+    align-items: center;
+    font-size: 11px;
+    user-select: none;
+    
+    > * {
+      cursor: pointer;
+    }
   }
 }

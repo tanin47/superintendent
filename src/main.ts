@@ -68,6 +68,11 @@ export default class Main {
       }
     }
 
+    // eslint-disable-next-line no-unreachable-loop
+    for (const space of Main.spaces.values()) {
+      return space
+    }
+
     throw new Error("There's no focused space")
   }
 
