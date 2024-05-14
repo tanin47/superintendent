@@ -142,6 +142,65 @@ describe('Workerize', () => {
       )
     })
 
+    it('supports all formats of dates', async () => {
+      await workerize.addCsv('./test/data-store/csv-samples/dates.csv', true, ',', '', true)
+      const result = await workerize.query('SELECT * FROM "dates"', null)
+
+      result.rows[0] = result.rows[0].map((r) => {
+        try {
+          return (r as Date).toISOString()
+        } catch (e) {
+          return r
+        }
+      })
+
+      await expect(result).toEqual(
+        {
+          count: 1,
+          columns: [
+            { name: 'date1', tpe: 'timestamp', maxCharWidthCount: 25 },
+            { name: 'date2', tpe: 'timestamp', maxCharWidthCount: 25 },
+            { name: 'date3', tpe: 'timestamp', maxCharWidthCount: 25 },
+            { name: 'date4', tpe: 'timestamp', maxCharWidthCount: 25 },
+            { name: 'date5', tpe: 'timestamp', maxCharWidthCount: 25 },
+            { name: 'date6', tpe: 'timestamp', maxCharWidthCount: 25 },
+            { name: 'date7', tpe: 'timestamp', maxCharWidthCount: 25 },
+            { name: 'date8', tpe: 'timestamp', maxCharWidthCount: 25 },
+            { name: 'date9', tpe: 'timestamp', maxCharWidthCount: 25 },
+            { name: 'date10', tpe: 'timestamp', maxCharWidthCount: 25 },
+            { name: 'date11', tpe: 'timestamp', maxCharWidthCount: 25 },
+            { name: 'date12', tpe: 'timestamp', maxCharWidthCount: 25 }
+          ],
+          name: expect.any(String),
+          sql: 'SELECT * FROM "dates"',
+          rows: [
+            [
+              new Date(Date.parse('2024-02-01T11:22:33Z')).toISOString(),
+              new Date(Date.parse('2024-02-01T11:22Z')).toISOString(),
+              new Date(Date.parse('2024-02-01')).toISOString(),
+              new Date(Date.parse('2024-02-01')).toISOString(),
+              new Date(Date.parse('2024-02-01')).toISOString(),
+              new Date(Date.parse('2024-02-01')).toISOString(),
+              new Date(Date.parse('2024-02-01')).toISOString(),
+              new Date(Date.parse('2024-02-01')).toISOString(),
+              new Date(Date.parse('2024-02-01')).toISOString(),
+              new Date(Date.parse('2024-02-01')).toISOString(),
+              new Date(Date.parse('2024-02-01')).toISOString(),
+              new Date(Date.parse('2024-02-01')).toISOString()
+            ]
+          ]
+        }
+      )
+      await workerize.exportCsv('dates', exportedPath, ',')
+      await expect(fs.readFileSync(exportedPath, { encoding: 'utf8' })).toEqual(
+        [
+          'date1,date2,date3,date4,date5,date6,date7,date8,date9,date10,date11,date12',
+          '2024-02-01 11:22:33,2024-02-01 11:22:00,2024-02-01 00:00:00,2024-02-01 00:00:00,2024-02-01 00:00:00,2024-02-01 00:00:00,2024-02-01 00:00:00,2024-02-01 00:00:00,2024-02-01 00:00:00,2024-02-01 00:00:00,2024-02-01 00:00:00,2024-02-01 00:00:00',
+          ''
+        ].join('\n')
+      )
+    })
+
     it('supports hugeint; it uses double', async () => {
       await workerize.addCsv('./test/data-store/csv-samples/hugeint.csv', true, ',', '', true)
       const result = await workerize.query('SELECT * FROM "hugeint"', null)

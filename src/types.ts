@@ -55,7 +55,7 @@ export interface QueryColumn {
   maxCharWidthCount: number
   tpe: ColumnType
 }
-export type QueryRow = string[]
+export type QueryRow = Array<string | number | Date>
 
 export interface QueryResult {
   name: string

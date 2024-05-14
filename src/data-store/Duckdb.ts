@@ -99,8 +99,14 @@ export class Duckdb extends Datastore {
 
   OTHER_DATE_FORMATS = [
     '%Y-%m-%d %H:%M',
-    '%-d-%B-%Y',
-    '%-d-%b-%Y'
+    '%d-%B-%y', // %y being before %Y is very important. 24 could have been parsed as the year 24, not 2024.
+    '%d-%b-%y',
+    '%d-%B-%Y',
+    '%d-%b-%Y',
+    '%B %d, %y',
+    '%b %d, %y',
+    '%B %d, %Y',
+    '%b %d, %Y'
   ]
 
   private async detectAndChangeMoreColumns (table: string): Promise<void> {
