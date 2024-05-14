@@ -14,6 +14,25 @@ interface ColumnDetectionResult {
   timestampFormat: string
 }
 
+const OTHER_DATE_FORMATS = [
+  '%Y-%m-%d %H:%M',
+  '%d-%b-%y',
+  '%d %b %y',
+  '%b %d, %y'
+]
+
+for (const df of OTHER_DATE_FORMATS) {
+  if (df.includes('%b')) {
+    OTHER_DATE_FORMATS.push(df.replace('%b', '%B'))
+  }
+}
+
+for (const df of OTHER_DATE_FORMATS) {
+  if (df.includes('%y')) {
+    OTHER_DATE_FORMATS.push(df.replace('%y', '%Y'))
+  }
+}
+
 export class Duckdb extends Datastore {
   private readonly env!: Env
   private db!: Database
@@ -97,25 +116,13 @@ export class Duckdb extends Datastore {
     }
   }
 
-  OTHER_DATE_FORMATS = [
-    '%Y-%m-%d %H:%M',
-    '%d-%B-%y', // %y being before %Y is very important. 24 could have been parsed as the year 24, not 2024.
-    '%d-%b-%y',
-    '%d-%B-%Y',
-    '%d-%b-%Y',
-    '%B %d, %y',
-    '%b %d, %y',
-    '%B %d, %Y',
-    '%b %d, %Y'
-  ]
-
   private async detectAndChangeMoreColumns (table: string): Promise<void> {
     const columnInfos = (await this.db.prepare(`SELECT * FROM "${table}" LIMIT 1`)).columns()
 
     for await (const col of columnInfos) {
       if (col.type.id.toLocaleLowerCase() !== 'varchar') { continue }
 
-      for (const df of this.OTHER_DATE_FORMATS) {
+      for (const df of OTHER_DATE_FORMATS) {
         try {
           await this.execChangeColumnType(table, col.name, 'timestamp', df)
           break
