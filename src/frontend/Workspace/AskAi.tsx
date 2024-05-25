@@ -64,7 +64,7 @@ export default React.forwardRef(function AskAi (
               '<div class="green"><i class="fas fa-check-circle"></i> Table names</div>' +
               '<div class="green"><i class="fas fa-check-circle"></i> Column names</div>' +
             '</div>' +
-            '<div>The below information is <span class="highlighted">not</span> used:</div>' +
+            '<div>The below information is <span class="highlighted">not</span> used and <span class="highlighted">does not</span> leave your machine:</div>' +
             '<div class="checklist">' +
               '<div class="red"><i class="fas fa-exclamation-circle"></i> Data and values in the tables</div>' +
             '</div>' +
