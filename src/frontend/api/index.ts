@@ -43,6 +43,16 @@ export function setErrorReportingOptIn (isReporting: boolean): void {
   window.storeApi.set(ERROR_REPORTING_OPT_IN_KEY, isReporting)
 }
 
+export const AI_DATA_NOTICE_SHOWN_AT_KEY = 'aiDataNoticeShownAt'
+
+export function getAiDataNoticeShownAt (): number | null {
+  return window.storeApi.get(AI_DATA_NOTICE_SHOWN_AT_KEY) as (number | undefined) ?? null
+}
+
+export function setAiDataNoticeShownAt (): void {
+  window.storeApi.set(AI_DATA_NOTICE_SHOWN_AT_KEY, new Date().getTime())
+}
+
 export const PURCHASE_NOTICE_SHOWN_AT_KEY = 'purchaseNoticeShownAt'
 
 export function getPurchaseNoticeShownAt (): number | null {

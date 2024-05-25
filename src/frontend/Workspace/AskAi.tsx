@@ -1,6 +1,6 @@
 import React from 'react'
 import { useWorkspaceContext } from './WorkspaceContext'
-import { type AiResult, askAi } from '../api'
+import { type AiResult, askAi, getAiDataNoticeShownAt, setAiDataNoticeShownAt } from '../api'
 import * as dialog from './dialog'
 import './AskAi.scss'
 
@@ -50,13 +50,42 @@ export default React.forwardRef(function AskAi (
     []
   )
 
+  const maybeShowAiDataNotice = React.useCallback(
+    () => {
+      const shownAt = getAiDataNoticeShownAt()
+
+      if (!shownAt || (new Date().getTime() - shownAt) >= (3 * 30 * 24 * 60 * 60 * 1000)) { // 3 months
+        dialog.showDialog(
+          'AI Data Privacy Disclosure',
+          '<div class="ai-data-notice-body">' +
+            '<div>The below information will strictly used for the AI feature and not be shared nor used anywhere else:</div>' +
+            '<div class="checklist">' +
+              '<div class="green"><i class="fas fa-check-circle"></i> SQL statements</div>' +
+              '<div class="green"><i class="fas fa-check-circle"></i> Table names</div>' +
+              '<div class="green"><i class="fas fa-check-circle"></i> Column names</div>' +
+            '</div>' +
+            '<div>The below information is <span class="highlighted">not</span> used:</div>' +
+            '<div class="checklist">' +
+              '<div class="red"><i class="fas fa-exclamation-circle"></i> Data and values in the tables</div>' +
+            '</div>' +
+          '</div>',
+          true,
+          'I understand'
+        )
+        setAiDataNoticeShownAt()
+      }
+    },
+    []
+  )
+
   React.useEffect(
     () => {
       if (show) {
         setPlaceholderIndex((previousIndex) => ((previousIndex + 1) % PLACEHOLDERS.length))
+        maybeShowAiDataNotice()
       }
     },
-    [show]
+    [show, maybeShowAiDataNotice]
   )
 
   React.useImperativeHandle(
@@ -106,6 +135,7 @@ export default React.forwardRef(function AskAi (
   return (
     <div
       className="ask-ai"
+      data-testid="ask-ai-panel"
       style={{
         display: show ? 'flex' : 'none'
       }}

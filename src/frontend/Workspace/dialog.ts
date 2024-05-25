@@ -13,7 +13,6 @@ const SWAL_OPTIONS = {
     actions: 'dialog-actions',
     input: 'dialog-input'
   },
-  confirmButtonText: 'Close',
   confirmButtonColor: '#333',
   allowOutsideClick: false,
   allowEscapeKey: false,
@@ -21,11 +20,12 @@ const SWAL_OPTIONS = {
 
 }
 
-function showDialog (title: string, messageHtml: string, showConfirmButton: boolean = true): void {
+export function showDialog (title: string, messageHtml: string, showConfirmButton: boolean = true, confirmButtonText: string = 'Close'): void {
   void Swal.fire({
     title,
     html: messageHtml,
     showConfirmButton,
+    confirmButtonText,
     ...SWAL_OPTIONS
   })
 }

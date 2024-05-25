@@ -42,3 +42,32 @@
     }
   }
 }
+
+.ai-data-notice-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .highlighted {
+    text-decoration: underline;
+  }
+
+  .green {
+    color: rgb(25, 135, 84);
+  }
+
+  .red {
+    color: rgb(220, 53, 69);
+  }
+
+  i {
+    font-family: "Font Awesome 5 Free" !important;
+    margin-right: 4px;
+  }
+
+  .checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+}
