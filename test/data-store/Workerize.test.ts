@@ -245,10 +245,14 @@ describe('Workerize', () => {
       await expect(result).toEqual(
         {
           count: 1,
-          columns: [{ name: 'something', tpe: 'varchar', maxCharWidthCount: 5 }, { name: 'another', tpe: 'varchar', maxCharWidthCount: 5 }],
+          columns: [
+            { name: 'something', tpe: 'varchar', maxCharWidthCount: 5 },
+            { name: 'another', tpe: 'varchar', maxCharWidthCount: 5 },
+            { name: 'other', tpe: 'varchar', maxCharWidthCount: 13 }
+          ],
           name: expect.any(String),
           sql: 'SELECT * FROM unicode',
-          rows: [['ก ไก่', 'ข ไข่']]
+          rows: [['ก ไก่', 'ข ไข่', 'Neuchâteloise']]
         }
       )
       await workerize.exportCsv('unicode', exportedPath, ',')
