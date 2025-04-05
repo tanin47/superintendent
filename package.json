@@ -9,7 +9,8 @@
     "start": "electron --app=dist/dev/main.js",
     "test": "jest --useStderr",
     "wdio": "ENABLE_WDIO=yes wdio run ./wdio.conf.ts",
-    "lint:fix": "eslint --ext ts,tsx --fix src test"
+    "lint:fix": "eslint --ext ts,tsx --fix src test",
+    "preinstall": "npx npm-force-resolutions"
   },
   "build": {
     "appId": "tanin.superintendent",
@@ -76,6 +77,10 @@
     "npmRebuild": false
   },
   "author": "Tanin Na Nakorn",
+  "resolutions": {
+    "@types/react": "17.0.85",
+    "@types/react-dom": "17.0.11"
+  },
   "devDependencies": {
     "@electron/notarize": "2.3.0",
     "@types/archiver": "^6.0.2",
@@ -84,8 +89,9 @@
     "@types/jest": "^29.5.11",
     "@types/luxon": "^3.4.2",
     "@types/randomcolor": "^0.5.9",
-    "@types/react": "^17.0.0",
-    "@types/react-dom": "^17.0.0",
+    "@types/react": "17.0.85",
+    "@types/react-dom": "17.0.11",
+    "@types/react-window": "1.8.8",
     "@typescript-eslint/eslint-plugin": "^6.4.0",
     "@wdio/cli": "^8.26.0",
     "@wdio/jasmine-framework": "^8.26.0",
@@ -141,15 +147,15 @@
     "luxon": "^3.4.4",
     "nan": "^2.14.0",
     "react-modal": "^3.14.3",
-    "react-virtualized-auto-sizer": "^1.0.5",
-    "react-window": "tanin47/react-window#ecadbf767a96624c194d09af39f9e13a05bfe8ce",
-    "react-window-infinite-loader": "^1.0.7",
+    "react-virtualized-auto-sizer": "1.0.26",
+    "react-window": "1.8.11",
+    "react-window-infinite-loader": "1.0.10",
     "sql-formatter": "15.3.0",
     "sweetalert2": "11.10.7",
     "threads": "^1.6.5",
     "tiny-worker": "^2.3.0"
   },
-  "packageManager": "yarn@4.0.2",
+  "packageManager": "yarn@4.8.1",
   "repository": "git@github.com:tanin47/superintendent-app.git",
   "private": true
 }
