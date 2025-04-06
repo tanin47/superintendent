@@ -299,12 +299,10 @@ export default React.forwardRef(function AddCsv ({
 
   const addFilesCallback = React.useCallback((fileList: string[] | null) => {
     if (fileList == null || fileList.length === 0 || isLoading) { return }
-    console.log(fileList)
 
     const newFiles: File[] = []
     for (const file of fileList) {
       let format: Format = 'comma'
-      console.log(file)
       const filename = file.split(/[\\/]/).pop() // get the filename
 
       if (filename === undefined) { continue }
