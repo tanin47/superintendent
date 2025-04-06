@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer, shell } from 'electron'
+import { contextBridge, ipcRenderer, shell, webUtils } from 'electron'
 import { cryptoApi, storeApi } from './external'
 import fs from 'fs'
 import readline from 'readline'
@@ -54,6 +54,12 @@ contextBridge.exposeInMainWorld('fileApi', {
   }
 })
 
+contextBridge.exposeInMainWorld('webUtils', {
+  getPathForFile: (file: File): string => {
+    return webUtils.getPathForFile(file)
+  }
+})
+
 declare global {
   interface Window {
     ipcRenderer: {
@@ -77,6 +83,9 @@ declare global {
     }
     fileApi: {
       extractContextualLines: (file: string, middleLineNumber: number) => Promise<string | null>
+    }
+    webUtils: {
+      getPathForFile: (file: File) => string
     }
   }
 }

@@ -1,8 +1,4 @@
 #checkLicenseForm {
-  * {
-    font-family: 'Dosis', sans-serif;
-  }
-
   font-family: 'Dosis', sans-serif;
   font-size: 13px;
   background-color: #F2DF74;
@@ -21,6 +17,10 @@
   height: 100%;
   margin: 0;
   padding: 10px 0px;
+
+  * {
+    font-family: 'Dosis', sans-serif;
+  }
 
   .step {
     background: #565656;

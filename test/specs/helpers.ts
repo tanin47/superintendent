@@ -1,5 +1,5 @@
-import { $, browser, expect } from '@wdio/globals'
-import { Key } from 'webdriverio'
+import { $, $$, browser, expect } from '@wdio/globals'
+import { Key, type ChainablePromiseElement } from 'webdriverio'
 
 export async function clearEditor (): Promise<void> {
   await $('.CodeMirror').click()
@@ -77,13 +77,13 @@ export async function getCaptureExceptionCalls (): Promise<any[][]> {
 }
 
 const TEST_VALID_LICENSE = '---- Superintendent license ----\n' +
-  'Email: tanin47@gmail.com\n' +
-  'Expired: 2024-09-20T23:57:20.766258645\n' +
-  'Signature:\n' +
-  'S+OqcwpMQdf4J3TRpIbqQ/wg4+XbGRoaHj/Z4rVIyVti8i3QabKl6vBchU8tHWq1\n' +
-  'UBHXBTCKksvLgqNaL//oXBwyGbaPQokHf60fzlLEy1qwZo9G5RmBYhvs7cHlrkJe\n' +
-  'U5QalYQc1X+chwy+c8fPizeO+ZPkPrLptlVZJJhnB/c=\n' +
-  '---- End of Superintendent license ----'
+    'Email: tanin47@gmail.com\n' +
+    'Expired: 2026-03-28T02:41:53.808092351\n' +
+    'Signature:\n' +
+    'KFeT9BgEmVOJZr932OLi6XhIJhANQWkwGJQMQxpJ6hCp6lGPDt5DhuTnMPlKEyGJ\n' +
+    'S5h/56vJM62LSf2+otv4/ja9BxJ/gQ/SxmAuGVI4mE6N+cElS1jg6JwHJD5MzrIm\n' +
+    'yjAyEL/347uFqLjXRCrdeTr6XeuVMXbW3K551+5bQng=\n' +
+    '---- End of Superintendent license ----'
 
 export async function setValidLicense (): Promise<void> {
   await browser.executeScript(`window.storeApi.set('license-key', atob('${Buffer.from(TEST_VALID_LICENSE).toString('base64')}'))`, [])

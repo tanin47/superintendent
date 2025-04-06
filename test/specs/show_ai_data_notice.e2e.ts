@@ -1,4 +1,4 @@
-import { $ } from '@wdio/globals'
+import { $, expect } from '@wdio/globals'
 
 describe('Show the purchase notice', () => {
   it('show AI Data notice', async () => {

@@ -1,4 +1,4 @@
-import { $, browser, expect } from '@wdio/globals'
+import { $, $$, browser, expect } from '@wdio/globals'
 import { fillEditor, getEditorValue, getTabs, getWindowHandles, selectMenu, setValidLicense } from './helpers'
 import fs from 'fs'
 import path from 'path'

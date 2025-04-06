@@ -26,7 +26,7 @@ export function convertFileList (fileList: FileList | null): string[] {
 
   if (fileList != null) {
     for (const file of fileList) {
-      results.push(file.path)
+      results.push(window.webUtils.getPathForFile(file))
     }
   }
 

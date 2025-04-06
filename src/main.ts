@@ -753,7 +753,7 @@ export default class Main {
           }
         }
       ])
-      Main.application.dock.setMenu(dockMenu)
+      Main.application.dock?.setMenu(dockMenu)
     }
   }
 

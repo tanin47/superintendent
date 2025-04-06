@@ -1,4 +1,4 @@
-import { $, expect } from '@wdio/globals'
+import { $, $$, expect } from '@wdio/globals'
 import { fillEditor, getEditorValue, setValidLicense } from './helpers'
 
 describe('A simple scenario', () => {

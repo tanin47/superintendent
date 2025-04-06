@@ -1,20 +1,12 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference types="wdio-electron-service" />
-import type { Options } from '@wdio/types'
-export const config: Options.Testrunner = {
+export const config = {
   //
   // ====================
   // Runner Configuration
   // ====================
   // WebdriverIO supports running e2e tests as well as unit and component tests.
   runner: 'local',
-  autoCompileOpts: {
-    autoCompile: true,
-    tsNodeOpts: {
-      project: './test/tsconfig.json',
-      transpileOnly: true
-    }
-  },
 
   //
   // ==================
@@ -66,8 +58,8 @@ export const config: Options.Testrunner = {
     // Electron service options
     // see https://webdriver.io/docs/wdio-electron-service/#configuration
     'wdio:electronServiceOptions': {
-      // custom application args
-      appArgs: []
+      appEntryPoint: './node_modules/.bin/electron',
+      appArgs: ['--app=./dist/dev/main.js']
     },
     'wdio:chromedriverOptions': {
       binary: process.platform === 'win32'
