@@ -1,5 +1,4 @@
 import React from 'react'
-import { type Ref } from './AddCsvModal'
 import Modal from 'react-modal'
 
 export default function CopyingModal ({
@@ -8,7 +7,7 @@ export default function CopyingModal ({
 }: {
   isOpen: boolean
   cellCount: number
-}, ref: React.ForwardedRef<Ref>): JSX.Element {
+}): JSX.Element {
   return (
     <Modal
       isOpen={isOpen}

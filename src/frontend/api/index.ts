@@ -234,7 +234,7 @@ export async function update (q: string, replace: Result): Promise<Result> {
       if (result.success === true) {
         void trackEvent('updating_succeeded')
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+         
         replace.update(result.data, true)
         return replace
       } else {
@@ -254,11 +254,11 @@ export async function query (q: string, replace: Result | null): Promise<Result>
         void trackEvent('querying_succeeded', { count: result.data.count })
 
         if (replace && replace.name === result.data.name) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+           
           replace.update(result.data, false)
           return replace
         } else {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+           
           return new Sheet({
             id: generateWorkspaceItemId(),
             presentationType: 'table',
@@ -286,7 +286,7 @@ export async function sort (result: Result, column: string, direction: SortDirec
       if (newResult.success === true) {
         void trackEvent('sorting_succeeded')
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+         
         result.update(newResult.data, true)
         result.updateSorts(sorts)
         return result
@@ -332,11 +332,11 @@ export async function addCsv (path: string, withHeader: boolean, format: string,
         void maybeShowPurchaseNotice()
 
         if (replace) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+           
           replace.update(result.data, false)
           return replace
         } else {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+           
           return new Sheet({
             presentationType: 'table',
             id: generateWorkspaceItemId(),
@@ -383,7 +383,7 @@ export async function downloadCsv (table: string): Promise<string> {
 export async function drop (table: string): Promise<void> {
   await window.ipcRenderer
     .invoke('drop', table)
-    .then((result) => {
+    .then((_result) => {
       // don't care
     })
 }
@@ -408,7 +408,7 @@ export async function changeColumnType (result: Result, columnName: string, newT
     .then((newResult) => {
       if (newResult.success === true) {
         void trackEvent('changing_column_succeeded')
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+         
         result.update(newResult.data, true)
         return result
       } else {

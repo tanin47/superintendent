@@ -1,5 +1,3 @@
-/* eslint-disable import/first */
-
 (process as any).versions.electron = '5.9.0'
 
 jest.mock('@sentry/electron/main', () => ({}))
@@ -37,9 +35,9 @@ describe('the update notice', () => {
     db: null as any as Datastore
   }
 
-  // eslint-disable-next-line @typescript-eslint/unbound-method
+   
   const mockedShowMessageBox = dialog.showMessageBox as any
-  // eslint-disable-next-line @typescript-eslint/unbound-method
+   
   const mockedOpenExternal = shell.openExternal as any
 
   beforeEach(() => {

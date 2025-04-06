@@ -88,8 +88,7 @@ function useInnerElementType (
   columnWidths: number[],
   computeRowHeight: (index: number) => number,
   computeCumulativeRowHeight: (index: number) => number
-// eslint-disable-next-line @typescript-eslint/ban-types
-): React.ForwardRefExoticComponent<React.PropsWithoutRef<{}> & React.RefAttributes<HTMLDivElement>> {
+): React.ForwardRefExoticComponent<React.PropsWithoutRef<unknown> & React.RefAttributes<HTMLDivElement>> {
   return React.useMemo(
     () =>
       // eslint-disable-next-line react/display-name
@@ -267,7 +266,7 @@ ref: React.Ref<unknown>): JSX.Element {
       height={height}
       initialScrollLeft={initialScrollLeft}
       initialScrollTop={initialScrollTop}
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+       
       onScroll={({ scrollLeft, scrollTop }) => { onScrolled(scrollLeft, scrollTop) }}
       onItemsRendered={({
         visibleRowStartIndex,
@@ -480,7 +479,7 @@ function Table ({
   )
 
   const addSelection = React.useCallback(
-    (rowIndex: number, colIndex: number) => (event: React.MouseEvent) => {
+    (rowIndex: number, colIndex: number) => () => {
       if (!isSelecting) return
       if (selection === null) return
 
@@ -540,7 +539,7 @@ function Table ({
   )
 
   React.useEffect(() => {
-    const handler = (event: MouseEvent): void => {
+    const handler = (): void => {
       if (resizingColIndex.current !== null) {
         gridRef.current.updateColumn(resizingColIndex.current)
         resizingColIndex.current = null
@@ -588,7 +587,7 @@ function Table ({
       endCol = endCol === 0 ? _result.columns.length - 1 : endCol - 1
 
       const copySelection = {
-        columns: _result.columns.slice(startCol, endCol + 1).map((c, i) => c.name),
+        columns: _result.columns.slice(startCol, endCol + 1).map((c) => c.name),
         startRow,
         endRow,
         includeRowNumbers,
@@ -598,14 +597,14 @@ function Table ({
 
       onCopyingStarted({ cellCount })
       void copy(_result.name, copySelection)
-        .then((result) => {
+        .then(() => {
           setTimeout(
             () => { onCopyingFinished() },
             300
           )
         })
         .catch((e) => {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+           
           void dialog.showError('Copying failed', e, { action: 'copying_failed' })
           onCopyingFinished()
         })
@@ -910,7 +909,7 @@ function Table ({
   )
 
   const loadMoreItems = React.useCallback(
-    async (startIndex: number, stopIndex: number): Promise<void> => {
+    async (): Promise<void> => {
       await loadMore(_result.name, _result.rows.length)
         .then((rows) => {
           const current = gridRef.current // setForceUpdate clears gridRef, so we need to save it first.

@@ -1,4 +1,4 @@
-import { $, expect } from '@wdio/globals'
+import { $, expect, browser } from '@wdio/globals'
 import { clearEditor, expectDefaultEditorText, getEditorValue, getSelectedText, getTabs, setValidLicense } from './helpers'
 
 describe('A simple scenario', () => {
@@ -72,7 +72,7 @@ describe('A simple scenario', () => {
   it('renames', async () => {
     await $('[data-testid="project-item-albatross"]').click({ button: 'right' })
     await $('[data-testid="project-context-menu-rename"]').click()
-    await expect(await getSelectedText()).toEqual('albatross')
+    await browser.waitUntil(async () => await getSelectedText() === 'albatross')
     await $('[data-testid="rename-textbox"]').setValue('bird')
     await $('[data-testid="rename-button"]').click()
     await $('[data-testid="project-item-bird"] span').click()

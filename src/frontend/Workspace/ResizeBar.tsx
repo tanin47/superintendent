@@ -25,7 +25,7 @@ export default function ResizeBar ({
     [downSize, isResizing, mouseDownX, mouseDownY, onResizing]
   )
   const upHandler = React.useCallback(
-    (event) => {
+    () => {
       setIsResizing(false)
     },
     []
@@ -65,7 +65,7 @@ export default function ResizeBar ({
     [isResizing, moveHandler, upHandler]
   )
 
-  const clonedElement = React.useMemo(
+  return React.useMemo(
     () => {
       return React.cloneElement(
         React.Children.only(children),
@@ -76,6 +76,4 @@ export default function ResizeBar ({
     },
     [downHandler, children]
   )
-
-  return clonedElement
 }

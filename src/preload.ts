@@ -4,15 +4,16 @@ import fs from 'fs'
 import readline from 'readline'
 
 if (process.env.ENABLE_WDIO === 'yes') {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   require('wdio-electron-service/preload')
   console.log('wdio-electron-service/preload is loaded.')
 }
 
 contextBridge.exposeInMainWorld('ipcRenderer', {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+   
   invoke: async (channel: string, ...args: any[]) => await ipcRenderer.invoke(channel, ...args),
   on: (channel: string, listener: (event: Electron.IpcRendererEvent, ...args: any[]) => void) => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+     
     const wrapped = (event: Electron.IpcRendererEvent, ...args: any[]): void => { listener(event, ...args) }
     ipcRenderer.on(channel, wrapped)
 

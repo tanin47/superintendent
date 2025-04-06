@@ -1,4 +1,4 @@
-import { $, $$, expect } from '@wdio/globals'
+import { $, $$, expect, browser } from '@wdio/globals'
 import { fillEditor, getEditorValue, setValidLicense } from './helpers'
 
 describe('A simple scenario', () => {
@@ -16,13 +16,13 @@ describe('A simple scenario', () => {
     await expect($$('.project-panel .item.draft')).toBeElementsArrayOfSize(3)
 
     await $('[data-testid="project-item-draft-1"]').click()
-    await expect(await getEditorValue()).toEqual('')
+    await browser.waitUntil(async () => await getEditorValue() === '')
 
     await $('[data-testid="project-item-draft-2"]').click()
-    await expect(await getEditorValue()).toEqual("select 'test'")
+    await browser.waitUntil(async () => await getEditorValue() === "select 'test'")
 
     await $('[data-testid="project-item-draft-3"]').click()
-    await expect(await getEditorValue()).toEqual('select 222')
+    await browser.waitUntil(async () => await getEditorValue() === 'select 222')
   })
 
   it('deletes a draft sql', async () => {

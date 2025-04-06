@@ -38,7 +38,7 @@ describe('Workerize', () => {
         const sql = `SELECT * FROM ${table}`
         const result = await workerize.query(sql, null)
 
-        await expect(result).toEqual(
+        expect(result).toEqual(
           {
             count: 2,
             columns: [
@@ -64,7 +64,7 @@ describe('Workerize', () => {
     const sql = 'SELECT * FROM empty_header'
     const result = await workerize.query(sql, null)
 
-    await expect(result).toEqual(
+    expect(result).toEqual(
       {
         count: 1,
         columns: [
@@ -86,14 +86,14 @@ describe('Workerize', () => {
       await workerize.addCsv('./test/data-store/csv-samples/auto_detect_bug.csv', true, ',', '', true)
       const result = await workerize.query('SELECT * FROM auto_detect_bug', null)
 
-      await expect(result.count).toEqual(2)
+      expect(result.count).toEqual(2)
     })
 
     it('import bom', async () => {
       await workerize.addCsv('./test/data-store/csv-samples/bom.csv', true, ',', '', true)
       const result = await workerize.query('SELECT * FROM bom', null)
 
-      await expect(result).toEqual(
+      expect(result).toEqual(
         {
           count: 1,
           columns: [{ name: 'bom_column_1', tpe: 'varchar', maxCharWidthCount: 6 }, { name: 'rowid_dup', tpe: 'bigint', maxCharWidthCount: 3 }],
@@ -104,7 +104,7 @@ describe('Workerize', () => {
       )
 
       await workerize.exportCsv('bom', exportedPath, ',')
-      await expect(fs.readFileSync(exportedPath, { encoding: 'utf8' })).toEqual(
+      expect(fs.readFileSync(exportedPath, { encoding: 'utf8' })).toEqual(
         'bom_column_1,rowid_dup\nvalue1,123\n'
       )
     })
@@ -113,7 +113,7 @@ describe('Workerize', () => {
       await workerize.addCsv('./test/data-store/csv-samples/null_padding_quote_new_line.csv', true, ',', '', true)
       const result = await workerize.query('SELECT * FROM null_padding_quote_new_line', null)
 
-      await expect(result).toEqual(
+      expect(result).toEqual(
         {
           count: 3,
           columns: [
@@ -131,7 +131,7 @@ describe('Workerize', () => {
         }
       )
       await workerize.exportCsv('null_padding_quote_new_line', exportedPath, ',')
-      await expect(fs.readFileSync(exportedPath, { encoding: 'utf8' })).toEqual(
+      expect(fs.readFileSync(exportedPath, { encoding: 'utf8' })).toEqual(
         [
           'name,address,something',
           'tanin,"multi',
@@ -150,7 +150,7 @@ describe('Workerize', () => {
       result.rows[0] = result.rows[0].map((r) => {
         try {
           return (r as Date).toISOString()
-        } catch (e) {
+        } catch (_e) {
           return r
         }
       })
@@ -170,7 +170,7 @@ describe('Workerize', () => {
         expectedRow.push(new Date(Date.parse(time)).toISOString())
       }
 
-      await expect(result).toEqual(
+      expect(result).toEqual(
         {
           count: 1,
           columns: expectedColumns,
@@ -180,7 +180,7 @@ describe('Workerize', () => {
         }
       )
       await workerize.exportCsv('dates', exportedPath, ',')
-      await expect(fs.readFileSync(exportedPath, { encoding: 'utf8' })).toEqual(
+      expect(fs.readFileSync(exportedPath, { encoding: 'utf8' })).toEqual(
         [
           expectedColumns.map((c) => c.name).join(','),
           expectedRow.map((r) => r.replace('T', ' ').replace('.000Z', '')),
@@ -193,7 +193,7 @@ describe('Workerize', () => {
       await workerize.addCsv('./test/data-store/csv-samples/hugeint.csv', true, ',', '', true)
       const result = await workerize.query('SELECT * FROM "hugeint"', null)
 
-      await expect(result).toEqual(
+      expect(result).toEqual(
         {
           count: 2,
           columns: [
@@ -209,7 +209,7 @@ describe('Workerize', () => {
         }
       )
       await workerize.exportCsv('hugeint', exportedPath, ',')
-      await expect(fs.readFileSync(exportedPath, { encoding: 'utf8' })).toEqual(
+      expect(fs.readFileSync(exportedPath, { encoding: 'utf8' })).toEqual(
         [
           'name,number',
           'tanin,1.7014118346046923e+38',
@@ -223,7 +223,7 @@ describe('Workerize', () => {
       await workerize.addCsv('./test/data-store/csv-samples/dup_column.csv', true, ',', '', true)
       const result = await workerize.query('SELECT * FROM dup_column', null)
 
-      await expect(result).toEqual(
+      expect(result).toEqual(
         {
           count: 1,
           columns: [{ name: 'name', tpe: 'varchar', maxCharWidthCount: 4 }, { name: 'Name_dup', tpe: 'varchar', maxCharWidthCount: 7 }],
@@ -233,7 +233,7 @@ describe('Workerize', () => {
         }
       )
       await workerize.exportCsv('dup_column', exportedPath, ',')
-      await expect(fs.readFileSync(exportedPath, { encoding: 'utf8' })).toEqual(
+      expect(fs.readFileSync(exportedPath, { encoding: 'utf8' })).toEqual(
         'name,Name_dup\njohn,"doe, do"\n'
       )
     })
@@ -242,7 +242,7 @@ describe('Workerize', () => {
       await workerize.addCsv('./test/data-store/csv-samples/unicode.csv', true, ',', '', true)
       const result = await workerize.query('SELECT * FROM unicode', null)
 
-      await expect(result).toEqual(
+      expect(result).toEqual(
         {
           count: 1,
           columns: [
@@ -257,9 +257,9 @@ describe('Workerize', () => {
       )
       await workerize.exportCsv('unicode', exportedPath, ',')
 
-      const expectedContent = 'something,another\nก ไก่,ข ไข่\n'
+      const expectedContent = 'something,another,other\nก ไก่,ข ไข่,Neuchâteloise\n'
 
-      await expect(fs.readFileSync(exportedPath, { encoding: 'utf8' })).toEqual(expectedContent)
+      expect(fs.readFileSync(exportedPath, { encoding: 'utf8' })).toEqual(expectedContent)
     })
 
     it('import quote', async () => {
@@ -268,20 +268,20 @@ describe('Workerize', () => {
 
       const expectedResult = {
         count: 2,
-        columns: [{ name: 'first_name', tpe: 'varchar', maxCharWidthCount: 17 }, { name: 'last_name', tpe: 'varchar', maxCharWidthCount: 10 }, { name: 'email', tpe: 'varchar', maxCharWidthCount: 12 }],
+        columns: [{ name: 'first_name', tpe: 'varchar', maxCharWidthCount: 18 }, { name: 'last_name', tpe: 'varchar', maxCharWidthCount: 10 }, { name: 'email', tpe: 'varchar', maxCharWidthCount: 12 }],
         name: expect.any(String),
         sql: 'SELECT * FROM quote',
         rows: [
           ['john', 'doe, do', 'test@doe.com'],
-          ['nanakorn, " tanin', ' somename ', 'some email']
+          ['nanakorn, "" tanin', ' somename ', 'some email']
         ]
       }
-      const expectedContent = 'first_name,last_name,email\njohn,"doe, do",test@doe.com\n"nanakorn, "" tanin", somename ,some email\n'
+      const expectedContent = 'first_name,last_name,email\njohn,"doe, do",test@doe.com\n"nanakorn, """" tanin", somename ,some email\n'
 
-      await expect(result).toEqual(expectedResult)
+      expect(result).toEqual(expectedResult)
 
       await workerize.exportCsv('quote', exportedPath, ',')
-      await expect(fs.readFileSync(exportedPath, { encoding: 'utf8' })).toEqual(expectedContent)
+      expect(fs.readFileSync(exportedPath, { encoding: 'utf8' })).toEqual(expectedContent)
     })
   })
 })

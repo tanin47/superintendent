@@ -46,7 +46,7 @@ export interface Workspace {
   db: Datastore
 }
 
-// eslint-disable-next-line @typescript-eslint/no-extraneous-class
+ 
 export default class Main {
   static spaces = new Map<number, Workspace>()
   static application: Electron.App
@@ -68,7 +68,7 @@ export default class Main {
       }
     }
 
-    // eslint-disable-next-line no-unreachable-loop
+     
     for (const space of Main.spaces.values()) {
       return space
     }
@@ -757,7 +757,7 @@ export default class Main {
     }
   }
 
-  static main (app: Electron.App, browserWindow: typeof BrowserWindow): void {
+  static main (app: Electron.App, _browserWindow: typeof BrowserWindow): void {
     Main.application = app
     Main.store = new Store()
     Main.buildMenu()

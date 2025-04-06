@@ -168,7 +168,7 @@ export default React.forwardRef(function CodeEditor ({
           event.keyCode === 95 // _
         ) {
           if (firstCharRecorded) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+             
             CodeMirror.commands.autocomplete(cm, undefined, { completeSingle: false })
           } else {
             firstCharRecorded = true

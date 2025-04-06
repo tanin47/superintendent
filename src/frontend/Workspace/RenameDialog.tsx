@@ -58,12 +58,12 @@ export default function RenameDialog ({
       }
 
       rename(renamingInfo.sheet.name, sanitized)
-        .then((result) => {
+        .then(() => {
           stateChangeApi.rename(renamingInfo.sheet.id, sanitized)
           onClosed()
         })
         .catch((error) => {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+           
           setErrorMsg(error.message)
         })
     },

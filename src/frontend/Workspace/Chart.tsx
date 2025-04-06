@@ -26,7 +26,7 @@ import { type ColumnType } from '../../types'
 import { DateTime } from 'luxon'
 
 ChartJs.register(
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+   
   Colors,
   BarController,
   LineController,

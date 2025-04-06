@@ -283,7 +283,7 @@ export default function Workspace ({
             </div>
             <ResizeBar
               currentSize={projectWidth}
-              onResizing={(initial, dx, dy) => {
+              onResizing={(initial, dx, _dy) => {
                 setProjectWidth(Math.min(window.innerWidth - 300, Math.max(dx + initial, 150)))
               }}
             >

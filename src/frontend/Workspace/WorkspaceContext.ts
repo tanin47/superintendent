@@ -54,7 +54,7 @@ function update (state: WorkspaceState, resultIndex: number | null = null): Work
 let draftSqlNumberRunner = 1
 export function reduce (state: WorkspaceState, action: Action): WorkspaceState {
   if (action.type === ActionType.RENAME) {
-    const index = state.results.findIndex((i) => i.base.id === action.id)!
+    const index = state.results.findIndex((i) => i.base.id === action.id)
 
     state.results[index].base.name = action.newName!
     return update(state, index)

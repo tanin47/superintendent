@@ -169,10 +169,10 @@ export default function SheetSection ({
                 key={result.base.name}
                 data-testid={`sheet-section-item-${result.base.name}`}
                 className={`tab ${result.base.id === selectedResult?.base.id ? 'selected' : ''} ${result.base instanceof DraftResult ? 'draft' : ''}`}
-                onClick={(event) => {
+                onClick={() => {
                   stateChangeApi.setSelectedResultId(result.base.id)
                 }}
-                onDoubleClick={(event) => {
+                onDoubleClick={() => {
                   if (result.base instanceof Sheet) {
                     onRenamingSheet({ sheet: result.base as SheetType, isNewTable: false })
                   }

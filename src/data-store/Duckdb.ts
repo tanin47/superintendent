@@ -74,7 +74,7 @@ export class Duckdb extends Datastore {
       }
     }
 
-    // eslint-disable-next-line no-unreachable-loop
+     
     for await (const row of stream) {
       row.forEach((candidate: string) => {
         if (!withHeader) {
@@ -126,7 +126,7 @@ export class Duckdb extends Datastore {
         try {
           await this.execChangeColumnType(table, col.name, 'timestamp', df)
           break
-        } catch (unknown) {
+        } catch (_unknown) {
           // Ignore error
         }
       }
@@ -158,7 +158,8 @@ export class Duckdb extends Datastore {
       'null_padding = true',
       // Avoid the error: The parallel scanner does not support null_padding in conjunction with quoted new lines. Please disable the parallel csv reader with parallel=false
       // This is not testable.
-      'parallel = false'
+      'parallel = false',
+      'strict_mode=false'
       // TODO: Ignoring error doesn't work well with multiline rows. No idea why. We should make it work some day.
       // 'ignore_errors = true'
       // `rejects_table = '${rejectsTable}'`
@@ -211,7 +212,9 @@ export class Duckdb extends Datastore {
           break
         }
       }
-    } catch (e) { }
+    } catch (_e) {
+      // empty
+    }
   }
 
   async rename (previousTableName: string, newTableName: string): Promise<void> {

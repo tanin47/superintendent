@@ -1,4 +1,4 @@
-import { $, $$, expect } from '@wdio/globals'
+import { $, $$, expect, browser } from '@wdio/globals'
 import { fillEditor, getEditorValue, setValidLicense } from './helpers'
 
 describe('A simple scenario', () => {
@@ -29,7 +29,7 @@ describe('A simple scenario', () => {
     await expect($('.toolbarSection .total')).not.toExist()
 
     await $('[data-testid="project-item-new_table"]').click()
-    await expect(await getEditorValue()).toEqual("select 'test'")
+    await browser.waitUntil(async () => await getEditorValue() === "select 'test'")
     await expect($('[data-testid="draft-notice"]')).not.toExist()
   })
 })

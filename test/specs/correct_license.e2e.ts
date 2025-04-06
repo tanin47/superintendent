@@ -16,9 +16,9 @@ describe('Correct license', () => {
     await $('#checkLicenseForm textarea').setValue(license)
     await $('#checkLicenseForm [data-testid="submit-button"]').click()
 
-    await expect(await $('.toolbarSection')).toExist()
+    await expect($('.toolbarSection')).toExist()
 
     await selectMenu('File', 'Enter a license')
-    await expect($('.valid-license')).toHaveText('You do not need to buy another license. You currently have a license that will expire on Sep 20, 2024.')
+    await expect($('.valid-license')).toHaveText('You do not need to buy another license. You currently have a license that will expire on 27 Mar 2026.')
   })
 })

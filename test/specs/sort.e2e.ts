@@ -1,4 +1,4 @@
-import { $, expect } from '@wdio/globals'
+import { $, expect, browser } from '@wdio/globals'
 import { expectDefaultEditorText, fillEditor, getEditorValue, setValidLicense } from './helpers'
 
 describe('Sort', () => {
@@ -111,8 +111,7 @@ describe('Sort', () => {
     await expectDefaultEditorText()
 
     await $('[data-testid="project-item-albatross"] span').click()
-    await expect(await getEditorValue()).toEqual('select * from "456sort"') // The SQL is not changed when sorted.
-
+    await browser.waitUntil(async () => await getEditorValue() === 'select * from "456sort"')
     await expect($('[data-testid="project-item-albatross"] .fa-caret-square-right')).toExist() // The isCsv marker is not replaced.
   })
 })

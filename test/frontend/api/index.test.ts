@@ -1,5 +1,3 @@
-/* eslint-disable import/first */
-
 (window.miscApi as any) = {
   isWdioEnabled: () => true
 }
