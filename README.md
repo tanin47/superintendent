@@ -14,7 +14,7 @@ You can use VSCode.
    - Run `yarn wdio --spec ./test/specs/draft_notice.e2e.ts` to run specific tests.
 4. To build the prod artifacts:
    - Mac: run `APPLEID=<EMAIL> APPLEIDPASS=<PASS> yarn run gulp release`
-   - Windows: run `CODE_SIGNING_TOOL_DIR="c:/Users/tanin/projects/CodeSignTool-v1.3.0-windows" SSL_USERNAME=tanin SSL_PASSWORD="<PASSWORD_FOR_SSL.COM>" yarn run gulp release`
+   - Windows: run ` CODE_SIGNING_TOOL_DIR="c:/Users/nina/projects/CodeSignTool-v1.3.2-windows-eSigner-file" SSL_USERNAME=tanin SSL_PASSWORD="<PASSWORD>" yarn run gulp release`
      - This requires an OTP input
    - Linux: run `yarn run gulp release`
 
