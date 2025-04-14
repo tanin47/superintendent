@@ -76,7 +76,7 @@ describe('A simple scenario', () => {
     await $('[data-testid="rename-textbox"]').setValue('bird')
     await $('[data-testid="rename-button"]').click()
     await $('[data-testid="project-item-bird"] span').click()
-    await expect(await getEditorValue()).toEqual('select 1')
+    await browser.waitUntil(async () => await getEditorValue() === 'select 1')
   })
 
   it('deletes', async () => {

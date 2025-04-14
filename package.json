@@ -1,6 +1,6 @@
 {
   "name": "superintendent",
-  "version": "6.0.0",
+  "version": "7.0.0",
   "description": "Write SQLs on CSVs",
   "license": "UNLICENSED",
   "main": "dist/prod/main.js",
@@ -49,7 +49,7 @@
       "target": {
         "target": "default",
         "arch": [
-          "x64"
+          "arm64"
         ]
       },
       "category": "public.app-category.finance",
@@ -144,7 +144,7 @@
     "nan": "^2.14.0",
     "react-modal": "^3.14.3",
     "react-virtualized-auto-sizer": "1.0.26",
-    "react-window": "tanin47/react-window#1.8.11-fix",
+    "react-window": "tanin47/react-window#84e4744a64fddee792fb7f9a5382a0f123090177",
     "react-window-infinite-loader": "1.0.10",
     "sql-formatter": "15.3.0",
     "sweetalert2": "11.10.7",

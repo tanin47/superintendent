@@ -1,4 +1,4 @@
-import { $, expect } from '@wdio/globals'
+import { $, expect, browser } from '@wdio/globals'
 import { fill, setValidLicense } from './helpers'
 
 describe('Change column type', () => {

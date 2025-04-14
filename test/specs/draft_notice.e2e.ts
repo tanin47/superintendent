@@ -1,4 +1,4 @@
-import { $, expect } from '@wdio/globals'
+import { $, expect, browser } from '@wdio/globals'
 import { clearEditor, fillEditor, getEditorValue, setValidLicense } from './helpers'
 
 describe('draft notice', () => {
@@ -50,7 +50,7 @@ describe('draft notice', () => {
     await expect($('[data-testid="project-item-draft-3"]')).toHaveElementClass(expect.stringContaining('selected'))
 
     await $('[data-testid="project-item-albatross"] span').click()
-    await expect(await getEditorValue()).toEqual('select 1, 2')
+    await browser.waitUntil(async () => await getEditorValue() == 'select 1, 2')
     await expect($('[data-testid="draft-notice"]')).not.toExist()
   })
 })
