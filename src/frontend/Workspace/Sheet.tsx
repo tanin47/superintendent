@@ -13,6 +13,7 @@ import {type ChangingColumnInfo, ChangingColumnTypeDialog} from './ChangingColum
 import {type ObjectWrapper, StateChangeApi, useDispatch} from './WorkspaceContext'
 import Chart from './Chart'
 import * as dialog from './dialog'
+import * as _ from 'lodash'
 
 interface CopyingData {
   cellCount: number
@@ -87,7 +88,8 @@ function useInnerElementType (
   cell: any,
   columnWidths: number[],
   computeRowHeight: (index: number) => number,
-  computeCumulativeRowHeight: (index: number) => number
+  computeCumulativeRowHeight: (index: number) => number,
+  totalHeight: number
 ): React.ForwardRefExoticComponent<React.PropsWithoutRef<unknown> & React.RefAttributes<HTMLDivElement>> {
   return React.useMemo(
     () =>
@@ -112,6 +114,7 @@ function useInnerElementType (
         for (let i = 1; i < columnWidths.length; i++) {
           cumulativeColumnWidths[i] = columnWidths[i] + cumulativeColumnWidths[i - 1]
         }
+        const totalWidth = cumulativeColumnWidths[cumulativeColumnWidths.length - 1]
 
         children.push(
           React.createElement(cell, {
@@ -192,7 +195,17 @@ function useInnerElementType (
         }
 
         return (
-          <div ref={ref} {...props}>
+          <div
+            ref={ref}
+            {...props}
+            style={{
+              // There are some styles here but the typing doesn't work correctly.
+              // eslint-disable-next-line react/prop-types
+              ...(props['style'] ?? {}),
+              width: totalWidth,
+              height: totalHeight
+            }}
+          >
             {children}
           </div>
         )
@@ -285,7 +298,8 @@ ref: React.Ref<unknown>): JSX.Element {
         children,
         columnWidths,
         computeRowHeight,
-        computeCumulativeRowHeight
+        computeCumulativeRowHeight,
+        computeCumulativeRowHeight(rowCount - 1)
       )}
     >
       {children}
