@@ -1,6 +1,7 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const ThreadsPlugin = require('threads-plugin')
 const { DefinePlugin } = require('webpack')
+const CopyPlugin = require("copy-webpack-plugin");
 
 const electronMainDefinePlugin = new DefinePlugin({
   'process.env.PROCESS_TYPE': JSON.stringify('main')
@@ -50,10 +51,45 @@ const electronWorkerConfiguration = {
   output: {
     filename: 'worker.js'
   },
-  externals: {
-    'better-sqlite3': 'commonjs better-sqlite3',
-    duckdb: 'commonjs duckdb'
-  }
+  externals: [
+      function ({ _context, request }, callback) {
+        if (request === '@duckdb/node-bindings') {
+          const runtimePlatformArch = `${process.platform}-${process.arch}`
+          // Externalize to a commonjs module using the request path
+          let newPath = ''
+          switch(runtimePlatformArch) {
+            case `linux-x64`:
+              newPath = '@duckdb/node-bindings-linux-x64/duckdb.node'
+              break
+            case 'linux-arm64':
+              newPath = '@duckdb/node-bindings-linux-arm64/duckdb.node'
+              break
+            case 'darwin-arm64':
+              newPath = '@duckdb/node-bindings-darwin-arm64/duckdb.node'
+              break
+            case 'darwin-x64':
+              newPath = '@duckdb/node-bindings-darwin-x64/duckdb.node'
+              break
+            case 'win32-x64':
+              newPath = '@duckdb/node-bindings-win32-x64/duckdb.node'
+              break
+            default:
+              throw new Error(`Error loading duckdb native binding: unsupported arch '${runtimePlatformArch}'`);
+          }
+
+          return callback(null, 'commonjs ' + newPath);
+        }
+
+        callback();
+      },
+    ],
+  plugins: [
+    new CopyPlugin({
+      patterns: [
+        { from: "**/libduckdb.dylib", to: "libduckdb.dylib" },
+      ],
+    }),
+  ],
 }
 
 const electronConfiguration = {
@@ -81,9 +117,6 @@ const electronConfiguration = {
     new ThreadsPlugin(),
     electronMainDefinePlugin
   ],
-  externals: {
-    'better-sqlite3': 'commonjs better-sqlite3'
-  }
 }
 
 const reactConfiguration = {

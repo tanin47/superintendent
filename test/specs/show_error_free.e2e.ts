@@ -19,7 +19,10 @@ describe('show error (free)', () => {
 
     await expect(calls.length).toEqual(1)
 
-    await expect(calls[0][0]).toEqual('Parser Error: syntax error at or near "some"')
+    await expect(calls[0][0]).toEqual("Parser Error: syntax error at or near \"some\"\n" +
+      "\n" +
+      "LINE 1: CREATE TABLE \"albatross\" AS select jibberish some-thing\n" +
+      "                                                     ^")
     await expect(calls[0][1]).toEqual({ extra: { sql: 'select jibberish some-thing' }, tags: { action: 'querying_failed' } })
   })
 })

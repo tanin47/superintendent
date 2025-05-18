@@ -62,7 +62,7 @@ export async function showError (
 
   const result = await Swal.fire({
     title: `<i class="fas fa-exclamation-circle error"></i><span class="title">${title}</span>`,
-    html: `<div class="error">${errorMessage}</div><div class="post-text">${postBody}</div>${errorReportingHtml}`,
+    html: `<div class="error">${errorMessage.trim()}</div><div class="post-text">${postBody}</div>${errorReportingHtml}`,
     customClass: {
       title: 'dialog-title',
       htmlContainer: 'dialog-content',
