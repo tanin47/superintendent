@@ -11,6 +11,25 @@ const electronRendererDefinePlugin = new DefinePlugin({
   'process.env.PROCESS_TYPE': JSON.stringify('renderer')
 })
 
+const runtimePlatformArch = process.env.TARGET_PLATFORM ? process.env.TARGET_PLATFORM : `${process.platform}-${process.arch}`
+let libduckdbFilename = ''
+
+switch(runtimePlatformArch) {
+  case `linux-x64`:
+  case 'linux-arm64':
+    libduckdbFilename = 'libduckdb.so'
+    break
+  case 'darwin-arm64':
+  case 'darwin-x64':
+    libduckdbFilename = 'libduckdb.dylib'
+    break
+  case 'win32-x64':
+    libduckdbFilename = 'duckdb.dll'
+    break
+  default:
+    throw new Error(`Error determining the duckdb lib filename: unsupported arch '${runtimePlatformArch}'`);
+}
+
 const electronPreload = {
   entry: './src/preload.ts',
   target: 'electron-preload',
@@ -54,7 +73,6 @@ const electronWorkerConfiguration = {
   externals: [
       function ({ _context, request }, callback) {
         if (request === '@duckdb/node-bindings') {
-          const runtimePlatformArch = `${process.platform}-${process.arch}`
           // Externalize to a commonjs module using the request path
           let newPath = ''
           switch(runtimePlatformArch) {
@@ -86,7 +104,11 @@ const electronWorkerConfiguration = {
   plugins: [
     new CopyPlugin({
       patterns: [
-        { from: "**/libduckdb.dylib", to: "libduckdb.dylib" },
+        {
+          from: `./node_modules/@duckdb/node-bindings-${runtimePlatformArch}/${libduckdbFilename}`,
+          to: libduckdbFilename,
+          noErrorOnMissing: true
+        },
       ],
     }),
   ],

@@ -4,21 +4,50 @@ Superintendent.app
 You can use VSCode.
 
 1. `yarn` to install the dependencies. 
-   1. We may need to `cp -R ~/projects/react-window/dist ./node_modules/react-window/` because the dist is not pulled.
 2. Run `yarn run electron-builder install-app-deps` to build native binaries.
 3. run `yarn run build:watch` and `yarn run start` in 2 separate windows to start Electron with hot reload.
-   - or `yarn run gulp start`
 4. Run tests: `yarn install --force` and `yarn jest`.
    - Run specific test based on pattern: `yarn jest -t <substring>`
 5. Run UI tests: `yarn run electron-builder install-app-deps` and `yarn wdio`. 
    - Run `yarn wdio --spec ./test/specs/draft_notice.e2e.ts` to run specific tests.
 4. To build the prod artifacts:
-   - Mac: run `APPLEID=<EMAIL> APPLEIDPASS=<PASS> yarn run gulp release`
-   - Windows: run ` CODE_SIGNING_TOOL_DIR="c:/Users/nina/projects/CodeSignTool-v1.3.2-windows-eSigner-file" SSL_USERNAME=tanin SSL_PASSWORD="<PASSWORD>" yarn run gulp release`
-     - This requires an OTP input
-   - Linux: run `yarn run gulp release`
+   - Mac: run `APPLEID=<EMAIL> APPLEIDPASS=<PASS> yarn run electron-builder install-app-deps && yarn dist:mac`
+   - Windows: please see the Linux & Window build because we use the docker build approach.
+   - Linux: please see the Linux & Window build because we use the docker build approach.
 
-On Windows, we use MINGW64, not the Command-Line Tool.
+On Windows, we use git-bash, not the Command-Line Tool.
+
+Linux & Window build
+------------
+
+We currently use the Docker option of electron-builder. However, we have to use a modified Docker image due to the new yarn version. 
+See: https://github.com/electron-userland/electron-builder/issues/9040
+
+1. Download the CodeSignTool from SSL.com: https://www.ssl.com/guide/esigner-codesigntool-command-guide/
+2. Unzip and put it under `./scripts/CodeSignTool-v1.3.2`.
+3. Run `chmod 755 /scripts/CodeSignTool-v1.3.2/CodeSignTool.sh`
+4. Go to `cd ./scripts`
+5. Run: `docker buildx build -t electronuserland/builder:wine --platform=linux/amd64 .`
+6. Go to the project root with `cd ..`
+7. Run the below docker command ([ref](https://www.electron.build/multi-platform-build.html#docker)):
+
+```
+docker run --rm -ti \
+  --env-file <(env | grep -iE 'DEBUG|NODE_|ELECTRON_|YARN_|NPM_|CI|CIRCLE|TRAVIS_TAG|TRAVIS|TRAVIS_REPO_|TRAVIS_BUILD_|TRAVIS_BRANCH|TRAVIS_PULL_REQUEST_|APPVEYOR_|CSC_|GH_|GITHUB_|BT_|AWS_|STRIP|BUILD_') \
+  --env ELECTRON_CACHE="/root/.cache/electron" \
+  --env ELECTRON_BUILDER_CACHE="/root/.cache/electron-builder" \
+  --platform linux/amd64 \
+  -v ${PWD}:/project \
+  -v ${PWD##*/}-node-modules:/project/node_modules \
+  -v ~/.cache/electron:/root/.cache/electron \
+  -v ~/.cache/electron-builder:/root/.cache/electron-builder \
+  electronuserland/builder:wine
+```
+
+Now that you are in the docker console:
+
+- Run `yarn && yarn dist:linux` for Linux
+- Run `npm install --force && yarn && SSL_USERNAME=<ssl_com_user> SSL_PASSWORD=<ssl_com_pass> yarn dist:win` for Windows
 
 Errors
 -------
@@ -37,7 +66,7 @@ Windows Code Signing
 For convenience, here are the 2 files we should verify:
 
 * `powershell -command "Get-AuthenticodeSignature -FilePath ./electron-builder/out/win-unpacked/superintendent.exe"`
-* `powershell -command "Get-AuthenticodeSignature -FilePath \"./electron-builder/out/superintendent Setup 5.2.0.exe\""`
+* `powershell -command "Get-AuthenticodeSignature -FilePath \"./electron-builder/out/superintendent Setup 7.0.0.exe\""`
 
 Mac's notarization
 --------------------
@@ -50,28 +79,3 @@ spctl -a -vvv -t install ./electron-builder/out/mac-arm64/superintendent.app
 
 The DMG cannot be, and is not, notarized 
 
-Testing
---------
-
-1. Test importing bom.csv
-2. Test importing a large csv file (600MB)
-3. Test importing quote.csv
-4. Test importing height_weight.csv + user.csv and do a join.
-5. Test exporting a table especially windows
-6. Test import sqlite
-7. Test exporting schema
-
-License for testing on prod
-----------------------------
-
-```
----- Superintendent license ----
-Name: tanin
-Email: tanin47@gmail.com
-Expired: 2023-07-29T04:06:28.968065
-Signature:
-KKJH+knQXSf98lTEsCVie09ihhirm5rx2Vedaih9ZLj/mJ67Zoc3Av3jun9wQH84
-pVVSDKPETB9TaDzMwus6/qXcDyyxVftUE7m0BA4LpjjEGvQPfR6O8trPPc+Iykr4
-kIxCJ2VClFHW33JDFjlhcs77j6ES9Eeh/kSkw12rpXw=
----- End of Superintendent license ----
-```

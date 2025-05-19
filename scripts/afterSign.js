@@ -24,14 +24,21 @@ exports.default = async function (context) {
       appleIdPassword: process.env.APPLEIDPASS
     })
   } else if (electronPlatformName === 'win32') {
-    console.log('Signing the app for win32.')
+    console.log(`Signing the app for ${electronPlatformName}.`)
 
-    const codeSigningToolDir = readEnv('CODE_SIGNING_TOOL_DIR')
+    const codeSigningToolDir = './scripts/CodeSignTool-v1.3.2'
     const sslUsername = readEnv('SSL_USERNAME')
     const sslPassword = readEnv('SSL_PASSWORD')
 
-    const binary = 'CodeSignTool.bat'
-    const args = ['sign', `-username="${sslUsername}"`, `-password="${sslPassword}"`, '-override', `-input_file_path="${appOutDir}/${appName}.exe"`]
+    const binary = '/bin/bash'
+    const args = [
+      './CodeSignTool.sh',
+      'sign',
+      `-username="${sslUsername}"`,
+      `-password="${sslPassword}"`,
+      '-override',
+      `-input_file_path="${appOutDir}/${appName}.exe"`
+    ]
     const options = { cwd: codeSigningToolDir, stdio: 'inherit', shell: true }
     console.log('Executing:', binary, args, options)
     execFileSync(binary, args, options)
