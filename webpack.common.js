@@ -107,7 +107,7 @@ const electronWorkerConfiguration = {
         {
           from: `./node_modules/@duckdb/node-bindings-${runtimePlatformArch}/${libduckdbFilename}`,
           to: libduckdbFilename,
-          noErrorOnMissing: true
+          noErrorOnMissing: false
         },
       ],
     }),
