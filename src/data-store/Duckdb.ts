@@ -12,7 +12,13 @@ import {
 } from '../types'
 import {getRandomBird} from './Birds'
 import {type Env} from './worker'
-import {DuckDBConnection, DuckDBInstance, DuckDBMaterializedResult, DuckDBTypeId} from '@duckdb/node-api';
+import {
+  DuckDBArrayType,
+  DuckDBConnection,
+  DuckDBInstance,
+  DuckDBMaterializedResult,
+  DuckDBTypeId
+} from '@duckdb/node-api';
 
 interface ColumnDetectionResult {
   columns: QueryColumn[]
@@ -39,7 +45,7 @@ for (const df of OTHER_DATE_FORMATS) {
   }
 }
 
-function convertTypeIdToColumnType(typeId: DuckDBTypeId): string | null {
+function convertTypeIdToSupportedUserFacingColumnType(typeId: DuckDBTypeId): string | null {
   switch (typeId) {
     case DuckDBTypeId.BIGINT:
       return 'bigint'
@@ -51,6 +57,8 @@ function convertTypeIdToColumnType(typeId: DuckDBTypeId): string | null {
       return 'varchar'
     case DuckDBTypeId.TIMESTAMP:
       return 'timestamp'
+    case DuckDBTypeId.LIST:
+      return 'list'
     default:
       return null
   }
@@ -369,6 +377,13 @@ export class Duckdb extends Datastore {
 
         if (columnTypes[i].typeId === DuckDBTypeId.TIMESTAMP) {
           value = (row[selection.columns[i]] as Date | null)?.toISOString() ?? ''
+        } else if (columnTypes[i].typeId === DuckDBTypeId.LIST) {
+          const pending = row[selection.columns[i]] as Array<any> | null
+          if (pending !== null) {
+            value = JSON.stringify(pending)
+          } else {
+            value = ''
+          }
         } else {
           value = (row[selection.columns[i]] as string | null) ?? ''
         }
@@ -405,7 +420,7 @@ export class Duckdb extends Datastore {
     const timestampTypes = new Set([DuckDBTypeId.TIME, DuckDBTypeId.DATE])
 
     for await (const [index, columnType] of columnTypes.entries()) {
-      const tpe = convertTypeIdToColumnType(columnType.typeId)
+      const tpe = convertTypeIdToSupportedUserFacingColumnType(columnType.typeId)
       if (tpe !== null) {continue}
 
       if (intTypes.has(columnType.typeId)) {
@@ -414,6 +429,9 @@ export class Duckdb extends Datastore {
         await this.execChangeColumnType(table, columnNames[index], 'DOUBLE')
       } else if (timestampTypes.has(columnType.typeId)) {
         await this.execChangeColumnType(table, columnNames[index], 'TIMESTAMP')
+      } else if (columnType.typeId === DuckDBTypeId.ARRAY) {
+        const arrayType = columnType as DuckDBArrayType
+        await this.execChangeColumnType(table, columnNames[index], `${arrayType.valueType.toString()}[]`)
       } else {
         throw new Error(`Unable to normalize the data type: ${tpe} of the column ${columnNames[index]} in the table ${table}`)
       }
@@ -459,7 +477,7 @@ export class Duckdb extends Datastore {
     const metadataResult = await this.db.run(metadataSql)
 
     const columns: QueryColumn[] = columnTypes.map((colType, index) => {
-      const userFacingType = convertTypeIdToColumnType(colType.typeId)
+      const userFacingType = convertTypeIdToSupportedUserFacingColumnType(colType.typeId)
       if (userFacingType === null) {
         throw new Error(`The column ${columnNames[index]} of the table ${table} has an unsupported column type: ${colType.typeId}`)
       }

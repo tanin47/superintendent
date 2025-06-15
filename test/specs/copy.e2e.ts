@@ -22,8 +22,8 @@ describe('A simple scenario', () => {
   })
 
   it('copy row', async () => {
-    const sql = "select 'test', 'yo', timestamp '2010-12-01'\n" +
-          "union all select 'aaa', 'bbb', timestamp '2012-02-24'"
+    const sql = "select 'test', 'yo', timestamp '2010-12-01', ['9', '8'], array_value(1, 2, 3)\n" +
+          "union all select 'aaa', 'bbb', timestamp '2012-02-24', ['6'], array_value(4, 5, 6)"
 
     await clearEditor()
     await $('.CodeMirror').click()
@@ -36,7 +36,7 @@ describe('A simple scenario', () => {
     await clearEditor()
     await browser.keys([Key.Ctrl, 'v'])
 
-    await expect(await getEditorValue()).toEqual('aaa,bbb,2012-02-24T00:00:00.000Z')
+    await expect(await getEditorValue()).toEqual('aaa,bbb,2012-02-24T00:00:00.000Z,["6"],[4,5,6]')
   })
 
   it('copy column', async () => {
@@ -56,6 +56,6 @@ describe('A simple scenario', () => {
     await clearEditor()
     await browser.keys([Key.Ctrl, 'v'])
 
-    await expect(await getEditorValue()).toEqual("'test','yo',CAST('2010-12-01' AS TIMESTAMP)\ntest,yo,2010-12-01T00:00:00.000Z\naaa,bbb,2012-02-24T00:00:00.000Z")
+    await expect(await getEditorValue()).toEqual("'test','yo',CAST('2010-12-01' AS TIMESTAMP),main.list_value('9', '8'),array_value(1, 2, 3)\ntest,yo,2010-12-01T00:00:00.000Z,[\"9\",\"8\"],[1,2,3]\naaa,bbb,2012-02-24T00:00:00.000Z,[\"6\"],[4,5,6]")
   })
 })

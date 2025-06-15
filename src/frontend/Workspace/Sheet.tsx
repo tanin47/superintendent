@@ -833,6 +833,8 @@ function Table ({
           renderedValue = (value as Date).toISOString()
         } else if (columnType === 'double') {
           renderedValue = DOUBLE_FORMATTER.format(value as number)
+        } else if (columnType === 'list') {
+          renderedValue = JSON.stringify(value as Array<any>)
         }
       }
 
