@@ -10,7 +10,7 @@ export abstract class Datastore {
   abstract open (): Promise<void>
   abstract close (): Promise<void>
 
-  abstract addCsv (filePath: string, withHeader: boolean, separator: string, replace: string, autoDetect: boolean): Promise<QueryResult>
+  abstract addCsv (filePath: string, withHeader: boolean, separator: string, _replace: string, autoDetect: boolean): Promise<QueryResult>
   abstract exportCsv (table: string, filePath: string, delimiter: string): Promise<void>
 
   abstract query (sql: string, table: string | null): Promise<QueryResult>

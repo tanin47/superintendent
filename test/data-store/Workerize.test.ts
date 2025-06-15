@@ -81,6 +81,31 @@ describe('Workerize', () => {
     )
   })
 
+  it('handles escaping by double double quotes', async () => {
+    await workerize.addCsv('./test/data-store/csv-samples/escape_by_double.csv', true, ',', '', true)
+
+    const sql = 'SELECT * FROM escape_by_double'
+    const result = await workerize.query(sql, null)
+
+    expect(result).toEqual(
+      {
+        count: 3,
+        columns: [
+          { name: 'id', maxCharWidthCount: 1, tpe: 'bigint' },
+          { name: 'description', maxCharWidthCount: 19, tpe: 'varchar' },
+          { name: 'is_enabled', maxCharWidthCount: 5, tpe: 'boolean' }
+        ],
+        name: expect.any(String),
+        sql,
+        rows: [
+          [1n, 'wall', false],
+          [2n, 'room door 4", green', true],
+          [3n, 'shelf', false]
+        ]
+      }
+    )
+  })
+
   describe('import/export', () => {
     it('import autodetect', async () => {
       await workerize.addCsv('./test/data-store/csv-samples/auto_detect_bug.csv', true, ',', '', true)
@@ -268,15 +293,15 @@ describe('Workerize', () => {
 
       const expectedResult = {
         count: 2,
-        columns: [{ name: 'first_name', tpe: 'varchar', maxCharWidthCount: 18 }, { name: 'last_name', tpe: 'varchar', maxCharWidthCount: 10 }, { name: 'email', tpe: 'varchar', maxCharWidthCount: 12 }],
+        columns: [{ name: 'first_name', tpe: 'varchar', maxCharWidthCount: 17 }, { name: 'last_name', tpe: 'varchar', maxCharWidthCount: 10 }, { name: 'email', tpe: 'varchar', maxCharWidthCount: 12 }],
         name: expect.any(String),
         sql: 'SELECT * FROM quote',
         rows: [
           ['john', 'doe, do', 'test@doe.com'],
-          ['nanakorn, "" tanin', ' somename ', 'some email']
+          ['nanakorn, " tanin', ' somename ', 'some email']
         ]
       }
-      const expectedContent = 'first_name,last_name,email\njohn,"doe, do",test@doe.com\n"nanakorn, """" tanin", somename ,some email\n'
+      const expectedContent = 'first_name,last_name,email\njohn,"doe, do",test@doe.com\n"nanakorn, "" tanin", somename ,some email\n'
 
       expect(result).toEqual(expectedResult)
 

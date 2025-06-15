@@ -179,6 +179,7 @@ export class Duckdb extends Datastore {
       `delim = '${separator}'`,
       `header = ${withHeader}`,
       `columns = ${columnsParam}`,
+      'escape = \'"\'',
       // We already do sniff_csv. We don't need to do auto detection again.
       'auto_detect = false',
       'null_padding = true',
@@ -454,9 +455,8 @@ export class Duckdb extends Datastore {
         return `MAX(COALESCE(NULLIF(INSTR(CAST("${columnNames[index]}" AS text), x'0a'), 0), LENGTH(CAST("${columnNames[index]}" AS text)))) AS "${columnNames[index]}"`
       }
     })
-    const metdataSql = `SELECT ${lengthClauses.join(',')} FROM (${sampleSql})`
-
-    const metadataResult = await this.db.run(metdataSql)
+    const metadataSql = `SELECT ${lengthClauses.join(',')} FROM (${sampleSql})`
+    const metadataResult = await this.db.run(metadataSql)
 
     const columns: QueryColumn[] = columnTypes.map((colType, index) => {
       const userFacingType = convertTypeIdToColumnType(colType.typeId)
@@ -479,9 +479,10 @@ export class Duckdb extends Datastore {
         columnMap[col.name] = col
       }
 
-      for (const key in metadataResult[0]) {
-        if (Object.prototype.hasOwnProperty.call(metadataResult[0], key) && Object.prototype.hasOwnProperty.call(columnMap, key)) {
-          columnMap[key].maxCharWidthCount = Number(metadataResult[0][key]) || 0
+      const row = (await metadataResult.getRowObjectsJS())[0]
+      for (const key in row) {
+        if (row[key] && Object.prototype.hasOwnProperty.call(columnMap, key)) {
+          columnMap[key].maxCharWidthCount = Number(row[key])
         }
       }
     }
