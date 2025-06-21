@@ -3,7 +3,7 @@
 }
 
 import { cryptoApi, storeApi } from '../../../src/external'
-import { checkIfLicenseIsValid, extractLicenseInfo, getAiApiSignature } from '../../../src/frontend/api'
+import { checkIfLicenseIsValid, extractLicenseInfo } from '../../../src/frontend/api'
 import fs from 'fs'
 
 describe('api', () => {
@@ -44,14 +44,5 @@ ${signature}
       success: false,
       errorMessage: 'The license key has expired. Please buy a new license at superintendent.app.'
     })
-  })
-
-  it('signs a signature for the AI endpoint', async () => {
-    (window as any).cryptoApi = cryptoApi
-
-    const contract = JSON.parse(fs.readFileSync('./test/frontend/api/contract/ai_api_signature.json').toString()) as { body: string, timestamp: string, user: string, signature: string }
-
-    const signature = getAiApiSignature(contract.body, contract.timestamp, contract.user)
-    await expect(signature).toStrictEqual(contract.signature)
   })
 })

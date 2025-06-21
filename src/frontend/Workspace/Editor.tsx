@@ -14,12 +14,10 @@ import Button from './Button'
 import { altOptionChar, ctrlCmdChar } from './constants'
 import * as dialog from './dialog'
 import { useFloating, useClientPoint, useInteractions, useDismiss, useTransitionStyles, shift } from '@floating-ui/react'
-import { type AiResult, hasValidLicense, maybeShowPurchaseNotice, query } from '../api'
+import { hasValidLicense, maybeShowPurchaseNotice, query } from '../api'
 import { StateChangeApi, type ObjectWrapper, useDispatch, useWorkspaceContext } from './WorkspaceContext'
 import { type RenameDialogInfo } from './RenameDialog'
-import AskAi from './AskAi'
 import CodeEditor, { type CodeEditorRef } from './CodeEditor'
-import { formatSql } from './helper'
 
 function ContextMenu ({
   open,
@@ -131,13 +129,11 @@ export default React.forwardRef(function Editor ({
   onGoToUpdateMode: () => void
 }, ref: React.ForwardedRef<EditorRef>): JSX.Element {
   const codeMirrorInstance = React.useRef<CodeEditorRef>(null)
-  const askAiRef = React.useRef<any>(null)
   const [isQueryLoading, setIsQueryLoading] = React.useState<boolean>(false)
   const [shownComposableItemId, setShownComposableItemId] = React.useState<string | null>(null)
   const [shouldShowDraftNotice, setShouldShowDraftNotice] = React.useState<boolean>(false)
   const [shouldShowCsvNotice, setShouldShowCsvNotice] = React.useState<boolean>(false)
   const [contextMenuOpenInfo, setContextMenuOpenInfo] = React.useState<ContextMenuOpenInfo | null>(null)
-  const [showAiChat, setShowAiChat] = React.useState<boolean>(false)
 
   const workspaceState = useWorkspaceContext()
   const dispatch = useDispatch()
@@ -373,54 +369,6 @@ export default React.forwardRef(function Editor ({
     [show]
   )
 
-  const onPerformingAiResult = React.useCallback(
-    async (result: AiResult, isAutorun: boolean): Promise<void> => {
-      if (result.action === 'replace_selected_part') {
-        codeMirrorInstance.current!.replaceSelection(result.result, 'around')
-      } else if (result.action === 'replace_currently_viewed_sql') {
-        codeMirrorInstance.current?.setValue(formatSql(result.result))
-      } else if (result.action === 'make_new_sql') {
-        if (codeMirrorInstance.current?.getValue().trim()) {
-          makeNewSql(formatSql(result.result))
-        } else {
-          codeMirrorInstance.current?.setValue(formatSql(result.result))
-        }
-      } else {
-        throw new Error()
-      }
-
-      if (isAutorun) {
-        setTimeout(
-          () => { void runSql() },
-          1
-        )
-      }
-    },
-    [makeNewSql, runSql]
-  )
-
-  const toggleAiChat = React.useCallback(
-    () => {
-      setShowAiChat((current) => {
-        const newValue = !current
-
-        setTimeout(
-          () => {
-            if (newValue) {
-              askAiRef.current?.focus()
-            } else {
-              codeMirrorInstance.current?.focus()
-            }
-          },
-          1
-        )
-
-        return newValue
-      })
-    },
-    []
-  )
-
   React.useEffect(
     () => {
       const handler = (event): boolean => {
@@ -429,11 +377,6 @@ export default React.forwardRef(function Editor ({
 
         if (event.code === 'KeyU' && (event.metaKey || event.ctrlKey)) {
           onGoToUpdateMode()
-          return false
-        }
-
-        if (event.code === 'KeyI' && (event.metaKey || event.ctrlKey)) {
-          toggleAiChat()
           return false
         }
 
@@ -470,7 +413,7 @@ export default React.forwardRef(function Editor ({
         document.removeEventListener('keydown', handler)
       }
     },
-    [runSql, makeNewSql, toggleAiChat, onGoToUpdateMode, show, formatCodeEditor]
+    [runSql, makeNewSql, onGoToUpdateMode, show, formatCodeEditor]
   )
 
   return (
@@ -516,15 +459,6 @@ export default React.forwardRef(function Editor ({
               New
               <span className="short-key">{ctrlCmdChar()} N</span>
             </Button>
-            <span className="separator" />
-            <Button
-                onClick={() => { toggleAiChat() }}
-                icon={<i className="fas fa-magic"></i>}
-                testId="toggle-ai"
-              >
-              AI
-              <span className="short-key">{ctrlCmdChar()} I</span>
-            </Button>
           </div>
           <div className="right">
             <Button
@@ -560,15 +494,6 @@ export default React.forwardRef(function Editor ({
           This is an imported CSV. You cannot modify its SQL.
         </div>
       )}
-      <AskAi
-        ref={askAiRef}
-        show={showAiChat}
-        onGetContext={() => ({
-          selection: codeMirrorInstance.current!.getSelection(),
-          currentSql: codeMirrorInstance.current!.getValue()
-        })}
-        onSuccess={async (result, isAutorun) => { await onPerformingAiResult(result, isAutorun) }}
-      />
       <div
         style={{
           position: 'relative',

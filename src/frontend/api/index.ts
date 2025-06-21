@@ -43,16 +43,6 @@ export function setErrorReportingOptIn (isReporting: boolean): void {
   window.storeApi.set(ERROR_REPORTING_OPT_IN_KEY, isReporting)
 }
 
-export const AI_DATA_NOTICE_SHOWN_AT_KEY = 'aiDataNoticeShownAt'
-
-export function getAiDataNoticeShownAt (): number | null {
-  return window.storeApi.get(AI_DATA_NOTICE_SHOWN_AT_KEY) as (number | undefined) ?? null
-}
-
-export function setAiDataNoticeShownAt (): void {
-  window.storeApi.set(AI_DATA_NOTICE_SHOWN_AT_KEY, new Date().getTime())
-}
-
 export const PURCHASE_NOTICE_SHOWN_AT_KEY = 'purchaseNoticeShownAt'
 
 export function getPurchaseNoticeShownAt (): number | null {
@@ -416,97 +406,4 @@ export async function changeColumnType (result: Result, columnName: string, newT
         throw newResult.message
       }
     })
-}
-
-export interface AiQuery {
-  description: string
-  sql: string
-  isNewQuery: boolean
-}
-
-export interface AiResult {
-  result: string
-  description: string
-  action: 'replace_selected_part' | 'replace_currently_viewed_sql' | 'make_new_sql'
-}
-
-export const MACHINE_USER_NAME_KEY = 'machineUserName'
-
-function getMachineUsername (): string {
-  let user = window.storeApi.get(MACHINE_USER_NAME_KEY)
-
-  if (!user) {
-    user = `user-${new Date().getTime()}-${Math.random()}`
-    window.storeApi.set(MACHINE_USER_NAME_KEY, user)
-  }
-
-  return user
-}
-
-const AI_PRIVATE_KEY = 'MIICdQIBADANBgkqhkiG9w0BAQEFAASCAl8wggJbAgEAAoGBAI3vGHwB1si7ak1fprAFkRUmfHtACNuFxLodogeS73yqIMrSlJh6+hpSmT9dOpuEtrUYVesTbUzhz6vA3VaGxg6cw59uZ7LrGU+XPvLOh6AhBiMfW86oZcKE4CmjyN+8j37AwF3l/Apg5EGr/qY74zrutCeYPjb2KH5JFArmvcozAgMBAAECgYBX0caOg/zHet7NPQ+//dHFCmkfQYG5gk008zzb/thbhFCB7kWvCvhQ7SaRBDhNHZKG/qW6q+yHE3kRRmYtMXq9fwukmnZFmN+3yjSk9r4wDVcZs1Ev+iFdSGTBrZ48rtSwq3yq17D34wOPdZEUmRP/XRHzEeXY/r6v3bIYq5hHQQJBAPqsJsZapihGIeyp1npuZOR3+9M0ufa27Nvq+O0GgOB+7gNU8XabzupPvPQU9ChWobfWkHK4n+caeWzCSYtd2fECQQCQ81L9xBgeF7+Do9NdTv1R2UYg45jliy5wCat6V7A0ZyKS1cLMGvQ2bdDJB+WaiL6h1zaUt3VrGmbQT9iuCKJjAkB1iBIGHqqZZ4iwdlFhxjD4Dmm8dZRb4RjdZCaiu9HhcKIYXdN5UUSLCCgIKWrxHu1kTO4dXANdUERuggoJlk+BAkBcJKIEOWzPbG9NQo5xiW4VYtZmv+gJO4HorOz6F9Ymac2bpBFx6EyIcSTBNqjppLXycbn7regRjrX/BFMMxuZbAkA5361DsGscHZLMFP8Yyu+lDw8olStqd8KdYiy8P2We642APc2o2YqL3K10S+UHaaRpElSedEXthQzJ2MikJYWp'
-
-export function getAiApiSignature (body: string, timestamp: string, user: string): string {
-  const content = [body, timestamp, user].join('--')
-  return window.cryptoApi.sign(
-    'sha1',
-    content,
-    '-----BEGIN PRIVATE KEY-----\n' + AI_PRIVATE_KEY + '\n-----END PRIVATE KEY-----'
-  )
-}
-
-export async function askAi (command: string, selection: string | null, currentSql: string | null, sheets: Result[]): Promise<AiResult> {
-  void trackEvent('ask_ai')
-
-  try {
-    const timestamp = new Date().getTime().toString()
-    const user = getMachineUsername()
-
-    if (!selection) { selection = null }
-    if (!currentSql || selection) { currentSql = null }
-
-    const body = JSON.stringify({
-      command,
-      selection,
-      currentSql,
-      tables: sheets.map((csv) => {
-        return {
-          name: csv.name,
-          columns: csv.columns.map((column) => {
-            return {
-              name: column.name,
-              type: column.tpe
-            }
-          })
-        }
-      })
-    })
-    const signature = getAiApiSignature(body, timestamp, user)
-
-    const resp = await fetch(
-      'https://superintendent.app/ai/ask',
-      // 'http://localhost:9000/ai/ask',
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Superintendent.app Timestamp=${timestamp}, User=${user}, Signature=${signature}`,
-          'Content-Type': 'application/json'
-        },
-        body
-      }
-    )
-
-    const json = await resp.json()
-    void trackEvent('ask_ai_succeeded')
-
-    if (json.success) {
-      return json.response
-    } else if (json.errors) {
-      throw new Error(json.errors[0] as string)
-    } else {
-      throw new Error('Unknown error has occurred.')
-    }
-  } catch (e) {
-    void trackEvent('ask_ai_failed')
-    throw e
-  }
 }
