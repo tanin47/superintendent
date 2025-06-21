@@ -1,0 +1,113 @@
+@use './fontawesome/css/all';
+
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('./fonts/JetBrainsMono-Regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Dosis';
+  src: url('./fonts/Inter-Regular.ttf') format('woff2');
+}
+
+.fa, .fas {
+  font-family: "Font Awesome 5 Free" !important;
+}
+
+html {
+}
+
+.swal2-popup {
+  font-family: 'Dosis', sans-serif !important;
+  * {
+    font-family: 'Dosis', sans-serif !important;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.link {
+  color: #0645AD;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+input[type="text"] {
+  border: 1px solid #333;
+
+  &:focus {
+    outline: none;
+  }
+}
+
+.modal {
+  position: fixed;
+  background-color: white;
+  top: 50%;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  transform: translate(-50%, -50%);
+  border-radius: 5px;
+  padding: 20px;
+  color: #333;
+
+  font-family: 'Dosis', sans-serif !important;
+  * {
+    font-family: 'Dosis', sans-serif !important;
+  }
+
+  button {
+    border: 0;
+    border-radius: 5px;
+    background-color: #333;
+    color: #fff;
+    padding: 8px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+
+    &.main {
+      background-color: #228B22;
+
+      .short-key {
+        background-color: #66CF66;
+      }
+    }
+
+    &.cancel {
+      background-color: #B22222;
+
+      .short-key {
+        background-color: #F66666;
+      }
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .short-key {
+      margin-left: 8px;
+      padding: 1px 2px 1px 1px;
+      border-radius: 2px;
+      font-size: 10px;
+      color: #444;
+    }
+  }
+}
+
+.modal-overlay {
+  z-index: 1059;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,.7);
+}
