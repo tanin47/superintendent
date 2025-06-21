@@ -13,7 +13,7 @@ You can use VSCode.
 5. Run tests: `npm install --force && yarn install`.
    - We need this to install `@duckdb/node-bindings-win32-x64` and `@duckdb/node-bindings-linux-x64`
 6. To build the prod artifacts:
-   - Mac: run `APPLEID=<EMAIL> APPLEIDPASS=<PASS> yarn dist:mac`
+   - Mac: run `GH_TOKEN=<github_token> APPLEID=<EMAIL> APPLEIDPASS=<PASS> yarn dist:mac`
    - Windows: please see the Linux & Window build because we use the docker build approach.
    - Linux: please see the Linux & Window build because we use the docker build approach.
 
@@ -48,8 +48,8 @@ docker run --rm -ti \
 
 Now that you are in the docker console:
 
-- Run `yarn && yarn dist:linux` for Linux
-- Run `yarn && SSL_USERNAME=<ssl_com_user> SSL_PASSWORD=<ssl_com_pass> yarn dist:win` for Windows
+- Run `yarn && GH_TOKEN=<github_token> yarn dist:linux` for Linux
+- Run `yarn && GH_TOKEN=<github_token> SSL_USERNAME=<ssl_com_user> SSL_PASSWORD=<ssl_com_pass> yarn dist:win` for Windows
 
 Errors
 -------

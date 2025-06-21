@@ -18,6 +18,7 @@ import path from 'path'
 import os from 'os'
 import archiver from 'archiver'
 import JSZip from 'jszip'
+import {autoUpdater} from 'electron-updater';
 
 import { trackEvent, initialize } from './telemetryMain'
 
@@ -46,7 +47,6 @@ export interface Workspace {
   db: Datastore
 }
 
- 
 export default class Main {
   static spaces = new Map<number, Workspace>()
   static application: Electron.App
@@ -317,14 +317,6 @@ export default class Main {
 
   private static getExportDelimiter (): ExportDelimiter {
     return (Main.store.get('exportDelimiter') as (ExportDelimiter | undefined)) ?? 'comma'
-  }
-
-  private static getLatestUpdateNoticeShownAt (): number | null {
-    return Main.store.get('latestUpdateNoticeShownAt') as (number | undefined) ?? null
-  }
-
-  static setLatestUpdateNoticeShownAt (): void {
-    Main.store.set('latestUpdateNoticeShownAt', new Date().getTime())
   }
 
   private static buildMenu (): void {
@@ -614,37 +606,6 @@ export default class Main {
     return space
   }
 
-  static async maybeShowUpdateNotice (space: Workspace): Promise<void> {
-    const latest = Main.getLatestUpdateNoticeShownAt()
-
-    if (latest === null) {
-      Main.setLatestUpdateNoticeShownAt()
-      return
-    }
-
-    const now = new Date().getTime()
-
-    if ((now - latest) > (35 * 86400 * 1000)) {
-      void trackEvent('show_update_notice')
-      void dialog.showMessageBox(
-        space.window,
-        {
-          type: 'info',
-          buttons: ['Go to our website', 'Close'],
-          defaultId: 0,
-          title: 'Check new update',
-          message: 'Superintendent.app releases a new update regularly.\n\nPlease check a new update on our website.'
-        }
-      )
-        .then((choice) => {
-          if (choice.response === 0) {
-            void shell.openExternal('https://superintendent.app/?ref=update')
-          }
-        })
-      Main.setLatestUpdateNoticeShownAt()
-    }
-  }
-
   static showPurchaseNotice (): void {
     void trackEvent('show_purchase_notice')
 
@@ -741,8 +702,7 @@ export default class Main {
       return await Main.wrapResponse(Main.downloadCsv(Main.getSpace(event), table, Main.getExportDelimiter()))
     })
 
-    const space = await Main.makeWorkspace()
-    await Main.maybeShowUpdateNotice(space)
+    const _space = await Main.makeWorkspace()
 
     if (process.platform === 'darwin') {
       const dockMenu = Menu.buildFromTemplate([
@@ -755,6 +715,8 @@ export default class Main {
       ])
       Main.application.dock?.setMenu(dockMenu)
     }
+
+    void autoUpdater.checkForUpdatesAndNotify()
   }
 
   static main (app: Electron.App, _browserWindow: typeof BrowserWindow): void {
