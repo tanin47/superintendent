@@ -19,6 +19,8 @@ yarn-error.log
 chromedriver
 chromedriver.exe
 
+/secrets
+
 out/
 scripts/CodeSignTool-v1.3.2-windows
 scripts/CodeSignTool-v1.3.2
