@@ -1,26 +1,52 @@
 Superintendent.app
 ====================
 
-You can use VSCode.
+Your SQL spreadsheet app
+
+You can write SQL to query and visualize gigabytes of CSV files on your local machine. 
+Superintendent.app is a desktop application that works offline an protects your data privacy.
+
+It works on Mac, Windows, and Linux. Please visit our website to download the app: [https://superintendent.app](https://superintendent.app)
+
+Development
+------------
 
 1. `yarn` to install the dependencies. 
 2. Run `yarn run electron-builder install-app-deps` to build native binaries.
 3. run `yarn run build:watch` and `yarn run start` in 2 separate windows to start Electron with hot reload.
-4. Run tests: `yarn install --force` and `yarn jest`.
+4. Run tests: `yarn install` and `yarn jest`.
    - Run specific test based on pattern: `yarn jest -t <substring>`
-5. Run UI tests: `yarn run electron-builder install-app-deps` and `yarn wdio`. 
+5. Download `chromedriver` and put it in the root folder. It has to be the version `134.0.6998.165` because it is compatible with the Electron version that we use.
+   - Linux: https://storage.googleapis.com/chrome-for-testing-public/134.0.6998.165/linux64/chromedriver-linux64.zip
+   - Mac: https://storage.googleapis.com/chrome-for-testing-public/134.0.6998.165/mac-arm64/chromedriver-mac-arm64.zip
+   - Windows: https://storage.googleapis.com/chrome-for-testing-public/134.0.6998.165/win64/chromedriver-win64.zip
+5. Run the tests: `yarn wdio`. 
    - Run `yarn wdio --spec ./test/specs/draft_notice.e2e.ts` to run specific tests.
-5. Run tests: `npm install --force && yarn install`.
-   - We need this to install `@duckdb/node-bindings-win32-x64` and `@duckdb/node-bindings-linux-x64`
-6. To build the prod artifacts:
-   - Mac: run `GH_TOKEN=<github_token> APPLEID=<EMAIL> APPLEIDPASS=<PASS> yarn dist:mac`
-   - Windows: please see the Linux & Window build because we use the docker build approach.
-   - Linux: please see the Linux & Window build because we use the docker build approach.
 
-On Windows, we use git-bash, not the Command-Line Tool.
+We invest in having a good set of tests because it helps us maintain the application over an extended period of time.
+
+Secrets
+--------
+
+There are 3 secrets that are optional:
+
+1. `./secrets/VALID_LICENSE` is for running `yarn wdio --spec ./test/specs/correct_license.e2s.ts`
+2. `./secrets/GLITCHTIP_URL` is for enabling the error tracking for glitchtip.com.
+3. `./secrets/APTABASE_KEY` is for enabling the Aptabase's telemetry.
+
+Mac build
+----------
+
+Run `GH_TOKEN=<github_token> APPLEID=<EMAIL> APPLEIDPASS=<PASS> yarn dist:mac`
+
+You can skip the notarization (i.e. code signing) by setting: `export SKIP_CODE_SIGNING=true`
+
+We can check the notarization status with: `spctl -a -vvv -t install ./electron-builder/out/mac-arm64/superintendent.app`
+
+The DMG cannot be, and is not, notarized.
 
 Linux & Window build
-------------
+----------------------
 
 We currently use the Docker option of electron-builder. However, we have to use a modified Docker image due to the new yarn version. 
 See: https://github.com/electron-userland/electron-builder/issues/9040
@@ -31,7 +57,8 @@ See: https://github.com/electron-userland/electron-builder/issues/9040
 4. Go to `cd ./scripts`
 5. Run: `docker buildx build -t electronuserland/builder:wine --platform=linux/amd64 .`
 6. Go to the project root with `cd ..`
-7. Run the below docker command ([ref](https://www.electron.build/multi-platform-build.html#docker)):
+7. Run tests: `npm install --force && yarn install`.
+8. Run the below docker command ([ref](https://www.electron.build/multi-platform-build.html#docker)):
 
 ```
 docker run --rm -ti \
@@ -51,33 +78,11 @@ Now that you are in the docker console:
 - Run `yarn && GH_TOKEN=<github_token> yarn dist:linux` for Linux
 - Run `yarn && GH_TOKEN=<github_token> SSL_USERNAME=<ssl_com_user> SSL_PASSWORD=<ssl_com_pass> yarn dist:win` for Windows
 
-Errors
--------
+You can skip the code signing by setting: `export SKIP_CODE_SIGNING=true`
 
-If we see this: `"mach-o file, but is an incompatible architecture (have 'arm64', need 'x86_64h' or 'x86_64')"`,
-run `yarn run electron-builder install-app-deps` because duckdb.node is missing for Mac OS (Intel).
-
-Windows Code Signing
-----------------------
-
-### Validate that the binary is signed correctly
+### Validate that the binary is signed correctly on Windows
 
 1. Open PowerShell
 2. Run `powershell -command "Get-AuthenticodeSignature -FilePath \"<file>\""`
 
-For convenience, here are the 2 files we should verify:
-
-* `powershell -command "Get-AuthenticodeSignature -FilePath ./electron-builder/out/win-unpacked/superintendent.exe"`
-* `powershell -command "Get-AuthenticodeSignature -FilePath \"./electron-builder/out/superintendent-setup-7.2.0.exe\""`
-
-Mac's notarization
---------------------
-
-We can check the notarization status with: 
-
-```
-spctl -a -vvv -t install ./electron-builder/out/mac-arm64/superintendent.app
-```
-
-The DMG cannot be, and is not, notarized 
 

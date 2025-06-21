@@ -16,6 +16,11 @@ exports.default = async function (context) {
   const appName = context.packager.appInfo.productFilename
 
   if (electronPlatformName === 'darwin') {
+    if (process.env.SKIP_CODE_SIGNING) {
+      console.log('Skipping the code signing because SKIP_CODE_SIGNING is set.')
+      return
+    }
+
     console.log('Signing the app for darwin.')
     await notarize({
       teamId: 'S6482XAL5E',
@@ -24,6 +29,11 @@ exports.default = async function (context) {
       appleIdPassword: process.env.APPLEIDPASS
     })
   } else if (electronPlatformName === 'win32') {
+    if (process.env.SKIP_CODE_SIGNING) {
+      console.log('Skipping the code signing because SKIP_CODE_SIGNING is set.')
+      return
+    }
+
     console.log(`Signing the app for ${electronPlatformName}.`)
 
     const codeSigningToolDir = './scripts/CodeSignTool-v1.3.2'

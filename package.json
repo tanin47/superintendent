@@ -1,8 +1,8 @@
 {
   "name": "superintendent",
-  "version": "7.3.0",
-  "description": "Write SQLs on CSVs",
-  "license": "UNLICENSED",
+  "version": "7.3.0-rc1",
+  "description": "Import CSVs and write SQLs",
+  "license": "MIT",
   "main": "dist/prod/main.js",
   "scripts": {
     "build:watch": "webpack --watch --config webpack.dev.js",

@@ -11,15 +11,22 @@ if (isInTest) {
   trackEventProxy = async () => { await Promise.resolve() }
 
   captureExceptionProxy = () => ''
-} else {
-  Sentry.init({ dsn: 'https://ffa45e5490e645f694fb3bb0775d2c2a@app.glitchtip.com/6548', maxValueLength: 3000 })
+} else if (process.env.GLITCHTIP_URL) {
+  Sentry.init({ dsn: process.env.GLITCHTIP_URL, maxValueLength: 3000 })
 
-  trackEventProxy = Aptabase.trackEvent
   captureExceptionProxy = Sentry.captureException
+}
+
+if (process.env.APTABASE_KEY) {
+  trackEventProxy = Aptabase.trackEvent
+} else {
+  trackEventProxy = async () => { await Promise.resolve() }
 }
 
 export function initialize (): void {
   if (isInTest) { return }
+  if (!process.env.APTABASE_KEY) { return }
+
   void Aptabase.initialize('A-US-0398660071')
 }
 

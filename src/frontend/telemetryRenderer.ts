@@ -18,11 +18,14 @@ if (isInTest) {
   }
   // @ts-expect-error for testing
   window.captureExceptionCalls = captureExceptionCalls
-} else {
-  Sentry.init({ dsn: 'https://ffa45e5490e645f694fb3bb0775d2c2a@app.glitchtip.com/6548', maxValueLength: 3000 })
+} else if (process.env.GLITCHTIP_URL) {
+  Sentry.init({ dsn: process.env.GLITCHTIP_URL, maxValueLength: 3000 })
 
   trackEventProxy = trackEvent
   captureExceptionProxy = Sentry.captureException
+} else {
+  trackEventProxy = async () => { await Promise.resolve() }
+  captureExceptionProxy = (_exception: any, _hint?: ExclusiveEventHintOrCaptureContext) => { return '' }
 }
 
 export { trackEventProxy as trackEvent, captureExceptionProxy as captureException }

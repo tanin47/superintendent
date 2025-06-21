@@ -17,6 +17,11 @@ exports.default = function (context) {
   const platform = [...platformToTargets.keys()][0]
 
   if (platform === Platform.WINDOWS) {
+    if (process.env.SKIP_CODE_SIGNING) {
+      console.log('Skipping the code signing because SKIP_CODE_SIGNING is set.')
+      return
+    }
+
     console.log(`Signing the installer for ${platform.name}.`)
 
     const { artifactPaths } = context

@@ -1,18 +1,13 @@
 import { $, expect } from '@wdio/globals'
 import { selectMenu } from './helpers'
+import fs from "fs";
 
 describe('Correct license', () => {
   it('uses a correct license', async () => {
     await selectMenu('File', 'Enter a license')
 
-    const license = '---- Superintendent license ----\n' +
-        'Email: tanin47@gmail.com\n' +
-        'Expired: 2026-03-28T02:41:53.808092351\n' +
-        'Signature:\n' +
-        'KFeT9BgEmVOJZr932OLi6XhIJhANQWkwGJQMQxpJ6hCp6lGPDt5DhuTnMPlKEyGJ\n' +
-        'S5h/56vJM62LSf2+otv4/ja9BxJ/gQ/SxmAuGVI4mE6N+cElS1jg6JwHJD5MzrIm\n' +
-        'yjAyEL/347uFqLjXRCrdeTr6XeuVMXbW3K551+5bQng=\n' +
-        '---- End of Superintendent license ----'
+    const license = fs.readFileSync('./secrets/VALID_LICENSE', 'utf-8').trim()
+
     await $('#checkLicenseForm textarea').setValue(license)
     await $('#checkLicenseForm [data-testid="submit-button"]').click()
 

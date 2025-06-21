@@ -2,14 +2,22 @@ const HtmlWebpackPlugin = require('html-webpack-plugin')
 const ThreadsPlugin = require('threads-plugin')
 const { DefinePlugin } = require('webpack')
 const CopyPlugin = require("copy-webpack-plugin");
+const fs = require("fs");
 
-const electronMainDefinePlugin = new DefinePlugin({
-  'process.env.PROCESS_TYPE': JSON.stringify('main')
-})
+let envs = {
+  'process.env.GLITCHTIP_URL': 'false',
+  'process.env.APTABASE_KEY': 'false'
+}
 
-const electronRendererDefinePlugin = new DefinePlugin({
-  'process.env.PROCESS_TYPE': JSON.stringify('renderer')
-})
+if (fs.existsSync('./secrets/GLITCHTIP_URL')) {
+  envs['process.env.GLITCHTIP_URL'] = JSON.stringify(fs.readFileSync('./secrets/GLITCHTIP_URL', 'utf-8'))
+}
+
+if (fs.existsSync('./secrets/APTABASE_KEY')) {
+  envs['process.env.APTABASE_KEY'] = JSON.stringify(fs.readFileSync('./secrets/APTABASE_KEY', 'utf-8'))
+}
+
+const definePlugin = new DefinePlugin(envs)
 
 const runtimePlatformArch = process.env.TARGET_PLATFORM ? process.env.TARGET_PLATFORM : `${process.platform}-${process.arch}`
 let libduckdbFilename = ''
@@ -46,7 +54,10 @@ const electronPreload = {
   },
   output: {
     filename: 'preload.js'
-  }
+  },
+  plugins: [
+    definePlugin
+  ],
 }
 
 const electronWorkerConfiguration = {
@@ -111,6 +122,7 @@ const electronWorkerConfiguration = {
         },
       ],
     }),
+    definePlugin
   ],
 }
 
@@ -137,7 +149,7 @@ const electronConfiguration = {
   },
   plugins: [
     new ThreadsPlugin(),
-    electronMainDefinePlugin
+    definePlugin
   ],
 }
 
@@ -195,7 +207,7 @@ const reactConfiguration = {
     new HtmlWebpackPlugin({
       template: './src/frontend/index.html'
     }),
-    electronRendererDefinePlugin
+    definePlugin
   ]
 }
 
