@@ -68,7 +68,7 @@ Windows Code Signing
 For convenience, here are the 2 files we should verify:
 
 * `powershell -command "Get-AuthenticodeSignature -FilePath ./electron-builder/out/win-unpacked/superintendent.exe"`
-* `powershell -command "Get-AuthenticodeSignature -FilePath \"./electron-builder/out/superintendent Setup 7.0.0.exe\""`
+* `powershell -command "Get-AuthenticodeSignature -FilePath \"./electron-builder/out/superintendent-setup-7.2.0.exe\""`
 
 Mac's notarization
 --------------------

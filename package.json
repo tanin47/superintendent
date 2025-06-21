@@ -70,6 +70,12 @@
       "entitlementsInherit": "electron-builder/build/entitlements.mac.plist",
       "notarize": false
     },
+    "linux": {
+      "target": "AppImage"
+    },
+    "win": {
+      "artifactName": "${productName}-setup-${version}.${ext}"
+    },
     "files": [
       "dist/prod",
       "package.json",
@@ -84,10 +90,7 @@
     ],
     "afterSign": "scripts/afterSign.js",
     "afterAllArtifactBuild": "scripts/afterAllArtifactBuild.js",
-    "npmRebuild": false,
-    "linux": {
-      "target": "AppImage"
-    }
+    "npmRebuild": false
   },
   "author": "Tanin Na Nakorn",
   "resolutions": {

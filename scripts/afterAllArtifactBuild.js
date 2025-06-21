@@ -26,7 +26,7 @@ exports.default = function (context) {
     const sslPassword = readEnv('SSL_PASSWORD')
 
     for (const file of artifactPaths) {
-      if (!file.endsWith('.exe') && !file.endsWith('.AppImage')) { continue }
+      if (!file.endsWith('.exe')) { continue }
 
       const binary = '/bin/bash'
       const args = ['./CodeSignTool.sh', 'sign', `-username="${sslUsername}"`, `-password="${sslPassword}"`, '-override', `-input_file_path="${file}"`]
