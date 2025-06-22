@@ -1,7 +1,7 @@
 Superintendent.app
 ====================
 
-Your SQL spreadsheet app
+The Excel alternative for SQL lovers.
 
 You can write SQL to query and visualize gigabytes of CSV files on your local machine. 
 Superintendent.app is a desktop application that works offline an protects your data privacy.
