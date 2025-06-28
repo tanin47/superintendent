@@ -60,7 +60,7 @@
       "target": {
         "target": "default",
         "arch": [
-          "arm64"
+          "universal"
         ]
       },
       "category": "public.app-category.finance",
@@ -68,7 +68,8 @@
       "hardenedRuntime": true,
       "entitlements": "electron-builder/build/entitlements.mac.plist",
       "entitlementsInherit": "electron-builder/build/entitlements.mac.plist",
-      "notarize": false
+      "notarize": false,
+      "mergeASARs": false
     },
     "linux": {
       "target": "AppImage"
